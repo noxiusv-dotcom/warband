@@ -1010,7 +1010,7 @@ async function getSample(){
 let roomKey="", _fbInit=false;
 function fbAvailable(){ return typeof firebase!=="undefined" && window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey; }
 function initFb(){ if(_fbInit)return true; if(!fbAvailable())return false; try{ if(!firebase.apps.length)firebase.initializeApp(window.FIREBASE_CONFIG); _fbInit=true; return true; }catch(e){ return false; } }
-async function hashKey(s){ const buf=await crypto.subtle.digest("SHA-256",new TextEncoder().encode("p28-room|"+String(s))); return [...new Uint8Array(buf)].slice(0,10).map(b=>b.toString(16).padStart(2,"0")).join(""); }
+async function hashKey(s){ const norm=String(s||"").trim().toLowerCase().replace(/\s+/g," "); const buf=await crypto.subtle.digest("SHA-256",new TextEncoder().encode("p28-room|"+norm)); return [...new Uint8Array(buf)].slice(0,10).map(b=>b.toString(16).padStart(2,"0")).join(""); }
 function savedPass(){ try{return localStorage.getItem("p28_pass")||"";}catch(e){return "";} }
 function askPassphrase(){
   return new Promise(res=>{
@@ -1018,7 +1018,8 @@ function askPassphrase(){
     body.innerHTML=`
       <h3>Group passphrase</h3>
       <p class="lead">Enter your group's shared passphrase to reach your table. Everyone who uses the same word sees the same live games — so share it only with your players. It's not stored in the app.</p>
-      <div class="field" style="margin:6px 0 12px"><label>Passphrase</label><input class="input" id="lgPass" type="password" value="${esc(savedPass())}" placeholder="e.g. rusty-cathedral" maxlength="60" autocomplete="off"></div>
+      <div class="field" style="margin:6px 0 12px"><label>Passphrase</label><input class="input" id="lgPass" type="password" value="${esc(savedPass())}" placeholder="e.g. rusty-cathedral" maxlength="60" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"></div>
+      <p class="none-note" style="font-style:normal;margin:-6px 0 10px">Not case-sensitive — everyone lands at the same table regardless of capitalization.</p>
       <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:10px"><input type="checkbox" id="lgShow"> Show passphrase</label>
       <div class="modal-actions"><button class="btn primary sm" id="lgPGo">Enter table</button><button class="btn ghost sm" id="lgPX" style="margin-left:auto">Cancel</button></div>`;
     const done=v=>{closeModal();res(v);};
@@ -2430,17 +2431,30 @@ function scheduleHostSync(s){
 async function openJoinDialog(){
   const db=await getDb();
   if(!db){toast(fbAvailable()?"Enter your group passphrase to use live play.":"Live play isn't available in this version.");return;}
-  askPlayerName("Join a live game","Enter the code your host gave you. You'll see their scenario update live while you build and run your own warband.",nm=>{const c=($("#lgCode").value||"").toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,6);if(!c){toast("Enter the game code");return;}joinGame(c,nm);},
-    `<div class="field" style="margin-bottom:10px"><label>Game code</label><input class="input" id="lgCode" placeholder="e.g. AB3K" maxlength="6" style="max-width:160px;letter-spacing:.2em;text-transform:uppercase;font-family:var(--mono)"></div>`);
+  askPlayerName("Join a live game","Enter the game code your host gave you — the 4-letter code shown on their screen (not your group passphrase). You'll see their scenario update live while you build and run your own warband.",nm=>{const c=($("#lgCode").value||"").toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,6);if(!c){toast("Enter the game code");return;}joinGame(c,nm);},
+    `<div class="field" style="margin-bottom:10px"><label>Game code</label><input class="input" id="lgCode" placeholder="e.g. AB3K" maxlength="6" style="max-width:160px;letter-spacing:.2em;text-transform:uppercase;font-family:var(--mono)"><div class="none-note" style="font-style:normal;margin-top:4px">This is different from your passphrase — find it on the host's screen: "📡 Hosting · code XXXX".</div></div>`);
+}
+function fillScnArrayDefaults(s){
+  // Firebase Realtime Database silently drops any field that was an empty array/object
+  // at write time (e.g. specialRules:[] round-trips as "field absent"). Restore safe
+  // defaults on the receiving (guest) side so template code that assumes arrays never crashes.
+  if(!s||typeof s!=="object")return s;
+  ["objectives","specialRules","terrain","markers","npcs","items","events"].forEach(k=>{if(!Array.isArray(s[k]))s[k]=[];});
+  if(!s.map||typeof s.map!=="object")s.map={note:"",zones:[],features:[]};
+  s.map.zones=Array.isArray(s.map.zones)?s.map.zones:[];
+  s.map.features=Array.isArray(s.map.features)?s.map.features:[];
+  if(s.enemy&&typeof s.enemy==="object"&&!Array.isArray(s.enemy.characters))s.enemy.characters=[];
+  if(s.battle&&typeof s.battle==="object"&&!Array.isArray(s.battle.combatants))s.battle.combatants=[];
+  return s;
 }
 async function joinGame(code,name){
   const db=await getDb();if(!db){toast("Live play unavailable here.");return;}
   const res=$("#lgResult");if(res)res.innerHTML=`<div class="ng-note spin">Joining ${esc(code)}…</div>`;
   const ref=db.doc("sessions/"+code);
-  let snap;try{snap=await ref.get();}catch(e){if(res)res.innerHTML=`<div class="ng-note">Couldn't reach the game — check the code.</div>`;return;}
-  if(!snap.exists){if(res)res.innerHTML=`<div class="ng-note">No live game with code ${esc(code)}.</div>`;return;}
-  clearLive();liveRole="guest";liveCode=code;liveScenario=(snap.data()||{}).scenario||null;
-  try{ _liveUnsub.push(ref.onSnapshot(sn=>{if(sn.exists){liveScenario=(sn.data()||{}).scenario||liveScenario;if(liveRole==="guest")renderScenarioView();}else{toast("The host ended the game");leaveGame();}},()=>{})); }catch(e){}
+  let snap;try{snap=await ref.get();}catch(e){if(res)res.innerHTML=`<div class="ng-note">Couldn't reach the game — check your connection and try again.</div>`;toast("Couldn't reach the game");return;}
+  if(!snap.exists){if(res)res.innerHTML=`<div class="ng-note">No live game with code ${esc(code)} at your table. Double-check the code on the host's screen, and that you both set the same group passphrase.</div>`;toast("No game found with that code");return;}
+  clearLive();liveRole="guest";liveCode=code;liveScenario=fillScnArrayDefaults((snap.data()||{}).scenario||null);
+  try{ _liveUnsub.push(ref.onSnapshot(sn=>{if(sn.exists){liveScenario=fillScnArrayDefaults((sn.data()||{}).scenario)||liveScenario;if(liveRole==="guest")renderScenarioView();}else{toast("The host ended the game");leaveGame();}},()=>{})); }catch(e){}
   const pid=(name.replace(/[^A-Za-z0-9_-]/g,"")||"guest").slice(0,20)+"_"+Math.random().toString(36).slice(2,6);
   guestPid=pid; guestPlayerRef=ref.collection("players").doc(pid);
   try{ await guestPlayerRef.set({name,warbandName:activeWB().name,combatants:myCombatants(name,"g"+pid+"_"),joinedAt:Date.now()}); }catch(e){}
@@ -3179,10 +3193,10 @@ function renderScenarioDetail(scnOverride){
       <div class="scn-cols">
         <div>
           ${prepBox}
-          ${s.objectives.length?`<div class="scn-block"><div class="bh">Objectives &amp; victory</div><ul class="scn-list">${li(s.objectives)}</ul></div>`:""}
+          ${(s.objectives||[]).length?`<div class="scn-block"><div class="bh">Objectives &amp; victory</div><ul class="scn-list">${li(s.objectives)}</ul></div>`:""}
           ${s.deployment?`<div class="scn-block"><div class="bh">Deployment</div><p>${esc(s.deployment)}</p></div>`:""}
           ${s.scenery?`<div class="scn-block"><div class="bh">Scenery</div><p>${esc(s.scenery)}</p></div>`:""}
-          ${s.specialRules.length?`<div class="scn-block"><div class="bh">Special rules</div><ul class="scn-list">${li(s.specialRules)}</ul></div>`:""}
+          ${(s.specialRules||[]).length?`<div class="scn-block"><div class="bh">Special rules</div><ul class="scn-list">${li(s.specialRules)}</ul></div>`:""}
           ${s.twist?`<div class="scn-block"><div class="bh">Twist</div><p>${esc(s.twist)}</p></div>`:""}
           ${s.mode==="coop"?enemyBlock(s):""}
         </div>
@@ -3260,10 +3274,10 @@ function renderScenarioDetail(scnOverride){
 function scenarioText(s){
   let o=`${s.title}\n${s.mode==="coop"?"Co-op":"PvP"} · ${s.players} players · ${s.points} pts · ${s.gameLength}\n\n${s.premise}\n\n`;
   if(s.briefing)o+=s.briefing+"\n\n";
-  if(s.objectives.length)o+="OBJECTIVES:\n"+s.objectives.map(x=>"- "+x).join("\n")+"\n\n";
+  if((s.objectives||[]).length)o+="OBJECTIVES:\n"+s.objectives.map(x=>"- "+x).join("\n")+"\n\n";
   if(s.deployment)o+="DEPLOYMENT: "+s.deployment+"\n\n";
   if(s.scenery)o+="SCENERY: "+s.scenery+"\n\n";
-  if(s.specialRules.length)o+="SPECIAL RULES:\n"+s.specialRules.map(x=>"- "+x).join("\n")+"\n\n";
+  if((s.specialRules||[]).length)o+="SPECIAL RULES:\n"+s.specialRules.map(x=>"- "+x).join("\n")+"\n\n";
   if(s.twist)o+="TWIST: "+s.twist+"\n\n";
   if((s.events||[]).length)o+="TIMED EVENTS:\n"+s.events.map(e=>e.kind==="deadline"?"- By turn "+e.round+" (deadline): "+e.title+(e.text?" — "+e.text:""):"- Turn "+e.round+" (surprise): "+e.title+(e.text?" — "+e.text:"")).join("\n")+"\n\n";
   const prep=[];
