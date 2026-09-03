@@ -3388,42 +3388,6 @@ load();render();
 .mark-realm{ position:relative; }
 .mark-realm::after{ content:""; position:absolute; inset:-3px; border-radius:11px; border:1px solid var(--amber); opacity:.55; animation:realmPulse 2.6s ease-out infinite; pointer-events:none; }
 @keyframes realmPulse{ 0%{ transform:scale(.85); opacity:.6; } 70%{ transform:scale(1.35); opacity:0; } 100%{ opacity:0; } }
-
-/* Mission Control: the scenario detail screen gets its own layout in the Realm —
-   live HUD (map + turn tracker + battle roster + collectibles) surfaces first,
-   the written briefing (premise/objectives/deployment/etc) becomes reference
-   material underneath. Pure CSS reflow of the existing DOM — no markup change. */
-.scn-cols{ display:flex !important; flex-direction:column-reverse; gap:0; }
-.scn-cols > div:last-child{
-  display:grid; grid-template-columns:1fr 1fr;
-  grid-template-areas:"map map" "tracker battle" "collect collect";
-  gap:16px; margin-bottom:26px;
-}
-.scn-map-wrap{ grid-area:map; }
-.scn-tracker{ grid-area:tracker; margin-top:0 !important; }
-.scn-battle{ grid-area:battle; margin-top:0 !important; }
-.scn-collect{ grid-area:collect; margin-top:0 !important; }
-@media(max-width:760px){
-  .scn-cols > div:last-child{ grid-template-columns:1fr; grid-template-areas:"map" "tracker" "battle" "collect"; }
-}
-.scn-map-wrap,.scn-tracker,.scn-battle,.scn-collect{
-  position:relative; border-color:color-mix(in srgb,var(--amber) 30%,var(--line)) !important;
-}
-.scn-map-wrap::before,.scn-tracker::before,.scn-battle::before,.scn-collect::before,
-.scn-map-wrap::after,.scn-tracker::after,.scn-battle::after,.scn-collect::after{
-  content:""; position:absolute; width:10px; height:10px; border:2px solid var(--amber); opacity:.65; pointer-events:none;
-}
-.scn-map-wrap::before,.scn-tracker::before,.scn-battle::before,.scn-collect::before{ top:-1px; left:-1px; border-right:none; border-bottom:none; }
-.scn-map-wrap::after,.scn-tracker::after,.scn-battle::after,.scn-collect::after{ bottom:-1px; right:-1px; border-left:none; border-top:none; }
-.scn-map-wrap .mh,.scn-tracker .mh,.scn-battle .mh,.scn-collect .mh{ font-family:var(--mono) !important; letter-spacing:.08em !important; }
-/* the briefing column, now beneath the HUD, reads like a field dossier */
-.scn-cols > div:first-child{
-  border-top:1px dashed color-mix(in srgb,var(--amber) 35%,var(--line)); padding-top:22px; margin-top:4px;
-}
-.scn-cols > div:first-child::before{
-  content:"◆ FIELD DOSSIER"; display:block; font-family:var(--mono); font-size:10.5px; letter-spacing:.16em;
-  color:var(--ink-mute); margin-bottom:14px;
-}
 </style>
 </body>
 </html>
