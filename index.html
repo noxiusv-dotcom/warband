@@ -559,6 +559,13 @@ textarea.input{resize:vertical;min-height:56px;line-height:1.45}
 .scn-maplegend{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;font-size:11px;color:var(--ink-dim)}
 .scn-maplegend span{display:inline-flex;align-items:center;gap:5px}
 .scn-maplegend i{width:11px;height:11px;border-radius:3px;display:inline-block}
+.scn-map .mapnum{cursor:pointer}
+.scn-map .mapnum:hover circle,.scn-map .mapnum:active circle{stroke-width:1}
+.scn-maplegend-nums{display:flex;flex-direction:column;gap:5px;margin-top:12px;padding-top:10px;border-top:1px solid var(--line-soft)}
+.maplg-row{display:flex;align-items:baseline;gap:8px;font-size:12.5px;color:var(--ink-dim);border-radius:6px;padding:2px 4px;transition:background .3s}
+.maplg-row.flash{background:var(--amber-glow)}
+.maplg-num{flex:none;width:18px;height:18px;border-radius:50%;background:var(--panel-2);border:1px solid var(--line);color:var(--ink);font-family:var(--mono);font-size:10.5px;font-weight:700;display:grid;place-items:center}
+.maplg-label{color:var(--ink)}
 ::-webkit-scrollbar{width:10px;height:10px}
 ::-webkit-scrollbar-thumb{background:var(--line);border-radius:6px;border:2px solid var(--ground)}
 ::-webkit-scrollbar-thumb:hover{background:var(--ink-mute)}
@@ -2771,8 +2778,10 @@ function openMapLightbox(map,note){
     </button>
     ${scenarioMapSVG(map,false)}
     ${note?`<div class="mlb-cap">${esc(note)}</div>`:""}
+    ${mapLegendHTML(map)}
   </div>`;
   $("#mlbClose").onclick=closeMapLightbox;
+  wireMapNums(lb.querySelector(".scn-map"));
   lb.classList.add("show");syncScroll();
 }
 function closeMapLightbox(){$("#mapLightbox").classList.remove("show");$("#mapLightbox").innerHTML="";syncScroll();}
@@ -2785,17 +2794,41 @@ function scenarioMapSVG(map,mini){
   const zc=s=>s==="b"?["#e5686d","rgba(229,104,109,.15)"]:s==="neutral"?["#9aa3b2","rgba(154,163,178,.12)"]:["#5a9be0","rgba(90,155,224,.15)"];
   let g="";
   for(let i=10;i<100;i+=10)g+=`<line class="grid" x1="${i}" y1="0" x2="${i}" y2="100"/><line class="grid" x1="0" y1="${i}" x2="100" y2="${i}"/>`;
+  let num=0;
+  const badge=(x,y,fill,n,label)=>`<g class="mapnum" data-mapnum="${n}" data-maplabel="${esc(String(label))}"><circle cx="${x}" cy="${y}" r="3.1" fill="${fill}" stroke="#fff" stroke-width="0.5"/><text x="${x}" y="${y}" font-size="3.3" font-weight="700" fill="#fff" text-anchor="middle" dominant-baseline="central">${n}</text></g>`;
   let z="";
   zones.forEach(zo=>{const[st,fi]=zc(zo.side);const x=cl(zo.x),y=cl(zo.y),w=Math.min(100-x,Math.max(4,+zo.w||20)),h=Math.min(100-y,Math.max(4,+zo.h||18));
     z+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="2" fill="${fi}" stroke="${st}" stroke-width="0.5" stroke-dasharray="2 1.5"/>`;
-    if(!mini&&zo.label)z+=`<text class="zlabel" x="${x+w/2}" y="${y+h/2}" fill="${st}" font-size="3" text-anchor="middle" dominant-baseline="middle">${esc(String(zo.label)).slice(0,22)}</text>`;});
+    if(!mini&&zo.label){num++;z+=badge(x+w/2,y+h/2,st,num,zo.label);}});
   let f="";
   feats.forEach(ft=>{const x=cl(ft.x),y=cl(ft.y),t=ft.type||"terrain";
     if(t==="objective")f+=`<circle class="obj" cx="${x}" cy="${y}" r="2.7"/>`;
     else if(t==="hazard")f+=`<path class="haz" d="M ${x} ${y-3.2} L ${x+3} ${y+2.5} L ${x-3} ${y+2.5} Z"/>`;
     else f+=`<rect class="terr" x="${x-3.5}" y="${y-3.5}" width="7" height="7" rx="1.5"/>`;
-    if(!mini&&ft.label)f+=`<text class="flabel" x="${x}" y="${y+6}" font-size="2.6" text-anchor="middle">${esc(String(ft.label)).slice(0,20)}</text>`;});
+    if(!mini&&ft.label){num++;f+=badge(x,y-6,"#2c313d",num,ft.label);}});
   return `<svg class="scn-map" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">${g}${z}${f}</svg>`;
+}
+function mapLegendHTML(map){
+  map=map||{};
+  const zones=Array.isArray(map.zones)?map.zones:[];
+  const feats=Array.isArray(map.features)?map.features:[];
+  let num=0;const rows=[];
+  zones.forEach(zo=>{if(zo&&zo.label){num++;rows.push(`<div class="maplg-row" data-mapnum="${num}"><span class="maplg-num">${num}</span><span class="maplg-label">${esc(String(zo.label))}</span></div>`);}});
+  feats.forEach(ft=>{if(ft&&ft.label){num++;rows.push(`<div class="maplg-row" data-mapnum="${num}"><span class="maplg-num">${num}</span><span class="maplg-label">${esc(String(ft.label))}</span></div>`);}});
+  if(!rows.length)return "";
+  return `<div class="scn-maplegend-nums">${rows.join("")}</div>`;
+}
+function wireMapNums(container){
+  if(!container)return;
+  container.querySelectorAll(".mapnum").forEach(g=>{
+    g.addEventListener("click",ev=>{
+      ev.stopPropagation();
+      const n=g.dataset.mapnum,lbl=g.dataset.maplabel;
+      toast(`${n}. ${lbl}`);
+      const row=container.parentElement&&container.parentElement.querySelector(`.maplg-row[data-mapnum="${n}"]`);
+      if(row){row.classList.add("flash");setTimeout(()=>row.classList.remove("flash"),900);}
+    });
+  });
 }
 
 /* ---- live-play: round tracker + item pickups ---- */
@@ -3165,6 +3198,7 @@ function renderScenarioDetail(scnOverride){
               <span><i style="background:var(--amber)"></i>Objective</span>
               <span><i style="background:var(--danger)"></i>Hazard</span>
             </div>
+            ${mapLegendHTML(s.map)}
           </div>
           ${trackerHTML(s)}
           ${battleHTML(s)}
@@ -3200,6 +3234,7 @@ function renderScenarioDetail(scnOverride){
   // reveal secrets
   el.querySelectorAll("[data-reveal]").forEach(b=>b.onclick=()=>{const[cat,i]=b.dataset.reveal.split("|");const it=(s[cat]||[])[+i];if(it){it.revealed=true;save();renderScenarioView();}});
   const mp=el.querySelector(".scn-map-wrap .scn-map");if(mp)mp.onclick=()=>openMapLightbox(s.map,s.map&&s.map.note);
+  wireMapNums(mp);
   const cp=$("#scnCopy");if(cp)cp.onclick=()=>{navigator.clipboard.writeText(scenarioText(s)).then(()=>toast("Copied")).catch(()=>toast("Copy failed"));};
   if(scnReadOnly){
     const lb=$("#scnBack");if(lb)lb.onclick=leaveGame;
