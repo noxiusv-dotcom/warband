@@ -2453,10 +2453,10 @@ function renderScenarioList(){
       </div>
     </button>`).join("");
   el.innerHTML=`
-    <div class="live-panel">
-      <div class="lp-main"><b>Live game</b> <span class="none-note" style="font-style:normal">Host a scenario for your table, or join one your host is running. Everyone plays on their own device.</span>${fbAvailable()?`<div class="none-note" style="font-style:normal;margin-top:4px">${roomKey?`◉ At your table · <button class="linkbtn" id="lpLeaveTable">change passphrase</button>`:`<button class="linkbtn" id="lpTable">set group passphrase</button> to reach your table`}</div>`:""}</div>
+    ${fbAvailable()?`<div class="live-panel">
+      <div class="lp-main"><b>Live game</b> <span class="none-note" style="font-style:normal">Host a scenario for your table, or join one your host is running. Everyone plays on their own device.</span><div class="none-note" style="font-style:normal;margin-top:4px">${roomKey?`◉ At your table · <button class="linkbtn" id="lpLeaveTable">change passphrase</button>`:`<button class="linkbtn" id="lpTable">set group passphrase</button> to reach your table`}</div></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm ghost" id="lpImport">⇩ Import scenario</button><button class="btn sm" id="lpJoin">📡 Join a live game</button></div>
-    </div>
+    </div>`:""}
     <div class="section-head"><span class="eyebrow">Scenarios &amp; Campaigns</span><span class="rule"></span></div>
     <div class="scn-grid">
       ${cards}
@@ -2464,8 +2464,8 @@ function renderScenarioList(){
     </div>`;
   el.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>{scnCurrentId=b.dataset.open;scnScreen="detail";renderScenarioView();});
   $("#scnNew").onclick=openScenarioWizard;
-  $("#lpJoin").onclick=openJoinDialog;
-  $("#lpImport").onclick=openImportScenario;
+  const lpj=$("#lpJoin");if(lpj)lpj.onclick=openJoinDialog;
+  const lpi=$("#lpImport");if(lpi)lpi.onclick=openImportScenario;
   const lt=$("#lpTable");if(lt)lt.onclick=async()=>{if(await ensureRoom())renderScenarioView();};
   const ll=$("#lpLeaveTable");if(ll)ll.onclick=()=>{forgetRoom();clearLive();liveRole="solo";liveScenario=null;renderScenarioView();toast("Left the table — set a passphrase to rejoin");};
 }
@@ -3147,7 +3147,7 @@ function renderScenarioDetail(scnOverride){
         <button class="btn" id="scnRegen">✦ Regenerate</button>
         <button class="btn ghost sm" id="scnCopy">Copy as text</button>
         <button class="btn ghost sm" id="scnShare">↗ Share code</button>
-        ${liveRole==="host"&&s.id===hostScenarioId?`<button class="btn gc-fielded sm" id="hostStop2">Stop hosting</button>`:`<button class="btn sm" id="scnHost">📡 Host live</button>`}
+        ${fbAvailable()?(liveRole==="host"&&s.id===hostScenarioId?`<button class="btn gc-fielded sm" id="hostStop2">Stop hosting</button>`:`<button class="btn sm" id="scnHost">📡 Host live</button>`):""}
         <button class="btn danger ghost" id="scnDelete" style="margin-left:auto">Delete</button>`}
       </div>
     </div>`;
