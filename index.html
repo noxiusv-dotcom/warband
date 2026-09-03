@@ -2411,7 +2411,7 @@ async function hostScenario(s,name){
   const db=await getDb();if(!db){toast("Live play unavailable here.");return;}
   const code=sessCode();
   const res=$("#lgResult");if(res)res.innerHTML=`<div class="ng-note spin">Opening session…</div>`;
-  try{ await db.doc("sessions/"+code).set({code,hostName:name,scenario:scnForDb(s),updatedAt:Date.now()}); }
+  try{ await db.doc("sessions/"+code).update({code,hostName:name,scenario:scnForDb(s),updatedAt:Date.now()}); }
   catch(e){ if(res)res.innerHTML=`<div class="ng-note">Couldn't open the session — try again.</div>`; return; }
   clearLive();liveRole="host";hostCode=code;hostScenarioId=s.id;livePlayers=[];
   try{ _liveUnsub.push(db.doc("sessions/"+code).collection("players").onSnapshot(snap=>{livePlayers=snap.docs.map(d=>d.data()||{});if(liveRole==="host"){mergePlayersIntoHostedBattle();renderScenarioView();}},()=>{})); }catch(e){}
@@ -2425,7 +2425,7 @@ async function stopHosting(){
 function scheduleHostSync(s){
   if(liveRole!=="host"||!hostCode||s.id!==hostScenarioId)return;
   clearTimeout(_hostSyncTimer);
-  _hostSyncTimer=setTimeout(async()=>{const db=await getDb();if(!db)return;try{await db.doc("sessions/"+hostCode).set({code:hostCode,hostName:playerName(),scenario:scnForDb(s),updatedAt:Date.now()});}catch(e){}},500);
+  _hostSyncTimer=setTimeout(async()=>{const db=await getDb();if(!db)return;try{await db.doc("sessions/"+hostCode).update({code:hostCode,hostName:playerName(),scenario:scnForDb(s),updatedAt:Date.now()});}catch(e){}},500);
 }
 
 async function openJoinDialog(){
