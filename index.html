@@ -634,7 +634,7 @@ textarea.input{resize:vertical;min-height:56px;line-height:1.45}
       <span class="eyebrow">The Roster</span>
       <span class="rule"></span>
       <button class="btn sm ghost" id="btnPrint" title="Open a clean summary you can print or screenshot">Summary</button>
-      <button class="btn sm ghost" id="btnShareWB" title="Copy a code to send this warband to another device">↗ Share code</button>
+      <button class="btn sm ghost" id="btnShareWB" title="Copy a code to bring this warband into your camp on the World App">⛺ Move to camp</button>
     </div>
     <div class="roster" id="roster"></div>
 
@@ -1576,8 +1576,8 @@ function exportCurrent(fromLibrary){
   const json=JSON.stringify(w,null,2);
   const body=$("#modalBody");
   body.innerHTML=`
-    <h3>Share “${esc(w.name)}”</h3>
-    <p class="lead">Copy this code and send it to another device — paste it into that app's Import to load this exact warband (e.g. to bring an AI-built warband from this app into the live-play app).</p>
+    <h3>Move “${esc(w.name)}” to your camp</h3>
+    <p class="lead">Copy this code, open the World App on your device, and paste it into Warbands → Import… to bring this exact warband into your camp for live play.</p>
     <textarea class="jsonbox" id="exBox" readonly>${esc(json)}</textarea>
     <div class="modal-actions">
       <button class="btn primary sm" id="exCopy">Copy to clipboard</button>
@@ -2518,8 +2518,8 @@ function exportScenarioCode(s){
   const body=$("#modalBody");
   const code=JSON.stringify(scnForDb(s));
   body.innerHTML=`
-    <h3>Share this scenario</h3>
-    <p class="lead">Copy this code and paste it into the public app (⇩ Import scenario) to host it live for your table.</p>
+    <h3>Move this scenario to the World App</h3>
+    <p class="lead">Copy this code, open the World App, and paste it into Scenarios → ⇩ Import scenario to host it live for your table.</p>
     <textarea class="jsonbox" id="exScn" readonly>${esc(code)}</textarea>
     <div class="modal-actions"><button class="btn primary sm" id="exScnCopy">Copy code</button><button class="btn ghost sm" id="exScnX" style="margin-left:auto">Close</button></div>`;
   $("#exScnX").onclick=closeModal;
@@ -3154,7 +3154,7 @@ function renderScenarioDetail(scnOverride){
         ${scnReadOnly?`<button class="btn ghost sm" id="scnCopy">Copy as text</button><button class="btn primary sm" id="scnLeave" style="margin-left:auto">⎋ Leave game</button>`:`
         <button class="btn" id="scnRegen">✦ Regenerate</button>
         <button class="btn ghost sm" id="scnCopy">Copy as text</button>
-        <button class="btn ghost sm" id="scnShare">↗ Share code</button>
+        <button class="btn ghost sm" id="scnShare" title="Copy a code to bring this scenario into the World App to host it live">🌍 Move to World App</button>
         ${fbAvailable()?(liveRole==="host"&&s.id===hostScenarioId?`<button class="btn gc-fielded sm" id="hostStop2">Stop hosting</button>`:`<button class="btn sm" id="scnHost">📡 Host live</button>`):""}
         <button class="btn danger ghost" id="scnDelete" style="margin-left:auto">Delete</button>`}
       </div>
@@ -3188,9 +3188,13 @@ function renderScenarioDetail(scnOverride){
   }
   $("#scnBack").onclick=()=>{scnScreen="list";renderScenarioView();};
   const rg=$("#scnRegen");if(rg)rg.onclick=()=>{scnMode=s.mode;scnPlayers=s.players;openScenarioWizard();const sd=$("#scSeed");if(sd)sd.value=s.seed||"";const sp=$("#scPoints");if(sp)sp.value=s.points;};
-  const dl=$("#scnDelete");if(dl)dl.onclick=()=>askConfirm("Delete “"+(s.title||"this scenario")+"”?",()=>{
-    w.scenarios=scnsOf(w).filter(x=>x.id!==s.id);save();scnScreen="list";renderScenarioView();toast("Scenario deleted");
-  },{danger:true,yesLabel:"Delete"});
+  const dl=$("#scnDelete");if(dl)dl.onclick=()=>{
+    const hosting=liveRole==="host"&&s.id===hostScenarioId;
+    askConfirm("Delete “"+(s.title||"this scenario")+"”?"+(hosting?" This will also end the live game for anyone who joined.":""),async()=>{
+      if(hosting)await stopHosting();
+      w.scenarios=scnsOf(w).filter(x=>x.id!==s.id);save();scnScreen="list";renderScenarioView();toast("Scenario deleted");
+    },{danger:true,yesLabel:"Delete"});
+  };
   const sh=$("#scnShare");if(sh)sh.onclick=()=>exportScenarioCode(s);
   const hh=$("#scnHost");if(hh)hh.onclick=()=>openHostDialog(s);
   const hs=$("#hostStop");if(hs)hs.onclick=stopHosting;
