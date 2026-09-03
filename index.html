@@ -566,6 +566,23 @@ textarea.input{resize:vertical;min-height:56px;line-height:1.45}
 .maplg-row.flash{background:var(--amber-glow)}
 .maplg-num{flex:none;width:18px;height:18px;border-radius:50%;background:var(--panel-2);border:1px solid var(--line);color:var(--ink);font-family:var(--mono);font-size:10.5px;font-weight:700;display:grid;place-items:center}
 .maplg-label{color:var(--ink)}
+.mapref{display:inline-flex;gap:3px;vertical-align:baseline;margin-right:6px}
+.mapref-n{display:inline-grid;place-items:center;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:var(--amber-glow);border:1px solid color-mix(in srgb,var(--amber) 55%,var(--line));color:var(--amber);font-family:var(--mono);font-size:10px;font-weight:700}
+.role-chip{display:inline-block;margin-left:7px;padding:1px 7px;border-radius:9px;font-family:var(--disp);font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;border:1px solid var(--line);color:var(--ink-dim);background:var(--panel-2);white-space:nowrap}
+.role-chip.r-cover{color:var(--teal);border-color:color-mix(in srgb,var(--teal) 45%,var(--line))}
+.role-chip.r-cache{color:var(--amber);border-color:color-mix(in srgb,var(--amber) 55%,var(--line));background:var(--amber-glow)}
+.role-chip.r-inter{color:var(--arcane);border-color:color-mix(in srgb,var(--arcane) 45%,var(--line))}
+.role-chip.r-obj{color:var(--amber);border-color:color-mix(in srgb,var(--amber) 45%,var(--line))}
+.role-chip.r-haz{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 45%,var(--line))}
+.role-chip.r-spawn{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 35%,var(--line))}
+.role-chip.r-deco{color:var(--ink-mute)}
+.role-chip.r-track{color:var(--teal);border-color:color-mix(in srgb,var(--teal) 40%,var(--line));text-transform:none;letter-spacing:0;font-weight:500}
+.prep-when,.pick-when{font-size:11.5px;color:var(--ink-dim);margin-top:3px;line-height:1.4;font-style:italic}
+.cache-block{border:1px solid color-mix(in srgb,var(--amber) 35%,var(--line));background:var(--amber-glow);border-radius:var(--r-sm);padding:10px 12px;margin-bottom:12px}
+.cache-row{display:flex;align-items:center;gap:10px;justify-content:space-between;padding:5px 0;flex-wrap:wrap}
+.cache-row+.cache-row{border-top:1px solid var(--line-soft)}
+.cache-main{min-width:0}
+.pick-row.dim{opacity:.62}
 ::-webkit-scrollbar{width:10px;height:10px}
 ::-webkit-scrollbar-thumb{background:var(--line);border-radius:6px;border:2px solid var(--ground)}
 ::-webkit-scrollbar-thumb:hover{background:var(--ink-mute)}
@@ -2439,7 +2456,7 @@ function fillScnArrayDefaults(s){
   // at write time (e.g. specialRules:[] round-trips as "field absent"). Restore safe
   // defaults on the receiving (guest) side so template code that assumes arrays never crashes.
   if(!s||typeof s!=="object")return s;
-  ["objectives","specialRules","terrain","markers","npcs","items","events"].forEach(k=>{if(!Array.isArray(s[k]))s[k]=[];});
+  ["objectives","specialRules","terrain","markers","npcs","items","events","searched"].forEach(k=>{if(!Array.isArray(s[k]))s[k]=[];});
   if(!s.map||typeof s.map!=="object")s.map={note:"",zones:[],features:[]};
   s.map.zones=Array.isArray(s.map.zones)?s.map.zones:[];
   s.map.features=Array.isArray(s.map.features)?s.map.features:[];
@@ -2523,7 +2540,7 @@ function normalizeImportedScn(raw){
   s.id=uid(); s.createdAt=s.createdAt||Date.now();
   s.mode=s.mode==="coop"?"coop":"pvp";
   s.players=+s.players||3; s.points=+s.points||300;
-  ["objectives","specialRules","terrain","markers"].forEach(k=>{if(!Array.isArray(s[k]))s[k]=[];});
+  ["objectives","specialRules","terrain","markers","searched"].forEach(k=>{if(!Array.isArray(s[k]))s[k]=[];});
   ["npcs","items","events"].forEach(k=>{if(!Array.isArray(s[k]))s[k]=[];});
   s.items=s.items.map((x,i)=>({name:String(x&&x.name||""),note:String(x&&x.note||""),secret:!!(x&&x.secret),hint:String(x&&x.hint||""),revealed:!!(x&&x.revealed),id:(x&&x.id)||("it"+i),heldBy:(x&&x.heldBy)||null}));
   s.title=String(s.title||"Imported scenario").slice(0,80);
@@ -2644,10 +2661,13 @@ This game lasts EXACTLY ${length} turns (already rolled) — place every timed e
 Include 2-5 TIMED EVENTS, each with a "round" (1 to ${length}) and a "kind": "deadline" for a time-pressure objective the PLAYERS must achieve BY that turn (shown to them in advance, e.g. "by turn 4 disarm the reactor" — use these sparingly, only when the narrative needs a clock), or "surprise" for a hidden reveal that only appears when that turn arrives (reinforcements, a hazard, a betrayal, an environmental shift). Prefer surprises. Write each event atmospherically.
 When a surprise event has a concrete mechanical effect the app can auto-apply to characters, add an "effect" object: {"apply":true,"type":"damage"|"heal"|"skill"|"condition","amount":"1D6" (a dice string, for damage/heal),"skill":"A"|"F"|"S"|"AW"|"P" (for a skill change),"delta":-1 (for skill),"condition":"short label like Blinded or On fire" (for condition/skill),"duration":"turn" (wears off next turn) or "game" (lasts the game),"scope":"chosen" (the host picks who is in range) or "all" (every combatant),"negatedBy":["trait/ability/armour/item names that cancel it"]}. Choose negatedBy from things that logically cancel the effect (e.g. Power armour negates Poisonous and Cumulative; Psy-hood negates Psychic/Arcane; Fearless negates fear/break effects; Iron skin, Death-proof, Painless, Unearthly, Bulwark can apply). For a purely narrative event set "effect":{"apply":false}.
 This is a PRINT-AND-PLAY game: players 3D-print their miniatures and build/print terrain. So also produce a preparation checklist of what must be built or printed BEFORE the game — terrain pieces, objective/token markers, any extra non-player characters or creatures the scenario needs, and any custom collectible items it introduces (things a character can pick up during play).
+CONNECT THE CHECKLIST TO THE MAP — this is important. Every map feature needs a "role" saying what it DOES in play, chosen from: "cover-low" (shoot over it), "cover-tall" (blocks sight, can hide behind), "blocking" (impassable/solid), "deco" (pure scenery, no game effect), "cache" (can be SEARCHED — this is where a collectible item is found), "interactive" (can be operated/hacked/opened/triggered), "objective", "hazard", "spawn" (where something arrives). And every checklist entry (terrain, markers, npcs, items) must set "mapLabel" to the EXACT label text of the map feature or zone it corresponds to, copied character-for-character (use a comma-separated list if one entry covers several identical pieces, e.g. "Wreck Spire, Wreck Spire"). The app turns those into the numbers shown on the map, so the host knows exactly which printed piece goes where and which one is searchable. If a collectible item is found by searching a terrain piece, give that feature role "cache" and point the item's "mapLabel" at it. Leave "mapLabel" as "" ONLY for things genuinely not on the map (e.g. a spare token kept off-table).
+SEARCHING IS RESOLVED BY THE APP: a feature with role "cache" gets a Search button in play. Any item whose mapLabel points at that cache stays hidden until someone searches it, and the app picks which one turns up (at random if several share one cache). So it is GOOD to hide 1-3 items in caches, and fine for two different items to share a cache — that creates a real gamble. An item that just lies in the open (like the main objective) should point at a non-cache feature instead, so it needs no searching.
+EVERY item MUST have a "when" field: one short, concrete sentence saying WHEN OR WHERE it matters, naming the specific special rule, hazard, event or place it interacts with — e.g. "Wear it before entering the flooded lower level; cancels the Deep-pressure -1 Athletics penalty" rather than a vague "useful later". If an item counters something, that something must exist in specialRules, events or a hazard feature — never invent a rule the scenario doesn't have. Do the same for npcs where it helps ("when" = when/where it shows up).
 SECRETS & SURPRISES — make the world feel alive: you MAY include plot twists and surprise reveals. Mark any NPC, item, or timed event that should be a SECRET (hidden from the host until it happens) with "secret": true. For a secret NPC or item, DO NOT spoil it in the checklist — instead give a non-spoiler "hint" telling the host only what to PREPARE (e.g. "a large monstrous miniature", "a mysterious relic token") while keeping the real name/note/round in the normal fields (the app hides them until the host reveals or the moment arrives). A collectible item whose effect should only be discovered on pickup should be marked "secret": true with a vague "hint". Not everything needs to be secret — obvious, up-front elements stay visible.
 Reply with ONLY a JSON object (no prose, no code fence) shaped EXACTLY like:
-{"title":"short evocative title","premise":"1-2 sentence hook","briefing":"vivid 4-6 sentence atmospheric second-person narration","scenery":"1-2 sentences describing the terrain to build","objectives":["a victory condition","..."],"specialRules":["an optional special rule","..."],"twist":"one mid-game complication (or empty string)","events":[{"round":4,"kind":"surprise","title":"short event name","text":"what happens this round, written atmospherically","effect":{"apply":true,"type":"damage","amount":"1D6","scope":"chosen","duration":"turn","negatedBy":["Power armour"]}}],"deployment":"how the warbands deploy, referencing table sides/centre","gameLength":"1D10+6 turns","terrain":["terrain piece to build","..."],"markers":["objective/token to print","..."],"npcs":[{"name":"extra character/creature","note":"what it is / when it appears","secret":false,"hint":""}],"items":[{"name":"collectible item","note":"what it does / what it changes about whoever picks it up","secret":false,"hint":""}],"map":{"note":"one-line caption of the battlefield","zones":[{"label":"short deployment label","side":"a","x":5,"y":5,"w":30,"h":18}],"features":[{"type":"terrain","label":"short","x":50,"y":50}]}}
-Map coordinates are percentages of the 90×90 board: x from 0 (left) to 100 (right), y from 0 (top) to 100 (bottom). Provide 2-4 deployment zones (side is "a", "b" or "neutral") and 6-10 features (type is one of "terrain","cover","objective","hazard"). Keep every map label under 22 characters. Keep the checklist arrays short and concrete (omit any that don't apply).`;
+{"title":"short evocative title","premise":"1-2 sentence hook","briefing":"vivid 4-6 sentence atmospheric second-person narration","scenery":"1-2 sentences describing the terrain to build","objectives":["a victory condition","..."],"specialRules":["an optional special rule","..."],"twist":"one mid-game complication (or empty string)","events":[{"round":4,"kind":"surprise","title":"short event name","text":"what happens this round, written atmospherically","effect":{"apply":true,"type":"damage","amount":"1D6","scope":"chosen","duration":"turn","negatedBy":["Power armour"]}}],"deployment":"how the warbands deploy, referencing table sides/centre","gameLength":"1D10+6 turns","terrain":[{"name":"terrain piece to build","note":"how many / what it looks like","mapLabel":"Wreck Spire","role":"cover-tall"}],"markers":[{"name":"objective/token to print","note":"what it marks","mapLabel":"Hadal Core","role":"objective"}],"npcs":[{"name":"extra character/creature","note":"what it is / when it appears","when":"when and where it shows up","mapLabel":"Vent Mouth","secret":false,"hint":""}],"items":[{"name":"collectible item","note":"what it does / what it changes about whoever picks it up","when":"the concrete moment it matters, naming the rule/hazard it answers","mapLabel":"Supply Locker","secret":false,"hint":""}],"map":{"note":"one-line caption of the battlefield","zones":[{"label":"short deployment label","side":"a","x":5,"y":5,"w":30,"h":18}],"features":[{"type":"terrain","role":"cover-tall","label":"Wreck Spire","x":50,"y":50}]}}
+Map coordinates are percentages of the 90×90 board: x from 0 (left) to 100 (right), y from 0 (top) to 100 (bottom). Provide 2-4 deployment zones (side is "a", "b" or "neutral") and 6-10 features (type is one of "terrain","cover","objective","hazard"; role is one of the roles listed above and is REQUIRED on every feature). Keep every map label under 22 characters and make each one distinctive enough to reference. Keep the checklist arrays short and concrete (omit any that don't apply), and give every checklist entry a "mapLabel" matching a map label exactly wherever it belongs on the table.`;
   try{
     const raw=await s.json(prompt,{modelTier:"default",cache:false});
     const scn=coerceScenario(raw,{seed,players,points,mode,difficulty,length});
@@ -2661,11 +2681,14 @@ Map coordinates are percentages of the 90×90 board: x from 0 (left) to 100 (rig
 function coerceScenario(raw,opts){
   raw=raw&&typeof raw==="object"?raw:{};
   const arr=x=>Array.isArray(x)?x.filter(Boolean).map(String):[];
-  const named=x=>Array.isArray(x)?x.map(v=>typeof v==="string"?{name:v,note:"",secret:false,hint:"",revealed:false}:{name:String(v&&v.name||"").slice(0,60),note:String(v&&v.note||"").slice(0,180),secret:!!(v&&v.secret),hint:String(v&&v.hint||"").slice(0,90),revealed:false}).filter(v=>v.name||v.hint):[];
+  const named=x=>Array.isArray(x)?x.map(v=>typeof v==="string"?{name:v,note:"",when:"",mapLabel:"",role:"",secret:false,hint:"",revealed:false}:{name:String(v&&v.name||"").slice(0,60),note:String(v&&v.note||"").slice(0,180),when:String(v&&v.when||"").slice(0,180),mapLabel:String(v&&v.mapLabel||"").slice(0,120),role:String(v&&v.role||"").toLowerCase().slice(0,20),secret:!!(v&&v.secret),hint:String(v&&v.hint||"").slice(0,90),revealed:false}).filter(v=>v.name||v.hint):[];
   const m=raw.map&&typeof raw.map==="object"?raw.map:{};
   const num=(v,d)=>{const n=+v;return isFinite(n)?Math.max(0,Math.min(100,n)):d;};
   const zones=(Array.isArray(m.zones)?m.zones:[]).map(z=>({label:String(z&&z.label||"").slice(0,26),side:(z&&z.side)==="b"?"b":(z&&z.side)==="neutral"?"neutral":"a",x:num(z&&z.x,5),y:num(z&&z.y,5),w:num(z&&z.w,25),h:num(z&&z.h,18)}));
-  const feats=(Array.isArray(m.features)?m.features:[]).map(f=>{const t=(f&&f.type||"terrain");return{type:["terrain","cover","objective","hazard"].includes(t)?t:"terrain",label:String(f&&f.label||"").slice(0,24),x:num(f&&f.x,50),y:num(f&&f.y,50)};});
+  // if the AI omits a role, derive a sensible one from the feature type so the host still
+  // sees what a piece is for (never guesses "cache" — that would invent a search point)
+  const roleFromType={objective:"objective",hazard:"hazard",cover:"cover-tall",terrain:""};
+  const feats=(Array.isArray(m.features)?m.features:[]).map(f=>{const t=(f&&f.type||"terrain");const ty=["terrain","cover","objective","hazard"].includes(t)?t:"terrain";const r=String(f&&f.role||"").toLowerCase();return{type:ty,role:FEAT_ROLES[r]?r:roleFromType[ty],label:String(f&&f.label||"").slice(0,24),x:num(f&&f.x,50),y:num(f&&f.y,50)};});
   return {
     id:uid(), createdAt:Date.now(),
     mode:opts.mode, players:opts.players, points:opts.points, seed:opts.seed||"",
@@ -2679,8 +2702,9 @@ function coerceScenario(raw,opts){
     events:(Array.isArray(raw.events)?raw.events:[]).map(e=>({round:Math.max(1,Math.min(opts.length||16,Math.round(+(e&&e.round))||1)),kind:(e&&e.kind)==="deadline"?"deadline":"surprise",title:String(e&&e.title||"").slice(0,70),text:String(e&&e.text||"").slice(0,320),effect:parseEventEffect(e&&e.effect)})).filter(e=>e.title||e.text).sort((a,b)=>a.round-b.round),
     deployment:String(raw.deployment||""),
     gameLength:String(raw.gameLength||"1D10+6 turns"),
-    terrain:arr(raw.terrain), markers:arr(raw.markers), npcs:named(raw.npcs),
-    items:named(raw.items).map((x,i)=>({name:x.name,note:x.note,secret:x.secret,hint:x.hint,revealed:false,id:"it"+i,heldBy:null})),
+    terrain:named(raw.terrain), markers:named(raw.markers), npcs:named(raw.npcs),
+    items:named(raw.items).map((x,i)=>({name:x.name,note:x.note,when:x.when,mapLabel:x.mapLabel,role:x.role,secret:x.secret,hint:x.hint,revealed:false,found:false,id:"it"+i,heldBy:null})),
+    searched:[],
     difficulty:opts.difficulty||"normal",
     round:1, rounds:opts.length||null,
     map:{note:String(m.note||""),zones,features:feats},
@@ -2822,14 +2846,74 @@ function scenarioMapSVG(map,mini){
     if(!mini&&ft.label){num++;f+=badge(x,y-6,"#2c313d",num,ft.label);}});
   return `<svg class="scn-map" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">${g}${z}${f}</svg>`;
 }
-function mapLegendHTML(map){
+/* ---- map ↔ build-list cross-referencing ----
+   Every labelled zone/feature gets a number (zones first, then features — the SAME order
+   scenarioMapSVG draws its badges in). Build-list entries name the map label they belong to
+   via `mapLabel`, so the app can resolve it to those numbers and show them side by side. */
+const FEAT_ROLES={
+  "cover-low":{label:"low cover",cls:"r-cover"},
+  "cover-tall":{label:"tall cover",cls:"r-cover"},
+  "blocking":{label:"blocks line of sight",cls:"r-cover"},
+  "deco":{label:"scenic only",cls:"r-deco"},
+  "cache":{label:"searchable",cls:"r-cache"},
+  "interactive":{label:"interactive",cls:"r-inter"},
+  "objective":{label:"objective",cls:"r-obj"},
+  "hazard":{label:"hazard",cls:"r-haz"},
+  "spawn":{label:"spawn point",cls:"r-spawn"}
+};
+function roleChip(role){
+  const r=FEAT_ROLES[String(role||"").toLowerCase()];
+  return r?`<span class="role-chip ${r.cls}">${esc(r.label)}</span>`:"";
+}
+function mapSeq(map){
   map=map||{};
   const zones=Array.isArray(map.zones)?map.zones:[];
   const feats=Array.isArray(map.features)?map.features:[];
-  let num=0;const rows=[];
-  zones.forEach(zo=>{if(zo&&zo.label){num++;rows.push(`<div class="maplg-row" data-mapnum="${num}"><span class="maplg-num">${num}</span><span class="maplg-label">${esc(String(zo.label))}</span></div>`);}});
-  feats.forEach(ft=>{if(ft&&ft.label){num++;rows.push(`<div class="maplg-row" data-mapnum="${num}"><span class="maplg-num">${num}</span><span class="maplg-label">${esc(String(ft.label))}</span></div>`);}});
-  if(!rows.length)return "";
+  const out=[];let n=0;
+  zones.forEach(z=>{if(z&&z.label){n++;out.push({n,label:String(z.label),role:"",kind:"zone"});}});
+  feats.forEach(f=>{if(f&&f.label){n++;out.push({n,label:String(f.label),role:String(f.role||""),kind:"feature"});}});
+  return out;
+}
+function normLabel(v){return String(v||"").trim().toLowerCase().replace(/\s+/g," ").replace(/s$/,"");}
+/* Tolerant matching: the AI has to repeat a label it invented elsewhere, so near-misses
+   ("Supply Lockers" vs "Supply Locker") are common. Exact-normalised match first; then a
+   containment match, but ONLY when it is unambiguous (exactly one candidate). */
+function mapNumsFor(map,labels){
+  if(!labels)return [];
+  const seq=mapSeq(map);
+  const want=String(labels).split(/\s*,\s*/).map(normLabel).filter(Boolean);
+  if(!want.length||!seq.length)return [];
+  const out=[];
+  want.forEach(wr=>{
+    const exact=seq.filter(e=>normLabel(e.label)===wr);
+    if(exact.length){exact.forEach(e=>{if(!out.includes(e.n))out.push(e.n);});return;}
+    if(wr.length<4)return;
+    const loose=seq.filter(e=>{const el=normLabel(e.label);return el.length>=4&&(el.includes(wr)||wr.includes(el));});
+    if(loose.length===1&&!out.includes(loose[0].n))out.push(loose[0].n);
+  });
+  return out.sort((a,b)=>a-b);
+}
+function numBadges(nums){
+  if(!nums||!nums.length)return "";
+  return `<span class="mapref">${nums.map(n=>`<span class="mapref-n">${n}</span>`).join("")}</span>`;
+}
+// build-list entries may be plain strings (older scenarios) or {name,note,mapLabel,role,...}
+function prepEntry(x){
+  if(typeof x==="string")return {name:x,note:"",when:"",mapLabel:"",role:"",secret:false,hint:"",revealed:false};
+  return {name:String(x&&x.name||""),note:String(x&&x.note||""),when:String(x&&x.when||""),mapLabel:String(x&&x.mapLabel||""),role:String(x&&x.role||""),secret:!!(x&&x.secret),hint:String(x&&x.hint||""),revealed:!!(x&&x.revealed)};
+}
+// an entry with no role of its own inherits the role of the map feature it points at
+function prepRole(map,e){
+  if(e.role&&FEAT_ROLES[e.role])return e.role;
+  const nums=mapNumsFor(map,e.mapLabel);
+  if(!nums.length)return "";
+  const hit=mapSeq(map).find(q=>nums.includes(q.n)&&q.role);
+  return hit?hit.role:"";
+}
+function mapLegendHTML(map){
+  const seq=mapSeq(map);
+  if(!seq.length)return "";
+  const rows=seq.map(e=>`<div class="maplg-row" data-mapnum="${e.n}"><span class="maplg-num">${e.n}</span><span class="maplg-label">${esc(e.label)}</span>${roleChip(e.role)}</div>`);
   return `<div class="scn-maplegend-nums">${rows.join("")}</div>`;
 }
 function wireMapNums(container){
@@ -3005,31 +3089,72 @@ function trackerHTML(s){
   h+=`<div class="tk-sec"><div class="tk-h">Turn log</div>${log.length?log.map(e=>`<div class="evt ${e.round===cur?"now":"past"}"><span class="evt-r">T${e.round}</span><div class="evt-body"><div class="evt-t">${esc(e.title)}</div>${e.text?`<div class="evt-x">${esc(e.text)}</div>`:""}</div></div>`).join(""):`<div class="none-note" style="font-style:normal">Nothing has happened yet — surprises reveal as you advance.</div>`}</div></div>`;
   return h;
 }
+/* Caches: map features with role "cache" are searchable. Items whose mapLabel points at a
+   cache are hidden inside it until someone searches — the APP decides what turns up
+   (the single bound item, or a random one when several share a cache, or nothing). */
+function cacheList(s){
+  return mapSeq(s.map).filter(e=>e.kind==="feature"&&e.role==="cache").map(e=>{
+    // an item belongs to this cache if its mapLabel resolves to this feature's number
+    const inside=(s.items||[]).filter(it=>mapNumsFor(s.map,it.mapLabel).includes(e.n));
+    return {n:e.n,label:e.label,inside,left:inside.filter(it=>!it.found&&!it.heldBy)};
+  });
+}
+function itemIsHidden(s,it){
+  if(it.found||it.heldBy)return false;
+  return cacheList(s).some(c=>c.inside.some(x=>x.id===it.id));
+}
+function searchCache(s,label){
+  const c=cacheList(s).find(x=>x.label===label);
+  if(!c)return;
+  s.searched=Array.isArray(s.searched)?s.searched:[];
+  if(!s.searched.includes(label))s.searched.push(label);
+  if(!c.left.length){ save();renderScenarioView();toast("Nothing here but scrap"); return; }
+  const found=c.left[Math.floor(Math.random()*c.left.length)];
+  found.found=true;
+  if(found.secret)found.revealed=true;      // finding it reveals what it is
+  pickupOpenId=found.id;                    // straight into "who picked it up?"
+  save();renderScenarioView();
+  toast("Found: "+(found.name||"something"));
+}
 function collectHTML(s){
   const items=(s.items||[]);
-  if(!items.length)return "";
+  const caches=cacheList(s);
+  if(!items.length&&!caches.length)return "";
   const chars=activeWB().characters;
+  const searched=Array.isArray(s.searched)?s.searched:[];
+  const searchBlock=caches.length?`<div class="cache-block"><div class="tk-h">🔦 Search points</div>${caches.map(c=>{
+    const done=searched.includes(c.label), empty=!c.left.length;
+    return `<div class="cache-row"><div class="cache-main">${numBadges([c.n])}<b>${esc(c.label)}</b>${done?`<span class="pick-note"> — ${empty?"emptied":"searched"}</span>`:(scnReadOnly?"":`<span class="pick-note"> — ${c.left.length} still hidden</span>`)}</div>${scnReadOnly?"":`<button class="btn sm ghost" data-search="${esc(c.label)}"${empty&&done?" disabled":""}>Search</button>`}</div>`;
+  }).join("")}<div class="none-note" style="font-style:normal;margin-top:6px">The app rolls what's found — searching may also turn up nothing.</div></div>`:"";
   const rows=items.map(it=>{
     if(!it.id)return "";
+    const nums=numBadges(mapNumsFor(s.map,it.mapLabel));
+    const whenLine=it.when?`<div class="pick-when">⏱ ${esc(it.when)}</div>`:"";
     if(it.heldBy){
       const ch=chars.find(c=>c.id===it.heldBy);
-      return `<div class="pick-row"><div class="pick-main"><b>${esc(it.name)}</b>${it.note?` <span class="pick-note">— ${esc(it.note)}</span>`:""}</div>
+      return `<div class="pick-row"><div class="pick-main">${nums}<b>${esc(it.name)}</b>${it.note?` <span class="pick-note">— ${esc(it.note)}</span>`:""}${whenLine}</div>
         <div class="pick-held">🎒 ${esc(ch?ch.name||"a character":"held")}${scnReadOnly?"":` <button class="linkbtn del" data-drop="${it.id}">drop</button>`}</div></div>`;
+    }
+    const hidden=itemIsHidden(s,it);
+    const label=(it.secret&&!it.revealed)?`<i>${esc(it.hint||"an unknown find")}</i>`:`<b>${esc(it.name)}</b>`;
+    if(hidden){
+      const where=mapNumsFor(s.map,it.mapLabel);
+      return `<div class="pick-row dim"><div class="pick-main">${nums}${label}<span class="pick-note"> — hidden${where.length?", search "+where.map(n=>"#"+n).join(" or "):""} to find it</span></div></div>`;
     }
     if(scnReadOnly){
       const nh=(it.secret&&!it.revealed)?` <span class="pick-note" style="font-style:italic">— effect unknown until picked up</span>`:(it.note?` <span class="pick-note">— ${esc(it.note)}</span>`:"");
-      return `<div class="pick-row"><div class="pick-main"><b>${esc(it.name)}</b>${nh}</div></div>`;
+      return `<div class="pick-row"><div class="pick-main">${nums}${label}${nh}${whenLine}</div></div>`;
     }
     if(pickupOpenId===it.id){
       const chips=chars.length?chars.map(c=>`<button class="pick-chip" data-assign="${it.id}|${c.id}">${esc(c.name)||"Unnamed"}</button>`).join(""):`<span class="none-note" style="font-style:normal">Add characters to your warband first.</span>`;
-      return `<div class="pick-row open"><div class="pick-main"><b>${esc(it.name)}</b></div>
+      return `<div class="pick-row open"><div class="pick-main">${nums}<b>${esc(it.name)}</b></div>
         <div class="pick-choose"><span class="pick-lbl">Picked up by…</span>${chips}<button class="linkbtn" data-pickcancel="1">cancel</button></div></div>`;
     }
     const noteHtml=(it.secret&&!it.revealed)?` <span class="pick-note" style="font-style:italic">— effect unknown until picked up</span>`:(it.note?` <span class="pick-note">— ${esc(it.note)}</span>`:"");
-    return `<div class="pick-row"><div class="pick-main"><b>${esc(it.name)}</b>${noteHtml}</div>
+    return `<div class="pick-row"><div class="pick-main">${nums}${label}${noteHtml}${whenLine}</div>
       <button class="btn sm ghost" data-pick="${it.id}">Picked up…</button></div>`;
   }).join("");
-  return `<div class="scn-collect"><div class="mh">Collectibles — pick-ups</div>${rows}</div>`;
+  return `<div class="scn-collect"><div class="mh">Collectibles — pick-ups</div>${searchBlock}${rows}</div>`;
 }
 function assignPickup(s,itemId,charId){
   const it=(s.items||[]).find(x=>x.id===itemId);if(!it)return;
@@ -3037,7 +3162,7 @@ function assignPickup(s,itemId,charId){
   it.heldBy=charId;
   if(it.secret)it.revealed=true;   // its effect is revealed once picked up
   c.pickups=c.pickups||[];
-  if(!c.pickups.some(p=>p.itemId===itemId&&p.scnId===s.id))c.pickups.push({itemId,scnId:s.id,name:it.name,note:it.note});
+  if(!c.pickups.some(p=>p.itemId===itemId&&p.scnId===s.id))c.pickups.push({itemId,scnId:s.id,name:it.name,note:it.note,when:it.when||""});
   pickupOpenId=null;save();renderScenarioView();toast((c.name||"Character")+" picked up "+it.name);
 }
 function dropPickup(s,itemId){
@@ -3057,7 +3182,7 @@ function renderPickupsGroup(c){
     const row=document.createElement("div");row.className="sel-row";row.style.flexDirection="column";row.style.alignItems="stretch";row.style.gap="8px";
     row.innerHTML=`
       <div style="display:flex;justify-content:space-between;gap:10px">
-        <div class="srmain"><div class="srname">${esc(p.name)}${p.applied?' <span class="tag" style="color:var(--arcane);border-color:var(--arcane)">changed</span>':""}</div>${p.note?`<div class="srdesc">${esc(p.note)}</div>`:""}</div>
+        <div class="srmain"><div class="srname">${esc(p.name)}${p.applied?' <span class="tag" style="color:var(--arcane);border-color:var(--arcane)">changed</span>':""}</div>${p.note?`<div class="srdesc">${esc(p.note)}</div>`:""}${p.when?`<div class="pick-when">⏱ ${esc(p.when)}</div>`:""}</div>
         <button class="rm" data-rm aria-label="Discard">×</button>
       </div>
       ${p.applied&&p.effect?`<div class="pickup-eff">✦ ${esc(p.effect.summary||"Transformed.")}</div>`:""}
@@ -3157,23 +3282,28 @@ function renderScenarioDetail(scnOverride){
   if(!s.round)s.round=1;
   (s.items||[]).forEach((it,i)=>{if(it&&!it.id)it.id="it"+i;if(it&&it.heldBy===undefined)it.heldBy=null;});
   const li=a=>a.map(x=>`<li>${esc(x)}</li>`).join("");
-  const prepSec=(title,items,noted,catKey)=>{
-    if(!items.length)return "";
-    const rows=items.map((x,i)=>{
-      if(!noted)return `<li>${esc(x)}</li>`;
-      if(x.secret&&!x.revealed)return `<li class="secret-li"><span class="redacted">${esc(x.hint||"A hidden surprise — prepare a spare miniature/token")}</span>${scnReadOnly?"":` <button class="reveal-btn" data-reveal="${catKey}|${i}">reveal</button>`}</li>`;
-      return `<li>${x.secret?'🔓 ':""}<b>${esc(x.name)}</b>${x.note?` — ${esc(x.note)}`:""}</li>`;
+  const prepSec=(title,items,catKey,tracked)=>{
+    if(!items||!items.length)return "";
+    const rows=items.map((raw,i)=>{
+      const x=prepEntry(raw);
+      const nums=numBadges(mapNumsFor(s.map,x.mapLabel));
+      const chip=roleChip(prepRole(s.map,x));
+      const trackChip=tracked?`<span class="role-chip r-track">tap in Collectibles when picked up</span>`:"";
+      const whenLine=x.when&&!(x.secret&&!x.revealed)?`<div class="prep-when">⏱ ${esc(x.when)}</div>`:"";
+      if(x.secret&&!x.revealed)
+        return `<li class="secret-li">${nums}<span class="redacted">${esc(x.hint||"A hidden surprise — prepare a spare miniature/token")}</span>${chip}${trackChip}${scnReadOnly?"":` <button class="reveal-btn" data-reveal="${catKey}|${i}">reveal</button>`}</li>`;
+      return `<li>${nums}${x.secret?'🔓 ':""}<b>${esc(x.name)}</b>${x.note?` — ${esc(x.note)}`:""}${chip}${trackChip}${whenLine}</li>`;
     }).join("");
     return `<div class="prep-sec"><div class="prep-h">${title}</div><ul class="scn-list">${rows}</ul></div>`;
   };
   const anyPrep=(s.terrain||[]).length+(s.markers||[]).length+(s.npcs||[]).length+(s.items||[]).length;
   const prepBox=anyPrep?`<div class="scn-prep">
       <div class="bh">▣ What you'll need — build &amp; print</div>
-      ${prepSec("Terrain / scenery",s.terrain||[])}
-      ${prepSec("Markers &amp; tokens",s.markers||[])}
-      ${prepSec("Extra characters / creatures",s.npcs||[],true,"npcs")}
-      ${prepSec("Custom items",s.items||[],true,"items")}
-      <div class="none-note" style="font-style:normal;margin-top:8px">Hidden or conditional elements may be revealed during play — improvise those as they come up.</div>
+      ${prepSec("Terrain / scenery",s.terrain||[],"terrain")}
+      ${prepSec("Markers &amp; tokens",s.markers||[],"markers")}
+      ${prepSec("Extra characters / creatures",s.npcs||[],"npcs")}
+      ${prepSec("Custom items",s.items||[],"items",true)}
+      <div class="none-note" style="font-style:normal;margin-top:8px">Numbers match the battlefield map below. Hidden or conditional elements may be revealed during play — improvise those as they come up.</div>
     </div>`:"";
   el.innerHTML=`
     <div class="scn-detail">
@@ -3245,6 +3375,7 @@ function renderScenarioDetail(scnOverride){
   el.querySelectorAll("[data-pickcancel]").forEach(b=>b.onclick=()=>{pickupOpenId=null;renderScenarioView();});
   el.querySelectorAll("[data-assign]").forEach(b=>b.onclick=()=>{const[itId,cId]=b.dataset.assign.split("|");assignPickup(s,itId,cId);});
   el.querySelectorAll("[data-drop]").forEach(b=>b.onclick=()=>dropPickup(s,b.dataset.drop));
+  el.querySelectorAll("[data-search]").forEach(b=>b.onclick=()=>searchCache(s,b.dataset.search));
   // reveal secrets
   el.querySelectorAll("[data-reveal]").forEach(b=>b.onclick=()=>{const[cat,i]=b.dataset.reveal.split("|");const it=(s[cat]||[])[+i];if(it){it.revealed=true;save();renderScenarioView();}});
   const mp=el.querySelector(".scn-map-wrap .scn-map");if(mp)mp.onclick=()=>openMapLightbox(s.map,s.map&&s.map.note);
@@ -3280,12 +3411,21 @@ function scenarioText(s){
   if((s.specialRules||[]).length)o+="SPECIAL RULES:\n"+s.specialRules.map(x=>"- "+x).join("\n")+"\n\n";
   if(s.twist)o+="TWIST: "+s.twist+"\n\n";
   if((s.events||[]).length)o+="TIMED EVENTS:\n"+s.events.map(e=>e.kind==="deadline"?"- By turn "+e.round+" (deadline): "+e.title+(e.text?" — "+e.text:""):"- Turn "+e.round+" (surprise): "+e.title+(e.text?" — "+e.text:"")).join("\n")+"\n\n";
+  const seq=mapSeq(s.map);
+  if(seq.length)o+="MAP KEY:\n"+seq.map(e=>{const r=FEAT_ROLES[e.role];return "  "+e.n+". "+e.label+(r?" — "+r.label:"");}).join("\n")+"\n\n";
+  const pl=list=>(list||[]).map(raw=>{
+    const x=prepEntry(raw);
+    const n=mapNumsFor(s.map,x.mapLabel), pre=n.length?"["+n.join(",")+"] ":"";
+    const r=FEAT_ROLES[prepRole(s.map,x)], rc=r?" ["+r.label+"]":"";
+    if(x.secret&&!x.revealed)return pre+(x.hint||"a hidden surprise")+rc;
+    return pre+x.name+(x.note?" ("+x.note+")":"")+rc+(x.when?" — when: "+x.when:"");
+  }).join("; ");
   const prep=[];
-  if((s.terrain||[]).length)prep.push("Terrain: "+s.terrain.join(", "));
-  if((s.markers||[]).length)prep.push("Markers: "+s.markers.join(", "));
-  if((s.npcs||[]).length)prep.push("Extra characters: "+s.npcs.map(x=>x.secret&&!x.revealed?(x.hint||"a hidden surprise"):x.name+(x.note?" ("+x.note+")":"")).join(", "));
-  if((s.items||[]).length)prep.push("Custom items: "+s.items.map(x=>x.secret&&!x.revealed?x.name+" (effect hidden until picked up)":x.name+(x.note?" ("+x.note+")":"")).join(", "));
-  if(prep.length)o+="TO BUILD / PRINT:\n"+prep.map(x=>"- "+x).join("\n")+"\n\n";
+  if((s.terrain||[]).length)prep.push("Terrain: "+pl(s.terrain));
+  if((s.markers||[]).length)prep.push("Markers: "+pl(s.markers));
+  if((s.npcs||[]).length)prep.push("Extra characters: "+pl(s.npcs));
+  if((s.items||[]).length)prep.push("Custom items: "+pl(s.items));
+  if(prep.length)o+="TO BUILD / PRINT (numbers match the map key):\n"+prep.map(x=>"- "+x).join("\n")+"\n\n";
   if(s.mode==="coop")o+="ENEMY FORCE: "+(s.points+diffOf(s).enemyBonus)+" pts (AI-controlled, "+diffOf(s).label+")\n";
   return o;
 }
