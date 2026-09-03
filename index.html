@@ -583,6 +583,13 @@ textarea.input{resize:vertical;min-height:56px;line-height:1.45}
 .cache-row+.cache-row{border-top:1px solid var(--line-soft)}
 .cache-main{min-width:0}
 .pick-row.dim{opacity:.62}
+.cache-stash{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:6px}
+.dep-h{font-family:var(--disp);text-transform:uppercase;letter-spacing:.1em;font-size:10.5px;font-weight:600;color:var(--ink-dim);margin:12px 0 7px}
+.dep-note{font-size:12px;color:var(--ink-dim);margin-top:5px;line-height:1.45}
+.dep-note b{color:var(--ink)}
+.gap-box{margin-top:10px;padding:9px 12px;border:1px dashed color-mix(in srgb,var(--warn) 55%,var(--line));background:color-mix(in srgb,var(--warn) 8%,transparent);border-radius:var(--r-sm)}
+.gap-box .prep-h{color:var(--warn)}
+.gap-box .scn-list li{font-size:12.5px}
 ::-webkit-scrollbar{width:10px;height:10px}
 ::-webkit-scrollbar-thumb{background:var(--line);border-radius:6px;border:2px solid var(--ground)}
 ::-webkit-scrollbar-thumb:hover{background:var(--ink-mute)}
@@ -2663,6 +2670,7 @@ When a surprise event has a concrete mechanical effect the app can auto-apply to
 This is a PRINT-AND-PLAY game: players 3D-print their miniatures and build/print terrain. So also produce a preparation checklist of what must be built or printed BEFORE the game — terrain pieces, objective/token markers, any extra non-player characters or creatures the scenario needs, and any custom collectible items it introduces (things a character can pick up during play).
 CONNECT THE CHECKLIST TO THE MAP — this is important. Every map feature needs a "role" saying what it DOES in play, chosen from: "cover-low" (shoot over it), "cover-tall" (blocks sight, can hide behind), "blocking" (impassable/solid), "deco" (pure scenery, no game effect), "cache" (can be SEARCHED — this is where a collectible item is found), "interactive" (can be operated/hacked/opened/triggered), "objective", "hazard", "spawn" (where something arrives). And every checklist entry (terrain, markers, npcs, items) must set "mapLabel" to the EXACT label text of the map feature or zone it corresponds to, copied character-for-character (use a comma-separated list if one entry covers several identical pieces, e.g. "Wreck Spire, Wreck Spire"). The app turns those into the numbers shown on the map, so the host knows exactly which printed piece goes where and which one is searchable. If a collectible item is found by searching a terrain piece, give that feature role "cache" and point the item's "mapLabel" at it. Leave "mapLabel" as "" ONLY for things genuinely not on the map (e.g. a spare token kept off-table).
 SEARCHING IS RESOLVED BY THE APP: a feature with role "cache" gets a Search button in play. Any item whose mapLabel points at that cache stays hidden until someone searches it, and the app picks which one turns up (at random if several share one cache). So it is GOOD to hide 1-3 items in caches, and fine for two different items to share a cache — that creates a real gamble. An item that just lies in the open (like the main objective) should point at a non-cache feature instead, so it needs no searching.
+ITEMS ARE THE MOST IMPORTANT PLACE TO GET THIS RIGHT, AND THE EASIEST TO FORGET: every entry in "items" MUST carry BOTH a "mapLabel" (where on the table it is found — normally the cache it is hidden in) AND a "when". Do not leave an item's mapLabel empty; if it is not hidden in a cache, point it at whatever feature it lies on or beside. An item with no mapLabel is useless to the host because they cannot place it.
 EVERY item MUST have a "when" field: one short, concrete sentence saying WHEN OR WHERE it matters, naming the specific special rule, hazard, event or place it interacts with — e.g. "Wear it before entering the flooded lower level; cancels the Deep-pressure -1 Athletics penalty" rather than a vague "useful later". If an item counters something, that something must exist in specialRules, events or a hazard feature — never invent a rule the scenario doesn't have. Do the same for npcs where it helps ("when" = when/where it shows up).
 SECRETS & SURPRISES — make the world feel alive: you MAY include plot twists and surprise reveals. Mark any NPC, item, or timed event that should be a SECRET (hidden from the host until it happens) with "secret": true. For a secret NPC or item, DO NOT spoil it in the checklist — instead give a non-spoiler "hint" telling the host only what to PREPARE (e.g. "a large monstrous miniature", "a mysterious relic token") while keeping the real name/note/round in the normal fields (the app hides them until the host reveals or the moment arrives). A collectible item whose effect should only be discovered on pickup should be marked "secret": true with a vague "hint". Not everything needs to be secret — obvious, up-front elements stay visible.
 Reply with ONLY a JSON object (no prose, no code fence) shaped EXACTLY like:
@@ -2684,11 +2692,26 @@ function coerceScenario(raw,opts){
   const named=x=>Array.isArray(x)?x.map(v=>typeof v==="string"?{name:v,note:"",when:"",mapLabel:"",role:"",secret:false,hint:"",revealed:false}:{name:String(v&&v.name||"").slice(0,60),note:String(v&&v.note||"").slice(0,180),when:String(v&&v.when||"").slice(0,180),mapLabel:String(v&&v.mapLabel||"").slice(0,120),role:String(v&&v.role||"").toLowerCase().slice(0,20),secret:!!(v&&v.secret),hint:String(v&&v.hint||"").slice(0,90),revealed:false}).filter(v=>v.name||v.hint):[];
   const m=raw.map&&typeof raw.map==="object"?raw.map:{};
   const num=(v,d)=>{const n=+v;return isFinite(n)?Math.max(0,Math.min(100,n)):d;};
-  const zones=(Array.isArray(m.zones)?m.zones:[]).map(z=>({label:String(z&&z.label||"").slice(0,26),side:(z&&z.side)==="b"?"b":(z&&z.side)==="neutral"?"neutral":"a",x:num(z&&z.x,5),y:num(z&&z.y,5),w:num(z&&z.w,25),h:num(z&&z.h,18)}));
+  const zones=(Array.isArray(m.zones)?m.zones:[]).map(z=>({label:String(z&&z.label||"").slice(0,34),side:(z&&z.side)==="b"?"b":(z&&z.side)==="neutral"?"neutral":"a",x:num(z&&z.x,5),y:num(z&&z.y,5),w:num(z&&z.w,25),h:num(z&&z.h,18)}));
   // if the AI omits a role, derive a sensible one from the feature type so the host still
   // sees what a piece is for (never guesses "cache" — that would invent a search point)
   const roleFromType={objective:"objective",hazard:"hazard",cover:"cover-tall",terrain:""};
   const feats=(Array.isArray(m.features)?m.features:[]).map(f=>{const t=(f&&f.type||"terrain");const ty=["terrain","cover","objective","hazard"].includes(t)?t:"terrain";const r=String(f&&f.role||"").toLowerCase();return{type:ty,role:FEAT_ROLES[r]?r:roleFromType[ty],label:String(f&&f.label||"").slice(0,24),x:num(f&&f.x,50),y:num(f&&f.y,50)};});
+  // REPAIR PASS: a searchable thing must exist physically on the map. If the AI declared a
+  // cache on a build-list entry (a crate/locker) but never put a matching feature on the map,
+  // synthesise one so it always gets a number and a place to stand.
+  const terrainL=named(raw.terrain), markersL=named(raw.markers), npcsL=named(raw.npcs), itemsL=named(raw.items);
+  (function(){
+    const spots=[[38,38],[62,38],[38,62],[62,62],[50,25],[25,50],[75,50],[50,75]];
+    const taken=l=>feats.some(f=>normLabel(f.label)===normLabel(l));
+    [].concat(terrainL,markersL,npcsL,itemsL).forEach(x=>{
+      if(String(x.role||"").toLowerCase()!=="cache")return;
+      const lbl=(x.mapLabel||x.name||"").trim(); if(!lbl||taken(lbl))return;
+      const free=spots.find(p=>!feats.some(f=>Math.abs(f.x-p[0])<9&&Math.abs(f.y-p[1])<9))||[50,50];
+      feats.push({type:"terrain",role:"cache",label:lbl.slice(0,24),x:free[0],y:free[1]});
+      if(!x.mapLabel)x.mapLabel=lbl;
+    });
+  })();
   return {
     id:uid(), createdAt:Date.now(),
     mode:opts.mode, players:opts.players, points:opts.points, seed:opts.seed||"",
@@ -2702,8 +2725,8 @@ function coerceScenario(raw,opts){
     events:(Array.isArray(raw.events)?raw.events:[]).map(e=>({round:Math.max(1,Math.min(opts.length||16,Math.round(+(e&&e.round))||1)),kind:(e&&e.kind)==="deadline"?"deadline":"surprise",title:String(e&&e.title||"").slice(0,70),text:String(e&&e.text||"").slice(0,320),effect:parseEventEffect(e&&e.effect)})).filter(e=>e.title||e.text).sort((a,b)=>a.round-b.round),
     deployment:String(raw.deployment||""),
     gameLength:String(raw.gameLength||"1D10+6 turns"),
-    terrain:named(raw.terrain), markers:named(raw.markers), npcs:named(raw.npcs),
-    items:named(raw.items).map((x,i)=>({name:x.name,note:x.note,when:x.when,mapLabel:x.mapLabel,role:x.role,secret:x.secret,hint:x.hint,revealed:false,found:false,id:"it"+i,heldBy:null})),
+    terrain:terrainL, markers:markersL, npcs:npcsL,
+    items:itemsL.map((x,i)=>({name:x.name,note:x.note,when:x.when,mapLabel:x.mapLabel,role:x.role,secret:x.secret,hint:x.hint,revealed:false,found:false,id:"it"+i,heldBy:null})),
     searched:[],
     difficulty:opts.difficulty||"normal",
     round:1, rounds:opts.length||null,
@@ -2728,6 +2751,8 @@ function buildEnemyChar(u){
   c.name=String(u.name||"Enemy").slice(0,42);
   c.role=String(u.role||"").slice(0,40);
   c.bg=String(u.background||"").slice(0,400);
+  c.atStart=u.atStart!==false;                              // default: on the table at turn 1
+  c.deployNote=String(u.deployNote||"").slice(0,180);
   const sk=u.skills||{};["A","F","S","AW","P"].forEach(k=>{let v=Math.round(+sk[k]);if(!isFinite(v))v=1;c.skills[k]=Math.max(1,Math.min(10,v));});
   let hp=Math.round(+u.hp);if(!isFinite(hp))hp=20;hp=Math.max(2,hp);if(hp%2)hp+=1;c.hp=hp;
   let n=Math.round(+u.count)||1;if(n===2)n=3;c.count=Math.max(1,Math.min(10,n));
@@ -2770,13 +2795,15 @@ Character build rules: each character costs a base 10 pts; the five skills A,F,S
 Use ONLY names spelled EXACTLY as in these catalogs:
 ${catalogForAI()}
 Reply with ONLY a JSON array (no prose, no code fence) of 3-8 units, each shaped exactly like:
-{"name":"Warboss Krael","role":"Leader","background":"Two vivid sentences: what this thing/person is, how it fits the scenario, and what makes it dangerous — atmospheric, not generic.","count":1,"skills":{"A":4,"F":6,"S":4,"AW":4,"P":2},"hp":26,"traits":["Fearsome","Brave"],"abilities":["Inspire"],"weapons":[{"name":"Power fist","qty":1}],"armour":[{"name":"Ballistic plate","qty":1}],"items":[{"name":"Med kit","qty":1}]}
+{"name":"Warboss Krael","role":"Leader","background":"Two vivid sentences: what this thing/person is, how it fits the scenario, and what makes it dangerous — atmospheric, not generic.","atStart":true,"deployNote":"sets up within 10cm of table side 3, behind the Rock Spire Cluster","count":1,"skills":{"A":4,"F":6,"S":4,"AW":4,"P":2},"hp":26,"traits":["Fearsome","Brave"],"abilities":["Inspire"],"weapons":[{"name":"Power fist","qty":1}],"armour":[{"name":"Ballistic plate","qty":1}],"items":[{"name":"Med kit","qty":1}]}
+DEPLOYMENT IS REQUIRED ON EVERY UNIT — the host must know exactly what to put on the table before turn 1. Set "atStart":true for units that start on the battlefield, and give "deployNote" a concrete placement (a table side, a deployment zone, or a named map feature). Set "atStart":false for anything that ARRIVES LATER — reinforcements, burrowing creatures, a boss that erupts from a lair — and make its "deployNote" say exactly when and from where, naming the turn and the timed event it belongs to (e.g. "does not deploy at start; erupts from the Broodmother's Warren on turn 5 (The Warren Wakes)"). If the scenario's events describe something arriving, the matching unit MUST be atStart:false and reference that event.
 Every unit needs a vivid "background" tying it to this specific scenario. Give it character: a leader, some troopers (or a squad), and maybe a specialist — but only where the scenario supports it. Spend close to ${target} points in total.`;
   try{
     const list=await s.json(prompt,{modelTier:"default",cache:false});
     const chars=(Array.isArray(list)?list:[]).map(buildEnemyChar).filter(Boolean);
     if(!chars.length)throw {code:"empty_completion"};
-    scn.enemy={characters:chars,target,generatedAt:Date.now()};save();
+    scn.enemy={characters:chars,target,generatedAt:Date.now()};
+    repairEnemyDeploy(scn);save();
     renderScenarioView();toast("Enemy warband mustered");
   }catch(e){
     if(statusEl)statusEl.innerHTML=`<div class="ng-note">${sampleErr(e&&e.code)}</div>`;
@@ -2796,7 +2823,11 @@ function enemyBlock(s){
     const total=s.enemy.characters.reduce((a,c)=>a+unitCost(c),0);
     return `<div class="scn-block"><div class="bh">Enemy force — AI-controlled</div>
       <p style="margin-bottom:10px">Target <b>${s.enemy.target||target} pts</b> (your ${s.points} + ${bonus}, ${diff.label}) · built <b style="color:var(--danger)">${total} pts</b> across ${s.enemy.characters.length} units. Tap a unit for its full card.</p>
-      <div class="enemy-grid">${s.enemy.characters.map(enemyMiniCard).join("")}</div>
+      ${(()=>{const cs=s.enemy.characters,any=cs.some(c=>c.deployNote||c.atStart===false);
+        if(!any)return `<div class="enemy-grid">${cs.map(enemyMiniCard).join("")}</div>`;
+        const now=cs.filter(c=>c.atStart!==false), later=cs.filter(c=>c.atStart===false);
+        const grp=(t,list)=>list.length?`<div class="dep-h">${t}</div><div class="enemy-grid">${list.map(enemyMiniCard).join("")}</div>${list.filter(c=>c.deployNote).map(c=>`<div class="dep-note"><b>${esc(c.name)}</b> — ${esc(c.deployNote)}</div>`).join("")}`:"";
+        return grp("▣ Deploy on the table now",now)+grp("⏳ Arrives later — keep off the table",later);})()}
       ${scnReadOnly?"":`<button class="btn sm ghost" id="enemyRegen" style="margin-top:12px">✦ Regenerate enemy</button><div id="enemyStatus"></div>`}
     </div>`;
   }
@@ -3092,12 +3123,72 @@ function trackerHTML(s){
 /* Caches: map features with role "cache" are searchable. Items whose mapLabel points at a
    cache are hidden inside it until someone searches — the APP decides what turns up
    (the single bound item, or a random one when several share a cache, or nothing). */
-function cacheList(s){
-  return mapSeq(s.map).filter(e=>e.kind==="feature"&&e.role==="cache").map(e=>{
-    // an item belongs to this cache if its mapLabel resolves to this feature's number
-    const inside=(s.items||[]).filter(it=>mapNumsFor(s.map,it.mapLabel).includes(e.n));
-    return {n:e.n,label:e.label,inside,left:inside.filter(it=>!it.found&&!it.heldBy)};
+/* A cache can be declared two ways, because the AI does both: as a map FEATURE with
+   role "cache", or as a build-list entry (a crate/locker token) with role "cache" whose
+   mapLabel points at the feature it sits on. Honour both. */
+function cacheNums(s){
+  const out=[];
+  mapSeq(s.map).forEach(e=>{if(e.kind==="feature"&&e.role==="cache"&&!out.includes(e.n))out.push(e.n);});
+  [].concat(s.terrain||[],s.markers||[],s.npcs||[],s.items||[]).forEach(raw=>{
+    const x=prepEntry(raw);
+    if(String(x.role||"").toLowerCase()!=="cache")return;
+    mapNumsFor(s.map,x.mapLabel).forEach(n=>{if(!out.includes(n))out.push(n);});
   });
+  return out.sort((a,b)=>a-b);
+}
+function cacheList(s){
+  const nums=cacheNums(s), seq=mapSeq(s.map);
+  return nums.map(n=>{
+    const e=seq.find(q=>q.n===n); if(!e)return null;
+    // a build-list "crate" sitting on this feature gives the search point its friendlier name
+    const token=[].concat(s.terrain||[],s.markers||[]).map(prepEntry)
+      .find(x=>String(x.role||"").toLowerCase()==="cache"&&mapNumsFor(s.map,x.mapLabel).includes(n));
+    const inside=(s.items||[]).filter(it=>mapNumsFor(s.map,it.mapLabel).includes(n));
+    return {n,label:e.label,name:(token&&token.name)||e.label,inside,left:inside.filter(it=>!it.found&&!it.heldBy)};
+  }).filter(Boolean);
+}
+/* REPAIR PASS for enemy deployment. The dangerous default is assuming a unit starts on the
+   table when the scenario clearly says it arrives later, so cross-check each unit against the
+   scenario's own timed events and NPC notes before falling back to the enemy deploy zone. */
+function repairEnemyDeploy(s){
+  const cs=(s.enemy&&s.enemy.characters)||[]; if(!cs.length)return false;
+  let changed=false;
+  const evs=s.events||[], npcs=(s.npcs||[]).filter(n=>n&&n.when);
+  const zoneB=(((s.map||{}).zones)||[]).find(z=>z&&z.side==="b");
+  const fallback=zoneB&&zoneB.label?("deploys in "+zoneB.label):"";
+  cs.forEach(c=>{
+    if(c.deployNote)return;                       // the generator already said something
+    const nm=normLabel(c.name); if(!nm)return;
+    const np=nm.length>3?npcs.find(n=>{const x=normLabel(n.name);return x===nm||x.includes(nm)||nm.includes(x);}):null;
+    if(np){ c.atStart=false; c.deployNote=np.when; changed=true; return; }
+    const ev=nm.length>3?evs.find(e=>normLabel((e.title||"")+" "+(e.text||"")).includes(nm)):null;
+    if(ev){ c.atStart=false; c.deployNote="arrives on turn "+ev.round+" — "+(ev.title||"a timed event"); changed=true; return; }
+    if(fallback){ c.atStart=(c.atStart!==false); c.deployNote=fallback; changed=true; }
+  });
+  return changed;
+}
+/* Surfaces anything the generator left incomplete, so a gap is visible and fixable
+   rather than silently missing at the table. */
+function scenarioGaps(s){
+  const g=[];
+  const loose=(s.items||[]).filter(it=>!mapNumsFor(s.map,it.mapLabel).length);
+  if(loose.length)g.push(loose.length+" item"+(loose.length>1?"s have":" has")+" no place on the map — hide them in a search point below, or just place them where you like: "+loose.map(i=>i.secret&&!i.revealed?(i.hint||"an unknown find"):i.name).join(", "));
+  const empties=cacheList(s).filter(c=>!c.inside.length);
+  if(empties.length)g.push("Search point"+(empties.length>1?"s":"")+" with nothing inside: "+empties.map(c=>"#"+c.n+" "+c.name).join(", "));
+  const ec=(s.enemy&&s.enemy.characters)||[];
+  if(ec.length&&!ec.some(c=>c.deployNote||c.atStart===false))
+    g.push("The enemy force has no deployment notes — regenerate it to be told which units start on the table and which arrive later.");
+  const noWhen=(s.items||[]).filter(it=>!it.when).length;
+  if(noWhen)g.push(noWhen+" item"+(noWhen>1?"s don't":" doesn't")+" say when it matters — check the notes before you play.");
+  return g;
+}
+// items the AI never gave a location — the host can stash them in a cache by hand
+function unplacedItems(s){
+  return (s.items||[]).filter(it=>!it.found&&!it.heldBy&&!mapNumsFor(s.map,it.mapLabel).length);
+}
+function stashItem(s,itemId,label){
+  const it=(s.items||[]).find(x=>x.id===itemId); if(!it)return;
+  it.mapLabel=label; save(); renderScenarioView(); toast("Hidden in "+label);
 }
 function itemIsHidden(s,it){
   if(it.found||it.heldBy)return false;
@@ -3122,10 +3213,13 @@ function collectHTML(s){
   if(!items.length&&!caches.length)return "";
   const chars=activeWB().characters;
   const searched=Array.isArray(s.searched)?s.searched:[];
+  const loose=scnReadOnly?[]:unplacedItems(s);
   const searchBlock=caches.length?`<div class="cache-block"><div class="tk-h">🔦 Search points</div>${caches.map(c=>{
     const done=searched.includes(c.label), empty=!c.left.length;
-    return `<div class="cache-row"><div class="cache-main">${numBadges([c.n])}<b>${esc(c.label)}</b>${done?`<span class="pick-note"> — ${empty?"emptied":"searched"}</span>`:(scnReadOnly?"":`<span class="pick-note"> — ${c.left.length} still hidden</span>`)}</div>${scnReadOnly?"":`<button class="btn sm ghost" data-search="${esc(c.label)}"${empty&&done?" disabled":""}>Search</button>`}</div>`;
-  }).join("")}<div class="none-note" style="font-style:normal;margin-top:6px">The app rolls what's found — searching may also turn up nothing.</div></div>`:"";
+    const nameLine=c.name&&c.name!==c.label?`<b>${esc(c.name)}</b><span class="pick-note"> at ${esc(c.label)}</span>`:`<b>${esc(c.label)}</b>`;
+    const stash=loose.length?`<div class="cache-stash"><span class="pick-lbl">Hide here:</span>${loose.map(it=>`<button class="pick-chip" data-stash="${it.id}|${esc(c.label)}">${esc(it.secret&&!it.revealed?(it.hint||"unknown find"):it.name)}</button>`).join("")}</div>`:"";
+    return `<div class="cache-row"><div class="cache-main">${numBadges([c.n])}${nameLine}${done?`<span class="pick-note"> — ${empty?"emptied":"searched"}</span>`:`<span class="pick-note"> — ${c.left.length} still hidden</span>`}${stash}</div>${scnReadOnly?"":`<button class="btn sm ghost" data-search="${esc(c.label)}"${empty&&done?" disabled":""}>Search</button>`}</div>`;
+  }).join("")}<div class="none-note" style="font-style:normal;margin-top:6px">The app rolls what's found — searching may also turn up nothing.${loose.length?" Items with no set location are listed above; tap one to hide it in a search point.":""}</div></div>`:"";
   const rows=items.map(it=>{
     if(!it.id)return "";
     const nums=numBadges(mapNumsFor(s.map,it.mapLabel));
@@ -3280,6 +3374,7 @@ function renderScenarioDetail(scnOverride){
   // migrate older scenarios
   if(!Array.isArray(s.events))s.events=[];
   if(!s.round)s.round=1;
+  if(!scnReadOnly&&repairEnemyDeploy(s))save();   // backfill older enemy forces too
   (s.items||[]).forEach((it,i)=>{if(it&&!it.id)it.id="it"+i;if(it&&it.heldBy===undefined)it.heldBy=null;});
   const li=a=>a.map(x=>`<li>${esc(x)}</li>`).join("");
   const prepSec=(title,items,catKey,tracked)=>{
@@ -3304,6 +3399,7 @@ function renderScenarioDetail(scnOverride){
       ${prepSec("Extra characters / creatures",s.npcs||[],"npcs")}
       ${prepSec("Custom items",s.items||[],"items",true)}
       <div class="none-note" style="font-style:normal;margin-top:8px">Numbers match the battlefield map below. Hidden or conditional elements may be revealed during play — improvise those as they come up.</div>
+      ${(()=>{const g=scnReadOnly?[]:scenarioGaps(s);return g.length?`<div class="gap-box"><div class="prep-h">⚠ Needs a decision from you</div><ul class="scn-list">${g.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`:"";})()}
     </div>`:"";
   el.innerHTML=`
     <div class="scn-detail">
@@ -3376,6 +3472,7 @@ function renderScenarioDetail(scnOverride){
   el.querySelectorAll("[data-assign]").forEach(b=>b.onclick=()=>{const[itId,cId]=b.dataset.assign.split("|");assignPickup(s,itId,cId);});
   el.querySelectorAll("[data-drop]").forEach(b=>b.onclick=()=>dropPickup(s,b.dataset.drop));
   el.querySelectorAll("[data-search]").forEach(b=>b.onclick=()=>searchCache(s,b.dataset.search));
+  el.querySelectorAll("[data-stash]").forEach(b=>b.onclick=()=>{const[id,lbl]=b.dataset.stash.split("|");stashItem(s,id,lbl);});
   // reveal secrets
   el.querySelectorAll("[data-reveal]").forEach(b=>b.onclick=()=>{const[cat,i]=b.dataset.reveal.split("|");const it=(s[cat]||[])[+i];if(it){it.revealed=true;save();renderScenarioView();}});
   const mp=el.querySelector(".scn-map-wrap .scn-map");if(mp)mp.onclick=()=>openMapLightbox(s.map,s.map&&s.map.note);
