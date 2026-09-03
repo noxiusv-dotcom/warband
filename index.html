@@ -631,6 +631,7 @@ textarea.input{resize:vertical;min-height:56px;line-height:1.45}
       <span class="eyebrow">The Roster</span>
       <span class="rule"></span>
       <button class="btn sm ghost" id="btnPrint" title="Open a clean summary you can print or screenshot">Summary</button>
+      <button class="btn sm ghost" id="btnShareWB" title="Copy a code to send this warband to another device">↗ Share code</button>
     </div>
     <div class="roster" id="roster"></div>
 
@@ -1567,21 +1568,22 @@ function openLibrary(){
 }
 function openDossierNewHint(){toast("New warband ready — recruit your first character")}
 
-function exportCurrent(){
+function exportCurrent(fromLibrary){
   const w=activeWB();
   const json=JSON.stringify(w,null,2);
   const body=$("#modalBody");
   body.innerHTML=`
-    <h3>Export “${esc(w.name)}”</h3>
-    <p class="lead">Copy this text and keep it somewhere safe, or paste it into the importer on another device.</p>
+    <h3>Share “${esc(w.name)}”</h3>
+    <p class="lead">Copy this code and send it to another device — paste it into that app's Import to load this exact warband (e.g. to bring an AI-built warband from this app into the live-play app).</p>
     <textarea class="jsonbox" id="exBox" readonly>${esc(json)}</textarea>
     <div class="modal-actions">
       <button class="btn primary sm" id="exCopy">Copy to clipboard</button>
-      <button class="btn ghost sm" id="exBack">Back</button>
+      <button class="btn ghost sm" id="exBack">${fromLibrary===false?"Close":"Back"}</button>
     </div>`;
   const box=$("#exBox");box.onclick=()=>box.select();
   $("#exCopy").onclick=()=>{box.select();try{navigator.clipboard.writeText(json)}catch(e){document.execCommand("copy")}toast("Copied")};
-  $("#exBack").onclick=openLibrary;
+  $("#exBack").onclick=fromLibrary===false?closeModal:openLibrary;
+  showModal();setTimeout(()=>{const t=$("#exBox");if(t)t.select();},60);
 }
 function importDialog(){
   const body=$("#modalBody");
@@ -3244,6 +3246,7 @@ document.addEventListener("paste",e=>{
 $("#btnLibrary").onclick=openLibrary;
 $("#btnRef").onclick=openReference;
 $("#btnPrint").onclick=openSummary;
+$("#btnShareWB").onclick=()=>exportCurrent(false);
 
 $("#wbName").addEventListener("input",e=>{activeWB().name=e.target.value;save()});
 $("#wbGen").onclick=openWarbandNameGen;
