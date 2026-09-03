@@ -393,6 +393,9 @@ textarea.input{resize:vertical;min-height:56px;line-height:1.45}
 /* ---------- scenarios ---------- */
 .live-panel{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:12px 15px;margin-bottom:16px}
 .live-panel .lp-main b{font-family:var(--disp)}
+.live-panel-gate{border-color:color-mix(in srgb,var(--amber) 45%,var(--line));background:var(--amber-glow)}
+.lp-tablebadge{font-family:var(--disp);font-weight:600;font-size:12.5px;letter-spacing:.03em;color:var(--teal);margin-top:4px;display:flex;align-items:center;gap:8px}
+.lp-tablebadge .linkbtn{font-weight:500;font-size:12px}
 .live-badge{display:inline-flex;align-items:center;gap:8px;font-family:var(--disp);font-weight:600;font-size:12px;letter-spacing:.03em;padding:6px 12px;border-radius:20px;margin:2px 0 12px}
 .live-badge.host{color:var(--teal);border:1px solid color-mix(in srgb,var(--teal) 45%,var(--line));background:color-mix(in srgb,var(--teal) 10%,transparent)}
 .live-badge.guest{color:var(--amber);border:1px solid color-mix(in srgb,var(--amber) 45%,var(--line));background:var(--amber-glow)}
@@ -2455,10 +2458,13 @@ function renderScenarioList(){
       </div>
     </button>`).join("");
   el.innerHTML=`
-    ${fbAvailable()?`<div class="live-panel">
-      <div class="lp-main"><b>Live game</b> <span class="none-note" style="font-style:normal">Host a scenario for your table, or join one your host is running. Everyone plays on their own device.</span><div class="none-note" style="font-style:normal;margin-top:4px">${roomKey?`◉ At your table · <button class="linkbtn" id="lpLeaveTable">change passphrase</button>`:`<button class="linkbtn" id="lpTable">set group passphrase</button> to reach your table`}</div></div>
+    ${fbAvailable()?(roomKey?`<div class="live-panel">
+      <div class="lp-main"><b>Live game</b> <span class="none-note" style="font-style:normal">Host a scenario for your table, or join one your host is running. Everyone plays on their own device.</span><div class="lp-tablebadge">◉ At your table <button class="linkbtn" id="lpLeaveTable">change passphrase</button></div></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm ghost" id="lpImport">⇩ Import scenario</button><button class="btn sm" id="lpJoin">📡 Join a live game</button></div>
-    </div>`:""}
+    </div>`:`<div class="live-panel live-panel-gate">
+      <div class="lp-main"><b>Live game</b> <span class="none-note" style="font-style:normal">Host or join a live game with your table — set a shared passphrase first so everyone lands in the same game.</span></div>
+      <button class="btn primary" id="lpTable">🔑 Set group passphrase</button>
+    </div>`):""}
     <div class="section-head"><span class="eyebrow">Scenarios &amp; Campaigns</span><span class="rule"></span></div>
     <div class="scn-grid">
       ${cards}
