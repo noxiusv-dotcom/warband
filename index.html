@@ -1420,11 +1420,14 @@ function renderVehicleRoster(){
         <div class="stat"><b>${vehicleHP(v)}</b><span>HP</span></div>
         <div class="stat"><b>${ty[2]}</b><span>SPD</span></div>
       </div>
+      ${(v.damage||v.laidUp||v.wrecked||(typeof v.curHP==="number"&&v.curHP<vehicleHP(v)))?`<div class="none-note" style="font-style:normal;color:${v.wrecked?"var(--danger)":"var(--warn)"}">${v.wrecked?"☠ ":v.laidUp?"⚙ ":"⚠ "}${esc(v.damage||("Hull damage — "+v.curHP+"/"+vehicleHP(v)+" hit-points"))}</div>`:""}
       <div class="card-foot">
         <div class="chips">
           <span class="chip">${ty[0]}</span>
           <span class="chip">${2+nSec} sect.</span>
           ${nW?`<span class="chip">${nW} wpn${nW>1?"s":""}</span>`:""}
+          ${v.laidUp?`<span class="chip" style="color:var(--warn)">in the workshop</span>`:""}
+          ${v.wrecked?`<span class="chip" style="color:var(--danger)">wrecked</span>`:""}
         </div>
         <button class="fieldtog ${fielded?"on":""}" data-tog title="Bring in / out of the battle">${fielded?"◉ Fielded":"○ Benched"}</button>
       </div>`;
@@ -1976,6 +1979,30 @@ function cardSection(title,entries){
       ${e.desc?`<div class="ed">${esc(e.desc)}</div>`:""}
     </div>`).join("")}</div>`;
 }
+/* SOLO AI (rulebook p.51-52). The host runs the DM's units, and until now had to remember
+   this ladder unaided. It is a strict priority order — take the FIRST line that applies. */
+const SOLO_AI=[
+  ["In combat","It fights on until it or its opponent is slain. It may not choose to leave combat."],
+  ["Not in combat, a player character in line of sight","It takes a shooting action, or uses an ability if it has a relevant one."],
+  ["Can't shoot and has no relevant ability","It moves its full speed straight at the nearest visible player character. If two are equally close, pick at random."],
+  ["No player character visible","It moves its full speed towards the board edge furthest from where it stands."]
+];
+const SOLO_AI_ALWAYS=[
+  "Always charges when a charge is possible.",
+  "Always counters in combat when it can.",
+  "Never pushes an opponent back after winning a fight.",
+  "Never leaves combat, and never holds an action.",
+  "Hits an obstacle while moving? Roll 1D4 — on 1-2 it carries straight on, using Agility to tackle the obstacle; on 3 it turns and moves back the way it came; on 4 you decide how it spends the rest of its move."
+];
+function cardSoloAI(){
+  return `<div class="gc-sec">
+    <div class="sh" style="color:var(--danger)">◉ On its activation — in priority order</div>
+    <div class="gc-spellnote" style="margin-bottom:8px">Take the first line that applies.</div>
+    ${SOLO_AI.map((r,i)=>`<div class="gc-entry"><div class="en"><span>${i+1}. ${esc(r[0])}</span></div><div class="ed">${esc(r[1])}</div></div>`).join("")}
+    <div class="gc-spellnote" style="margin-top:10px"><b>Always:</b></div>
+    ${SOLO_AI_ALWAYS.map(x=>`<div class="ed" style="margin:3px 0 0">• ${esc(x)}</div>`).join("")}
+  </div>`;
+}
 function spellNote(isMajor,isMinor,hasPsyka){
   const lines=[];
   if(isMajor)lines.push("<b>Major arcana</b> — roll 3 random powers from the table at the start of each game; cast them as often as you like.");
@@ -1993,16 +2020,45 @@ function cardSpellbook(c,note,rollCount){
     <div class="gc-spellnote">${note} <span style="color:var(--ink-mute)">Hover or tap a power to read it.</span></div>
     <div class="rollrow">
       <button class="rollbtn" id="spRoll">🎲 Roll ${rollCount} power${rollCount>1?"s":""}</button>
+      ${hasRoll?`<button class="rollbtn" id="spCast">✦ Cast a power</button>`:""}
       ${hasRoll?`<button class="linkbtn" id="spClear">Clear roll</button>`:""}
     </div>
     ${thisGame}
+    ${(c.pDrop|0)?`<div class="gc-spellnote" style="color:var(--danger)">Psyche is down to <b>${effP(c)}</b> for the rest of this game (rent asunder ×${c.pDrop}). Roll new powers to start a fresh game.</div>`:""}
+    ${castLine(c)}
     <div class="spellgrid${hasRoll?" hasroll":""}">${ARCANA.map((a,i)=>`<span class="spell${rolled.includes(i)?" rolled":""}" tabindex="0" data-tip="${esc(a[1])}">${rolled.includes(i)?"✦ ":""}${esc(a[0])}</span>`).join("")}</div>
   </div>`;
+}
+/* RENT ASUNDER (rulebook p.69-70). Every failed arcana roll risks it, and the app used to
+   only WARN about it — leaving the one consequence that makes casting a gamble to be tracked
+   on paper. Skill rolls succeed UNDER the value, so a cast fails on a roll >= (P). Then a
+   second 1D10: under the caster's CURRENT (P) and nothing happens; equal or over and the mind
+   is rent — damage equal to the failed cast roll minus (P), which armour cannot stop, and (P)
+   drops by 1 for the rest of the game (so each rending makes the next one likelier). */
+function effP(c){return Math.max(1,(c.skills.P|0)-(c.pDrop|0));}
+function castArcana(c){
+  const P=effP(c), cast=1+Math.floor(Math.random()*10);
+  if(cast<P){c.lastCast={cast,P,ok:true};save();buildCard();toast("Cast succeeded — rolled "+cast+" under "+P);return;}
+  const check=1+Math.floor(Math.random()*10);
+  if(check<P){c.lastCast={cast,P,ok:false,check,rent:false};save();buildCard();toast("Cast failed, but the mind holds");return;}
+  const dmg=Math.max(0,cast-P);
+  c.pDrop=(c.pDrop|0)+1;
+  c.lastCast={cast,P,ok:false,check,rent:true,dmg};
+  save();buildCard();
+  toast("RENT ASUNDER — "+dmg+" damage (no armour), Psyche now "+effP(c));
+}
+function castLine(c){
+  const r=c.lastCast; if(!r)return "";
+  const base=`rolled <b>${r.cast}</b> against (P) ${r.P}`;
+  if(r.ok)return `<div class="gc-spellnote" style="margin-top:8px;color:var(--teal)">✓ Cast succeeded — ${base}.</div>`;
+  if(!r.rent)return `<div class="gc-spellnote" style="margin-top:8px">✗ Cast failed — ${base}. Rent-asunder check rolled <b>${r.check}</b>, under (P) — the mind holds.</div>`;
+  return `<div class="gc-spellnote" style="margin-top:8px;color:var(--danger)">☠ <b>Rent asunder</b> — ${base}, check rolled <b>${r.check}</b>. Takes <b>${r.dmg}</b> damage that armour cannot stop, and (P) drops by 1 for the rest of the game.</div>`;
 }
 function rollArcana(c,n){
   const idx=Array.from({length:ARCANA.length},(_,i)=>i);
   for(let i=idx.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));const t=idx[i];idx[i]=idx[j];idx[j]=t;}
   c.rolledSpells=idx.slice(0,n).sort((a,b)=>a-b);
+  c.pDrop=0;c.lastCast=null;            // a new game: the mind starts whole again
   save();buildCard();
   toast("Rolled: "+c.rolledSpells.map(i=>ARCANA[i][0]).join(", "));
 }
@@ -2054,6 +2110,7 @@ function buildCard(){
           ${cardSection("Armour",arm)}
           ${cardSection("Items",items)}
           ${cardSection("Campaign changes",(c.pickups||[]).filter(p=>p.applied&&p.effect).map(p=>({name:p.name,desc:p.effect.summary})))}
+          ${cardIsEnemy?cardSoloAI():cardAgenda(c)}
           ${(anyGear+anyPow)===0&&!(c.pickups||[]).some(p=>p.applied)?`<div class="gc-sec"><div class="gc-empty">No traits, abilities or equipment yet — hit Edit to kit this character out.</div></div>`:""}
         </div>
       </div>
@@ -2069,7 +2126,11 @@ function buildCard(){
   $("#gcArt").onclick=()=>openPrompt(cardChar(),false);
   const gFld=$("#gcField");if(gFld)gFld.onclick=()=>toggleFielded(c);
   const sr=$("#spRoll");if(sr)sr.onclick=()=>rollArcana(c,isMajor?3:1);
-  const sc=$("#spClear");if(sc)sc.onclick=()=>{c.rolledSpells=[];save();buildCard();};
+  const agT=$("#agTake");if(agT)agT.onclick=()=>takeAgenda(c);
+  const agP=$("#agPeek");if(agP)agP.onclick=()=>{agendaOpen[c.id]=!agendaOpen[c.id];buildCard();};
+  const agD=$("#agDrop");if(agD)agD.onclick=()=>askConfirm("Give up this hidden agenda? It is gone and earns nothing.",()=>{delete c.agenda;delete agendaOpen[c.id];save();buildCard();render();toast("Agenda abandoned");},{danger:true,yesLabel:"Give it up"});
+  const scst=$("#spCast");if(scst)scst.onclick=()=>castArcana(c);
+  const sc=$("#spClear");if(sc)sc.onclick=()=>{c.rolledSpells=[];c.pDrop=0;c.lastCast=null;save();buildCard();};
   wirePortrait(c);
 }
 
@@ -2497,6 +2558,7 @@ function buildVehicleCard(){
           ${cardSection("Traits",vtraits)}
           ${cardSection("Abilities",vabils)}
           ${cardSection("Weapons",vweaps)}
+          ${cardIsEnemy?cardSoloAI():""}
         </div>
       </div>
     </div>
@@ -2767,8 +2829,9 @@ async function resendWarband(){
 function myCombatantsIn(scn){
   const w=activeWB(); if(!w||!scn||!scn.battle||!Array.isArray(scn.battle.combatants))return [];
   const cid=campId();
-  return scn.battle.combatants.filter(m=>m&&m.side==="player"&&m.charId&&
-    (w.characters.some(c=>c.id===m.charId)||(cid&&m.campId===cid)));
+  return scn.battle.combatants.filter(m=>m&&m.side==="player"&&(m.charId||m.vehId)&&
+    (m.charId?(w.characters.some(c=>c.id===m.charId)||(cid&&m.campId===cid))
+             :(vehsOf(w).some(v=>v.id===m.vehId)||(cid&&m.campId===cid))));
 }
 function rememberQuestState(scn){
   try{
@@ -2813,6 +2876,76 @@ function grantCP(chars,amount){
     c.cp=cpOf(c)+amount; c.cpTotal=before+amount; delete c.xp; delete c.xpTotal;
     if(rankOf(before)!==rankOf(c.cpTotal))c._rankedUp=rankOf(c.cpTotal);
   });
+}
+/* HIDDEN AGENDAS (rulebook p.58, table p.80). A private goal one character carries into a
+   game, separate from the scenario. Worth 5 campaign points, 1 less for every game it has
+   already been carried and failed. Deliberately NEVER included in myCombatants(), so it is
+   not synced to the host or the other players — the point is that they know you HAVE one,
+   not what it is. */
+const AGENDAS=[
+  {roll:1,name:"Vendetta",text:"One of the enemies you're facing is an old foe. After all characters are deployed, select an enemy character — you must kill it before the game ends."},
+  {roll:2,name:"The mule",text:"You're carrying illicit goods for a shadowy overlord. Reach the board edge opposite the one you started at and spend an entire turn in base contact with it."},
+  {roll:3,name:"Thief in the night",text:"There's a stash out here somewhere. Move to each corner of the playing area and roll 1D4 — on a 4 you have found it, for 2D20 credits. (If three corners come up empty, the last needs no roll.)"},
+  {roll:4,name:"Knowledge is power",text:"An enemy knows something you don't. Select an enemy character at the start of the game and win at least one fight action against it — instead of dealing damage, you extract what you need."},
+  {roll:5,name:"Vow of pacifism",text:"After a night of prayer and hard liquor you swore off violence. Survive to the end of the game without causing any damage to an enemy character."},
+  {roll:6,name:"An honourable death",text:"You went seeking glorious combat. You must fight and be slain by the enemy character with the highest (F). These campaign points are split among the warband."}
+];
+function agendaValue(a){return Math.max(0,5-((a&&a.fails)|0));}
+function takeAgenda(c){
+  const pick=AGENDAS[Math.floor(Math.random()*AGENDAS.length)];
+  c.agenda={roll:pick.roll,fails:0};
+  save();buildCard();render();
+  toast("⚑ A hidden agenda — tap Reveal to read it");
+}
+let agendaOpen={};
+function cardAgenda(c){
+  const a=c.agenda;
+  if(!a)return `<div class="gc-sec">
+    <div class="sh">⚑ Hidden agenda</div>
+    <div class="gc-spellnote">A private goal, rolled in secret and worth <b>5 campaign points</b>. Tell the others you have one — never what it is.</div>
+    <div class="rollrow"><button class="rollbtn" id="agTake">🎲 Take a hidden agenda</button></div>
+  </div>`;
+  const o=AGENDAS.find(x=>x.roll===a.roll)||AGENDAS[0];
+  const shown=!!agendaOpen[c.id];
+  return `<div class="gc-sec">
+    <div class="sh">⚑ Hidden agenda</div>
+    <div class="gc-spellnote">Worth <b>${agendaValue(a)}</b> campaign point${agendaValue(a)===1?"":"s"}${(a.fails|0)?` — carried and failed ${a.fails} game${a.fails>1?"s":""}, so it is worth ${a.fails} less`:""}.</div>
+    ${shown?`<div class="gc-entry"><div class="en"><span>${esc(o.name)}</span></div><div class="ed">${esc(o.text)}</div></div>`
+           :`<div class="gc-entry"><div class="ed redacted">Sealed — only this character knows what they are after.</div></div>`}
+    <div class="rollrow" style="margin:10px 0 0">
+      <button class="rollbtn" id="agPeek">${shown?"Hide":"Reveal"}</button>
+      <button class="linkbtn" id="agDrop">Give it up</button>
+    </div>
+  </div>`;
+}
+/* Settled at camp, after the quest tally — did they pull it off? */
+function openAgendaCheck(chars,then){
+  const list=(chars||[]).filter(c=>c&&c.agenda);
+  if(!list.length){if(then)then();return;}
+  let i=0;
+  const step=()=>{
+    if(i>=list.length){save();render();closeModal();if(then)then();return;}
+    const c=list[i], a=c.agenda, o=AGENDAS.find(x=>x.roll===a.roll)||AGENDAS[0], val=agendaValue(a);
+    $("#modalBody").innerHTML=`<h3>⚑ ${esc(c.name||"Unnamed")} — ${esc(o.name)}</h3>
+      <p class="lead">${esc(o.text)}</p>
+      <div class="ng-result"><b>Worth ${val} campaign point${val===1?"":"s"}</b>${(a.fails|0)?`<div class="ed" style="margin-top:4px">Reduced by ${a.fails} for the game${a.fails>1?"s":""} already spent carrying it.</div>`:""}</div>
+      <div class="modal-actions">
+        <button class="btn primary sm" id="agDone">Completed — award ${val}</button>
+        <button class="btn sm" id="agFail">Failed — carry it on</button>
+      </div>`;
+    $("#agDone").onclick=()=>{
+      if(val>0)grantCP([c],val);
+      delete c.agenda; save();
+      toast(val>0?("+"+val+" campaign points"):"Completed — but it is worth nothing now");
+      i++;step();
+    };
+    $("#agFail").onclick=()=>{
+      a.fails=(a.fails|0)+1; save();
+      toast("Carried on — now worth "+agendaValue(a));
+      i++;step();
+    };
+  };
+  step();showModal();
 }
 /* End-of-quest tally, straight off the rulebook's list. */
 function openCPAwards(snap,charIds,then){
@@ -3413,6 +3546,43 @@ function pendingQuest(scn){
   if(!snap||questClaims().includes(snap.scnId))return null;
   return snap;
 }
+/* VEHICLE DAMAGE (rulebook p.81-82) — the counterpart of the character injury table, rolled
+   at camp for any vehicle wrecked on the quest. What the app can apply it applies; the rest
+   it states plainly and leaves to the host. */
+const VEH_DAMAGE=[
+  {roll:1,name:"Grinding gears",effect:"Suffers −1D4 agility and moves at half speed.",
+   apply:v=>{v.damage="Grinding gears — −1D4 agility, moves at half speed.";}},
+  {roll:2,name:"Short on crew",effect:"Loses all but 1 of its crew sections.",
+   apply:v=>{const cw=findCat("vsection","Crew");if(cw){const e=(v.sections||[]).find(x=>x.id===cw.id);if(e)e.qty=1;}
+     v.damage="Short on crew — down to a single crew section.";}},
+  {roll:3,name:"Badly repaired",effect:"Gains the Ramshackle trait. This does not lower the vehicle's points cost.",
+   apply:v=>{const rt=findCat("vtrait","Ramshackle");if(rt&&(v.traits||[]).indexOf(rt.id)<0)v.traits.push(rt.id);
+     v.damage="Badly repaired — now Ramshackle (derelict on a single failed break test).";}},
+  {roll:4,name:"Slow repairs",effect:"Misses the next game, after which it is returned to full hit-points.",
+   apply:v=>{v.laidUp=true;v.curHP=vehicleHP(v);v.damage="In the workshop — sits out the next quest, then returns at full hit-points.";}},
+  {roll:5,name:"Fully repaired",effect:"Fixed up without any problems — starts the next game at full hit-points.",
+   apply:v=>{v.curHP=vehicleHP(v);v.damage="";}},
+  {roll:6,name:"Destroyed",effect:"Too badly damaged to keep going. Add up its total starting points cost; you may use 50% of that to build a new vehicle. Any campaign points it had are lost.",
+   apply:v=>{v.wrecked=true;v.salvage=Math.floor(vehicleCost(v)/2);v.damage="Destroyed — "+v.salvage+" pts of salvage towards a new vehicle.";}}
+];
+function openVehicleDamage(v,then){
+  const body=$("#modalBody");
+  const draw=res=>{
+    body.innerHTML=`<h3>▰ ${esc(v.name||"Vehicle")} was wrecked</h3>
+      <p class="lead">Roll 1D6 on the vehicle damage table to see what state it comes home in.</p>
+      <div>${res?`<div class="ng-result"><b>${res.roll} — ${esc(res.name)}</b><div class="ed" style="margin-top:6px">${esc(res.effect)}</div></div>`:""}</div>
+      <div class="modal-actions">
+        ${res?`<button class="btn primary sm" id="vdDone">Back to camp</button>`
+             :`<button class="btn primary sm" id="vdRoll">🎲 Roll 1D6</button>`}
+      </div>`;
+    if(res)$("#vdDone").onclick=()=>{closeModal();render();if(then)then();};
+    else $("#vdRoll").onclick=()=>{
+      const r=VEH_DAMAGE[Math.floor(Math.random()*6)];
+      r.apply(v);v.damageRoll=r.roll;save();draw(r);toast("▰ "+r.name);
+    };
+  };
+  draw(null);showModal();
+}
 function claimQuest(snap,then){
   const w=activeWB();
   let wounded=0,downed=0,found=0;
@@ -3433,6 +3603,16 @@ function claimQuest(snap,then){
       if(!c.pickups.some(p=>p.itemId===f.itemId&&p.scnId===f.scnId)){c.pickups.push(f);found++;}
     });
   });
+  const wrecks=[];
+  (snap.combatants||[]).forEach(m=>{
+    if(!m.vehId)return;
+    const v=vehsOf(w).find(x=>x.id===m.vehId); if(!v)return;
+    const max=vehicleHP(v);
+    if(typeof m.curHP==="number"&&m.curHP<max)v.curHP=Math.max(0,m.curHP); else v.curHP=max;
+    if(m.curHP<=0)wrecks.push(v);
+  });
+  // a vehicle that sat this quest out has served its lay-up and is ready again
+  vehsOf(w).forEach(v=>{if(v.laidUp&&!(snap.combatants||[]).some(m=>m.vehId===v.id))v.laidUp=false;});
   (snap.combatants||[]).forEach(m=>{const c=w.characters.find(x=>x.id===m.charId);if(c)tickInjuries(c);});
   markClaimed(snap.scnId);
   const ok=save();
@@ -3440,16 +3620,19 @@ function claimQuest(snap,then){
   const bits=[];
   if(wounded)bits.push(wounded+" wounded");
   if(downed)bits.push(downed+" taken down");
+  if(wrecks.length)bits.push(wrecks.length+" vehicle"+(wrecks.length>1?"s":"")+" wrecked");
   if(found)bits.push(found+" find"+(found>1?"s":""));
   toast(ok?("Back at camp"+(bits.length?" — "+bits.join(", "):"")):"⚠ Returned but NOT saved — storage is full");
   if(then)then();
   // XP for the quest first, then anyone who fell rolls for what it cost them
   const took=(snap.combatants||[]).map(m=>m.charId).filter(id=>w.characters.some(c=>c.id===id));
-  const rollInjuries=()=>{ if(!fell.length)return;
+  const rollWrecks=()=>{ if(wrecks.length)openVehicleDamage(wrecks[0]); };
+  const rollInjuries=()=>{ if(!fell.length){rollWrecks();return;}
     const c=w.characters.find(x=>x.id===fell[0].charId);
-    if(c&&c.pendingInjury)openInjuryRoll(c);
+    if(c&&c.pendingInjury)openInjuryRoll(c); else rollWrecks();
   };
-  setTimeout(()=>openCPAwards(snap,took,rollInjuries),350);
+  const settleAgendas=()=>openAgendaCheck(took.map(id=>w.characters.find(c=>c.id===id)).filter(Boolean),rollInjuries);
+  setTimeout(()=>openCPAwards(snap,took,settleAgendas),350);
 }
 function returnToCamp(){
   const snap=pendingQuest(liveScenario);
@@ -4312,6 +4495,13 @@ function negListOf(c){
 function injuryNotes(c){return (c.injuries||[]).filter(x=>x&&x.name).map(x=>x.name+(x.effectNote?" ("+x.effectNote+")":""));}
 function myCombatants(owner,idPrefix){
   const w=activeWB(), out=[], cid=campId();
+  // A vehicle laid up for repairs sits this one out; everything else fielded rolls out.
+  vehsOf(w).filter(v=>isFielded(v)&&!v.laidUp).forEach(v=>{
+    const max=vehicleHP(v);
+    const cur=(typeof v.curHP==="number"&&v.curHP>0&&v.curHP<max)?v.curHP*1:max;
+    out.push({id:(idPrefix||"p_")+v.id,side:"player",owner:owner||"",campId:cid,vehId:v.id,isVeh:true,
+      name:"▰ "+(v.name||"Unnamed vehicle"),maxHP:max,curHP:cur,conditions:[],neg:[],finds:[]});
+  });
   w.characters.filter(isFielded).forEach(c=>{
     const n=memberCount(c), max=c.hp*n;
     // a character carries its lingering wounds into the next quest
