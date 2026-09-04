@@ -609,6 +609,9 @@ textarea.input{resize:vertical;min-height:56px;line-height:1.45}
 .xp-bar{display:flex;align-items:center;gap:9px;background:var(--sunk);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 12px;font-size:13px}
 .xp-bar b{font-size:17px;color:var(--amber)}
 .xp-bar b.spent{color:var(--ink-mute)}
+.cp-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:6px}
+.cp-grid label{font-size:12px;color:var(--ink-dim);display:flex;flex-direction:column;gap:4px}
+.cp-grid .input{padding:6px 9px}
 .stylechip.unaffordable{opacity:.4;cursor:not-allowed}
 .stylechip .short{margin-left:6px;font-family:var(--mono);font-size:9.5px;color:var(--danger);opacity:.85}
 ::-webkit-scrollbar{width:10px;height:10px}
@@ -1362,8 +1365,8 @@ function renderRoster(){
             return cur===null?`<span class="chip hp">${c.hp} HP</span>`
               :`<span class="chip hp ${cur<=0?"down":"hurt"}">${cur<=0?"DOWN":cur+"/"+max+" HP"}</span>`;})()}
           <span class="chip">${RULES.speed}cm</span>
-          ${(c.xpTotal||0)>0?`<span class="chip rank">${esc(rankOf(c.xpTotal))}</span>`:""}
-          ${(c.xp||0)>0?`<span class="chip xp">⭐ ${c.xp} XP</span>`:""}
+          ${cpTotalOf(c)>0?`<span class="chip rank">${esc(rankOf(cpTotalOf(c)))}</span>`:""}
+          ${cpOf(c)>0?`<span class="chip xp">⭐ ${cpOf(c)} cp</span>`:""}
           ${(c.injuries||[]).length?`<span class="chip scar">⚠ ${(c.injuries||[]).length} scar${(c.injuries||[]).length>1?"s":""}</span>`:""}
           ${nGear?`<span class="chip">${nGear} gear</span>`:""}
         </div>
@@ -1742,8 +1745,12 @@ function openLibrary(){
       </div>`;
       const scarred=chars.filter(c=>(c.injuries||[]).length);
       if(scarred.length)h+=`<div class="camp-box" style="margin-bottom:12px">
-        <div class="prep-h">⚔ Scars they carry</div>
-        <ul class="scn-list">${scarred.map(c=>`<li><b>${esc(c.name)}</b> — ${(c.injuries||[]).map(x=>esc(x.name)+(x.effectNote?" <i>("+esc(x.effectNote)+")</i>":"")).join("; ")}</li>`).join("")}</ul>
+        <div class="prep-h">⚔ Wounds they carry</div>
+        ${scarred.map(c=>(c.injuries||[]).map((x,i)=>`<div class="wb-item"><div class="wbi-main" style="cursor:default">
+          <div class="wbi-name">${esc(c.name)} — ${esc(x.name)}</div>
+          <div class="wbi-sub">${esc(x.effectNote||x.ruleName||"")}${x.games?` · ${Math.max(0,x.games-(x.served||0))} more game${Math.max(0,x.games-(x.served||0))===1?"":"s"}`:x.permanent?" · permanent":""}${(x.served||0)?` · carried ${x.served} game${(x.served||0)===1?"":"s"}`:""}</div></div>
+          ${canTreat(c,x)?`<button class="linkbtn" data-treat="${c.id}|${i}">Treat (D6)</button>`:`<span class="none-note" style="font-style:normal">needs a game first</span>`}</div>`).join("")).join("")}
+        <div class="none-note" style="font-style:normal;margin-top:6px">Treatment costs ${CP_COSTS.heal} campaign points for the attempt, win or lose — roll 4+ on a D6 to be mended.</div>
       </div>`;
       return h;})()}
     <div class="camp-box">
@@ -1795,6 +1802,7 @@ function openLibrary(){
       if(save())toast("Scenarios cleared");render();openLibrary();
     },{danger:true,yesLabel:"Delete all"});
   };
+  body.querySelectorAll("[data-treat]").forEach(b=>b.onclick=()=>{const[cid,i]=b.dataset.treat.split("|");openTreatInjury(cid,+i);});
   body.querySelectorAll("[data-injury]").forEach(b=>b.onclick=()=>{
     const c=activeWB().characters.find(x=>x.id===b.dataset.injury);
     if(c&&c.pendingInjury)openInjuryRoll(c);
@@ -2738,170 +2746,281 @@ function rememberQuestState(scn){
     const mine=myCombatantsIn(scn);
     if(!mine.length)return;
     localStorage.setItem("p28_quest_"+scn.id,JSON.stringify({scnId:scn.id,title:scn.title||"",at:Date.now(),combatants:mine,
-      injuries:injuryTableFor(scn),causes:injuryCauses(scn),xpAwards:xpAwardsFor(scn)}));
+      injuries:injuryTableFor(scn),causes:injuryCauses(scn)}));
   }catch(e){}
 }
 /* ---- experience & rank ----
    1 XP = 1 point of upgrades. Spending grows the character's points value, so veterans cost
    more and you field fewer of them. Ranks come from lifetime XP, never spent away. */
+/* ---- campaign points & credits (rulebook economy) ----
+   Characters earn their own campaign points and spend them on themselves; the warband keeps a
+   collective pool for scenario goals and recruiting. Equipment is bought with POINTS only when
+   the warband is first built — after that it costs CREDITS, and CP convert to credits at 2:1. */
+const CP_COSTS={skill:20,hp:20,hpStep:5,recruit:10,heal:10};
+const CP_EARN=[
+  {key:"actions",label:"Successful shoot or fight actions",per:1,input:true},
+  {key:"kills",label:"Enemies killed",per:5,input:true},
+  {key:"survived",label:"Survived the game",per:1,auto:true},
+  {key:"unwounded",label:"Made it to the end unwounded",per:5,auto:true}
+];
+const CP_WARBAND=[
+  {key:"goal",label:"Achieved the scenario goal",per:10},
+  {key:"rout",label:"Destroyed 50% or more of an enemy warband",per:10}
+];
 const RANKS=[
-  {at:0,name:"Recruit"},{at:8,name:"Trooper"},{at:20,name:"Blooded"},{at:36,name:"Veteran"},
-  {at:56,name:"Sergeant"},{at:80,name:"Lieutenant"},{at:110,name:"Captain"},{at:150,name:"Warlord"}
+  {at:0,name:"Recruit"},{at:20,name:"Trooper"},{at:60,name:"Blooded"},{at:120,name:"Veteran"},
+  {at:200,name:"Sergeant"},{at:300,name:"Lieutenant"},{at:450,name:"Captain"},{at:650,name:"Warlord"}
 ];
 function rankOf(total){let r=RANKS[0];RANKS.forEach(x=>{if((total||0)>=x.at)r=x;});return r.name;}
 function nextRank(total){return RANKS.find(x=>(total||0)<x.at)||null;}
-const FALLBACK_XP=[
-  {name:"Survived the quest",xp:1,note:"every character who walked away"},
-  {name:"Completed the main objective",xp:2,note:""},
-  {name:"Took down an enemy leader",xp:2,note:""},
-  {name:"Recovered something valuable",xp:1,note:""}
-];
-function coerceXpAward(x){
-  if(!x||typeof x!=="object")return null;
-  const n=String(x.name||"").slice(0,70); if(!n)return null;
-  return {name:n,xp:Math.max(0,Math.min(10,Math.round(+x.xp)||0)),note:String(x.note||"").slice(0,120)};
-}
-function xpAwardsFor(scn){
-  const a=(scn&&Array.isArray(scn.xpAwards)?scn.xpAwards:[]).map(coerceXpAward).filter(Boolean);
-  return a.length?a:FALLBACK_XP.slice();
-}
-function grantXP(chars,amount,why){
+function cpOf(c){return (typeof c.cp==="number"?c.cp:(c.xp||0));}
+function cpTotalOf(c){return (typeof c.cpTotal==="number"?c.cpTotal:(c.xpTotal||0));}
+function creditsOf(w){return Math.max(0,Math.round(+w.credits||0));}
+function hasTrait(c,name){const o=findCat("trait",name);return !!(o&&(c.traits||[]).includes(o.id));}
+function grantCP(chars,amount){
   chars.forEach(c=>{
-    const before=c.xpTotal||0;
-    c.xp=(c.xp||0)+amount; c.xpTotal=before+amount;
-    const r1=rankOf(before), r2=rankOf(c.xpTotal);
-    if(r1!==r2)c._rankedUp=r2;
+    const before=cpTotalOf(c);
+    c.cp=cpOf(c)+amount; c.cpTotal=before+amount; delete c.xp; delete c.xpTotal;
+    if(rankOf(before)!==rankOf(c.cpTotal))c._rankedUp=rankOf(c.cpTotal);
   });
 }
-function openXPAwards(snap,charIds,then){
-  const awards=xpAwardsFor({xpAwards:snap.xpAwards});
+/* End-of-quest tally, straight off the rulebook's list. */
+function openCPAwards(snap,charIds,then){
   const w=activeWB();
   const took=charIds.map(id=>w.characters.find(x=>x.id===id)).filter(Boolean);
-  if(!took.length||!awards.length){if(then)then();return;}
+  if(!took.length){if(then)then();return;}
+  const state=took.map(c=>{
+    const m=(snap.combatants||[]).find(x=>x.charId===c.id)||{};
+    const max=c.hp*memberCount(c);
+    return {c,actions:0,kills:0,survived:(m.curHP||0)>0,unwounded:(m.curHP||0)>=max};
+  });
   const body=$("#modalBody");
-  body.innerHTML=`
-    <h3>What did they achieve?</h3>
-    <p class="lead">Tick what your warband managed at “${esc(snap.title||"the quest")}”. Everyone who took part earns it — ${took.length} character${took.length>1?"s":""}.</p>
-    ${awards.map((a,i)=>`<label class="xp-award"><input type="checkbox" data-xp="${i}"> <b>${esc(a.name)}</b> <span class="mono xp-val">+${a.xp}</span>${a.note?`<div class="none-note" style="font-style:normal">${esc(a.note)}</div>`:""}</label>`).join("")}
-    <div class="xp-total" id="xpTotalLine">0 XP each</div>
-    <div class="modal-actions">
-      <button class="btn primary sm" id="xpGive">Award XP</button>
-      <button class="btn ghost sm" id="xpNone" style="margin-left:auto">Nothing this time</button>
-    </div>`;
-  const total=()=>[...body.querySelectorAll("[data-xp]")].reduce((s,b)=>s+(b.checked?awards[+b.dataset.xp].xp:0),0);
-  const upd=()=>{$("#xpTotalLine").textContent=total()+" XP each";};
-  body.querySelectorAll("[data-xp]").forEach(b=>b.onchange=upd);
-  const finish=amount=>{
-    if(amount>0){grantXP(took,amount);save();render();toast("+"+amount+" XP to "+took.length+" character"+(took.length>1?"s":""));}
-    closeModal();
-    const up=took.filter(c=>c._rankedUp);
-    up.forEach(c=>{delete c._rankedUp;});
-    if(up.length)setTimeout(()=>openEarnedNames(up.map(c=>({charId:c.id,name:c.name,reason:(c.name||"They")+" rose to "+rankOf(c.xpTotal)})),"glory",then),300);
-    else if(then)then();
+  const draw=()=>{
+    const rows=state.map((s,i)=>{
+      const auto=(s.survived?1:0)+(s.unwounded?5:0);
+      const tot=s.actions*1+s.kills*5+auto;
+      return `<div class="earn-row">
+        <div class="prep-h">${esc(s.c.name||"Unnamed")} <span class="mono" style="float:right;color:var(--amber)">+${tot}</span></div>
+        <div class="cp-grid">
+          <label>Shoot / fight hits <span class="none-note" style="font-style:normal">1 each</span>
+            <input class="input" type="number" min="0" max="99" value="${s.actions}" data-cp="${i}|actions"></label>
+          <label>Enemies killed <span class="none-note" style="font-style:normal">5 each</span>
+            <input class="input" type="number" min="0" max="99" value="${s.kills}" data-cp="${i}|kills"></label>
+        </div>
+        <div class="none-note" style="font-style:normal;margin-top:5px">
+          ${s.survived?"✓ survived (+1)":"✗ did not survive"} · ${s.unwounded?"✓ unwounded (+5)":"✗ was wounded"}
+        </div></div>`;
+    }).join("");
+    const wbTot=CP_WARBAND.reduce((t,a)=>t+((body.querySelector('[data-wcp="'+a.key+'"]')||{}).checked?a.per:0),0);
+    body.innerHTML=`
+      <h3>Campaign points — ${esc(snap.title||"the quest")}</h3>
+      <p class="lead">Tally what each character managed. The rulebook's rates: 1 per successful shoot or fight action, 5 per enemy killed, 1 for surviving, 5 for finishing unwounded.</p>
+      ${rows}
+      <div class="eyebrow" style="margin:14px 0 7px">The warband as a whole</div>
+      ${CP_WARBAND.map(a=>`<label class="xp-award"><input type="checkbox" data-wcp="${a.key}"> <b>${esc(a.label)}</b> <span class="mono xp-val">+${a.per}</span></label>`).join("")}
+      <div class="none-note" style="font-style:normal">These go to the warband's shared pool — spend them on recruits, or hand them out later.</div>
+      <div class="modal-actions">
+        <button class="btn primary sm" id="cpGive">Award campaign points</button>
+        <button class="btn ghost sm" id="cpNone" style="margin-left:auto">Nothing this time</button>
+      </div>`;
+    body.querySelectorAll("[data-cp]").forEach(inp=>inp.oninput=e=>{
+      const[i,k]=e.target.dataset.cp.split("|");
+      state[+i][k]=Math.max(0,Math.min(99,parseInt(e.target.value||"0",10)||0));
+      const row=e.target.closest(".earn-row").querySelector(".prep-h .mono");
+      const s=state[+i]; if(row)row.textContent="+"+(s.actions+s.kills*5+(s.survived?1:0)+(s.unwounded?5:0));
+    });
+    const finish=give=>{
+      let pool=0;
+      if(give){
+        state.forEach(s=>{
+          const amt=s.actions*1+s.kills*5+(s.survived?1:0)+(s.unwounded?5:0);
+          if(amt>0)grantCP([s.c],amt);
+        });
+        CP_WARBAND.forEach(a=>{const b=body.querySelector('[data-wcp="'+a.key+'"]');if(b&&b.checked)pool+=a.per;});
+        if(pool){w.cp=(w.cp||0)+pool;}
+        // Rich earns coin, Venal must cash out, Mercenary wants paying
+        state.forEach(s=>{
+          if(hasTrait(s.c,"Rich")){const d=1+Math.floor(Math.random()*8);w.credits=creditsOf(w)+d;toast(s.c.name+" (Rich) earned "+d+" credits");}
+          if(hasTrait(s.c,"Venal")){const cash=Math.floor(cpOf(s.c)/2);if(cash>0){w.credits=creditsOf(w)+cash;s.c.cp=0;}}
+        });
+        save();render();
+      }
+      closeModal();
+      const up=state.map(s=>s.c).filter(c=>c._rankedUp);
+      up.forEach(c=>delete c._rankedUp);
+      if(up.length)setTimeout(()=>openEarnedNames(up.map(c=>({charId:c.id,name:c.name,reason:(c.name||"They")+" rose to "+rankOf(cpTotalOf(c))})),"glory",then),300);
+      else if(then)then();
+    };
+    $("#cpGive").onclick=()=>finish(true);
+    $("#cpNone").onclick=()=>finish(false);
+    body.querySelectorAll("[data-wcp]").forEach(b=>b.onchange=()=>{});
   };
-  $("#xpGive").onclick=()=>finish(total());
-  $("#xpNone").onclick=()=>finish(0);
-  showModal();
+  draw();showModal();
 }
-/* Locked-down upgrade mode: additions only, budget is XP, nothing else can be edited. */
-function openSpendXP(charId){
+/* Advancement: 20 CP per skill level or +5 HP; traits and abilities at their listed cost.
+   Equipment is NOT bought here — after the warband is built, gear costs credits. */
+function openSpendCP(charId){
   const orig=activeWB().characters.find(x=>x.id===charId); if(!orig)return;
-  const avail=orig.xp||0;
-  if(avail<=0){toast("No XP to spend yet");return;}
-  const baseCost=charCost(orig);
-  let draft=JSON.parse(JSON.stringify(orig));
-  const spent=()=>charCost(draft)-baseCost;
-  const left=()=>avail-spent();
+  const w=activeWB();
+  const avail=()=>cpOf(orig)+(w.cp||0);
+  if(avail()<=0){toast("No campaign points yet");return;}
+  let draft=JSON.parse(JSON.stringify(orig)), spent=0;
+  const left=()=>avail()-spent;
   const body=$("#modalBody");
   const draw=(filter)=>{
-    const f=normLabel(filter||"");
-    const rem=left();
-    const skillRow=SKILLS.map(([k,label])=>{
-      const v=draft.skills[k], maxed=v>=10, short=RULES.skillStep-rem;
-      const off=maxed||short>0;
-      return `<button class="stylechip${off?" unaffordable":""}" data-sk="${k}"${off?` disabled title="${maxed?"Already at 10":"Needs "+short+" more XP"}"`:""}>${k} ${v}${maxed?"":"→"+(v+1)} <b class="mono">${maxed?"max":RULES.skillStep}</b>${!maxed&&short>0?`<span class="short">+${short}</span>`:""}</button>`;
+    const f=normLabel(filter||""), rem=left();
+    const skillRow=SKILLS.map(([k])=>{
+      const v=draft.skills[k], maxed=v>=10, short=CP_COSTS.skill-rem, off=maxed||short>0;
+      return `<button class="stylechip${off&&!maxed?" unaffordable":""}" data-sk="${k}"${off?` disabled title="${maxed?"Already at 10":"Needs "+short+" more"}"`:""}>${k} ${v}${maxed?"":"→"+(v+1)} <b class="mono">${maxed?"max":CP_COSTS.skill}</b>${!maxed&&short>0?`<span class="short">+${short}</span>`:""}</button>`;
     }).join("");
-    // everything is listed — what you can't afford yet is greyed out, so you can save toward it
-    const gearRows=[["trait","traits"],["ability","abilities"],["weapon","weapons"],["armour","armour"],["item","items"]].map(([cat,field])=>{
-      const list=Object.values(CAT[cat]).filter(o=>!f||normLabel(o.name).includes(f));
+    const hpShort=CP_COSTS.hp-rem;
+    const hpChip=`<button class="stylechip${hpShort>0?" unaffordable":""}" data-hp="1"${hpShort>0?` disabled title="Needs ${hpShort} more"`:""}>+${CP_COSTS.hpStep} HP <b class="mono">${CP_COSTS.hp}</b>${hpShort>0?`<span class="short">+${hpShort}</span>`:""}</button>`;
+    const rows=[["trait","traits"],["ability","abilities"]].map(([cat,field])=>{
+      const list=Object.values(CAT[cat]).filter(o=>(!f||normLabel(o.name).includes(f))&&!(draft[field]||[]).includes(o.id));
       if(!list.length)return "";
-      return `<div class="eyebrow" style="margin:10px 0 6px">${cat[0].toUpperCase()+cat.slice(1)}s</div>
-        <div class="chips-row">${list.slice(0,60).map(o=>{
-          const short=o.cost-rem;
-          return `<button class="stylechip${short>0?" unaffordable":""}" data-buy="${cat}|${o.id}"${short>0?` disabled title="Needs ${short} more XP"`:""}>${esc(o.name)} <b class="mono">${o.cost>=0?"+":""}${o.cost}</b>${short>0?`<span class="short">+${short}</span>`:""}</button>`;
-        }).join("")}</div>`;
+      return `<div class="eyebrow" style="margin:10px 0 6px">${cat==="trait"?"Traits":"Abilities"}</div>
+        <div class="chips-row">${list.slice(0,60).map(o=>{const short=o.cost-rem;
+          return `<button class="stylechip${short>0?" unaffordable":""}" data-buy="${cat}|${o.id}"${short>0?` disabled title="Needs ${short} more"`:""}>${esc(o.name)} <b class="mono">${o.cost>=0?"+":""}${o.cost}</b>${short>0?`<span class="short">+${short}</span>`:""}</button>`;}).join("")}</div>`;
     }).join("");
     const added=[];
     SKILLS.forEach(([k])=>{if(draft.skills[k]>orig.skills[k])added.push(k+" "+orig.skills[k]+"→"+draft.skills[k]);});
     if(draft.hp>orig.hp)added.push("+"+(draft.hp-orig.hp)+" HP");
-    [["trait","traits"],["ability","abilities"]].forEach(([cat,field])=>{
-      (draft[field]||[]).forEach((id,i)=>{if((orig[field]||[]).filter(x=>x===id).length<=(draft[field]||[]).slice(0,i+1).filter(x=>x===id).length-1||!(orig[field]||[]).includes(id)){if(CAT[cat][id]&&!added.includes(CAT[cat][id].name))added.push(CAT[cat][id].name);}});
-    });
-    [["weapon","weapons"],["armour","armour"],["item","items"]].forEach(([cat,field])=>{
-      (draft[field]||[]).forEach(e=>{const o0=(orig[field]||[]).find(x=>x.id===e.id);const d=(e.qty||1)-((o0&&o0.qty)||0);if(d>0&&CAT[cat][e.id])added.push(CAT[cat][e.id].name+(d>1?" ×"+d:""));});
-    });
+    ["traits","abilities"].forEach(fld=>{const cat=fld==="traits"?"trait":"ability";
+      (draft[fld]||[]).forEach(id=>{if(!(orig[fld]||[]).includes(id)&&CAT[cat][id])added.push(CAT[cat][id].name);});});
     body.innerHTML=`
-      <h3>⭐ Spend XP — ${esc(orig.name||"Unnamed")}</h3>
-      <p class="lead">Only additions here — nothing else about them can be changed. Every point spent raises what they cost to field.</p>
-      <div class="xp-bar"><span>XP left</span><b class="mono ${rem<=0?"spent":""}">${rem}</b><span class="none-note" style="font-style:normal;margin-left:auto">${baseCost} → ${charCost(draft)} pts</span></div>
+      <h3>Advance ${esc(orig.name||"Unnamed")}</h3>
+      <p class="lead">Additions only — nothing else about them can be changed here. ${CP_COSTS.skill} campaign points buys one skill level or +${CP_COSTS.hpStep} hit-points; traits and abilities cost their listed points. Equipment is bought with credits, not these.</p>
+      <div class="xp-bar"><span>Points left</span><b class="mono ${rem<=0?"spent":""}">${rem}</b><span class="none-note" style="font-style:normal;margin-left:auto">${esc(orig.name||"")}: ${cpOf(orig)} · warband pool: ${w.cp||0}</span></div>
       ${added.length?`<div class="camp-box" style="margin:10px 0"><div class="prep-h">Buying</div><div>${added.map(esc).join(" · ")}</div></div>`:""}
-      <div class="eyebrow" style="margin:12px 0 6px">Skills</div>
+      <div class="eyebrow" style="margin:12px 0 6px">Skills &amp; hit-points</div>
       <div class="chips-row">${skillRow}</div>
-      <div class="chips-row" style="margin-top:8px">${(()=>{const short=RULES.hpPts-rem;
-        return `<button class="stylechip${short>0?" unaffordable":""}" data-hp="1"${short>0?` disabled title="Needs ${short} more XP"`:""}>+2 HP <b class="mono">${RULES.hpPts}</b>${short>0?`<span class="short">+${short}</span>`:""}</button>`;})()}</div>
-      <div class="field" style="margin:12px 0 4px"><label>Search gear &amp; traits</label><input class="input" id="xpSearch" value="${esc(filter||"")}" placeholder="e.g. brave, plate, pistol"></div>
-      <div style="max-height:34vh;overflow:auto">${gearRows||`<div class="ng-note">Nothing matches that search.</div>`}</div>
-      <div class="none-note" style="font-style:normal;margin-top:6px">Greyed-out entries cost more than you have — unspent XP carries over, so you can save for them.</div>
+      <div class="chips-row" style="margin-top:8px">${hpChip}</div>
+      <div class="field" style="margin:12px 0 4px"><label>Search traits &amp; abilities</label><input class="input" id="cpSearch" value="${esc(filter||"")}" placeholder="e.g. brave, inspire"></div>
+      <div style="max-height:32vh;overflow:auto">${rows||`<div class="ng-note">Nothing matches.</div>`}</div>
+      <div class="none-note" style="font-style:normal;margin-top:6px">Greyed-out entries cost more than you have — unspent points carry over between games.</div>
       <div class="modal-actions">
-        <button class="btn primary sm" id="xpConfirm"${spent()>0?"":" disabled"}>Confirm — spend ${spent()} XP</button>
-        <button class="btn ghost sm" id="xpReset">Start over</button>
-        <button class="btn ghost sm" id="xpCancel" style="margin-left:auto">Cancel</button>
+        <button class="btn primary sm" id="cpConfirm"${spent>0?"":" disabled"}>Confirm — spend ${spent}</button>
+        <button class="btn ghost sm" id="cpReset">Start over</button>
+        <button class="btn ghost sm" id="cpCancel" style="margin-left:auto">Cancel</button>
       </div>`;
-    const si=$("#xpSearch");
-    if(si)si.oninput=e=>{const v=e.target.value;draw(v);const n=$("#xpSearch");if(n){n.focus();n.setSelectionRange(v.length,v.length);}};
-    body.querySelectorAll("[data-sk]").forEach(b=>b.onclick=()=>{const k=b.dataset.sk;if(draft.skills[k]<10&&RULES.skillStep<=left()){draft.skills[k]++;draw(filter);}});
-    body.querySelectorAll("[data-hp]").forEach(b=>b.onclick=()=>{if(RULES.hpPts<=left()){draft.hp+=RULES.hpStep;draw(filter);}});
+    const si=$("#cpSearch");
+    if(si)si.oninput=e=>{const v=e.target.value;draw(v);const n=$("#cpSearch");if(n){n.focus();n.setSelectionRange(v.length,v.length);}};
+    body.querySelectorAll("[data-sk]").forEach(b=>b.onclick=()=>{const k=b.dataset.sk;
+      if(draft.skills[k]<10&&CP_COSTS.skill<=left()){draft.skills[k]++;spent+=CP_COSTS.skill;draw(filter);}});
+    body.querySelectorAll("[data-hp]").forEach(b=>b.onclick=()=>{
+      if(CP_COSTS.hp<=left()){draft.hp+=CP_COSTS.hpStep;spent+=CP_COSTS.hp;draw(filter);}});
     body.querySelectorAll("[data-buy]").forEach(b=>b.onclick=()=>{
-      const[cat,id]=b.dataset.buy.split("|");const o=CAT[cat][id];if(!o||o.cost>left())return;
-      if(cat==="trait"||cat==="ability"){const fld=cat==="trait"?"traits":"abilities";if(!draft[fld].includes(id))draft[fld].push(id);}
-      else{const fld=cat==="weapon"?"weapons":cat==="armour"?"armour":"items";const ex=draft[fld].find(e=>e.id===id);if(ex)ex.qty=(ex.qty||1)+1;else draft[fld].push({id,qty:1});}
-      draw(filter);
-    });
-    $("#xpReset").onclick=()=>{draft=JSON.parse(JSON.stringify(orig));draw(filter);};
-    $("#xpCancel").onclick=closeModal;
-    $("#xpConfirm").onclick=()=>{
-      const cost=spent(); if(cost<=0)return;
-      ["skills","hp","traits","abilities","weapons","armour","items"].forEach(k=>{orig[k]=draft[k];});
-      orig.xp=avail-cost;
+      const[cat,id]=b.dataset.buy.split("|"),o=CAT[cat][id];
+      if(!o||o.cost>left())return;
+      const fld=cat==="trait"?"traits":"abilities";
+      if(!draft[fld].includes(id)){draft[fld].push(id);spent+=o.cost;draw(filter);}});
+    $("#cpReset").onclick=()=>{draft=JSON.parse(JSON.stringify(orig));spent=0;draw(filter);};
+    $("#cpCancel").onclick=closeModal;
+    $("#cpConfirm").onclick=()=>{
+      if(spent<=0)return;
+      // spend the character's own points first, then the warband pool
+      let owe=spent, own=Math.min(cpOf(orig),owe); owe-=own;
+      orig.cp=cpOf(orig)-own; if(owe>0)w.cp=Math.max(0,(w.cp||0)-owe);
+      ["skills","hp","traits","abilities"].forEach(k=>{orig[k]=draft[k];});
       save();closeModal();render();buildDossier();
-      toast("Spent "+cost+" XP — now "+charCost(orig)+" pts");
-      // growing into something new is worth a name
+      toast("Spent "+spent+" campaign points — now "+charCost(orig)+" pts");
       setTimeout(()=>openEarnedNames([{charId:orig.id,name:orig.name,
-        reason:(orig.name||"They")+" grew stronger — "+added.join(", ")+" ("+rankOf(orig.xpTotal||0)+")"}],"glory",
-        ()=>buildDossier()),300);
+        reason:(orig.name||"They")+" grew stronger — "+added.join(", ")}],"glory",()=>buildDossier()),300);
     };
     showModal();
   };
   draw("");
 }
+/* Equipment after warband creation costs credits, per the rules. */
+function openBuyGear(charId){
+  const w=activeWB(), c=w.characters.find(x=>x.id===charId); if(!c)return;
+  const body=$("#modalBody");
+  const draw=(filter)=>{
+    const f=normLabel(filter||""), purse=creditsOf(w);
+    const haggle=hasTrait(c,"Haggle");
+    const rows=[["weapon","weapons"],["armour","armour"],["item","items"]].map(([cat,field])=>{
+      const list=Object.values(CAT[cat]).filter(o=>!f||normLabel(o.name).includes(f));
+      if(!list.length)return "";
+      return `<div class="eyebrow" style="margin:10px 0 6px">${cat==="weapon"?"Weapons":cat==="armour"?"Armour":"Items"}</div>
+        <div class="chips-row">${list.slice(0,60).map(o=>{const short=o.cost-purse;
+          return `<button class="stylechip${short>0?" unaffordable":""}" data-cbuy="${cat}|${o.id}"${short>0?` disabled title="Needs ${short} more credits"`:""}>${esc(o.name)} <b class="mono">${o.cost}cr</b>${short>0?`<span class="short">+${short}</span>`:""}</button>`;}).join("")}</div>`;
+    }).join("");
+    body.innerHTML=`
+      <h3>Buy equipment — ${esc(c.name||"Unnamed")}</h3>
+      <p class="lead">Once a warband is built, gear is paid for in credits rather than points. Anything bought still adds its cost to what this character is worth on the table.</p>
+      <div class="xp-bar"><span>Credits</span><b class="mono ${purse<=0?"spent":""}">${purse}</b>
+        <span class="none-note" style="font-style:normal;margin-left:auto">${haggle?"Haggle: roll to knock the price down":"warband purse"}</span></div>
+      <div class="field" style="margin:12px 0 4px"><label>Search</label><input class="input" id="cgSearch" value="${esc(filter||"")}" placeholder="e.g. pistol, plate"></div>
+      <div style="max-height:38vh;overflow:auto">${rows||`<div class="ng-note">Nothing matches.</div>`}</div>
+      <div class="modal-actions">
+        <button class="btn ghost sm" id="cgConvert">Convert points → credits (2:1)</button>
+        <button class="btn ghost sm" id="cgClose" style="margin-left:auto">Close</button>
+      </div>`;
+    const si=$("#cgSearch");
+    if(si)si.oninput=e=>{const v=e.target.value;draw(v);const n=$("#cgSearch");if(n){n.focus();n.setSelectionRange(v.length,v.length);}};
+    body.querySelectorAll("[data-cbuy]").forEach(b=>b.onclick=()=>{
+      const[cat,id]=b.dataset.cbuy.split("|"),o=CAT[cat][id]; if(!o)return;
+      let price=o.cost;
+      if(haggle){const r=1+Math.floor(Math.random()*6);
+        const off=r<=3?(1+Math.floor(Math.random()*4)):(1+Math.floor(Math.random()*10));
+        price=Math.max(1,price-off); toast("Haggled "+(o.cost-price)+" credits off");}
+      if(price>creditsOf(w)){toast("Not enough credits");return;}
+      const fld=cat==="weapon"?"weapons":cat==="armour"?"armour":"items";
+      c[fld]=Array.isArray(c[fld])?c[fld]:[];
+      const ex=c[fld].find(e=>e.id===id); if(ex)ex.qty=(ex.qty||1)+1; else c[fld].push({id,qty:1});
+      w.credits=creditsOf(w)-price; save();render();draw(filter);
+      toast("Bought "+o.name+" for "+price+" credits");
+    });
+    $("#cgConvert").onclick=()=>openConvertCP(charId);
+    $("#cgClose").onclick=closeModal;
+    showModal();
+  };
+  draw("");
+}
+function openConvertCP(backToChar){
+  const w=activeWB(), body=$("#modalBody");
+  const chars=w.characters.filter(c=>cpOf(c)>0);
+  const merc=(c)=>hasTrait(c,"Mercenary");   // Mercenary converts at 1:1
+  body.innerHTML=`
+    <h3>Convert campaign points to credits</h3>
+    <p class="lead">Campaign points become credits at two to one. A Mercenary trades theirs at one to one.</p>
+    ${(w.cp||0)>0?`<div class="wb-item"><div class="wbi-main" style="cursor:default"><div class="wbi-name">Warband pool</div>
+      <div class="wbi-sub">${w.cp} points → ${Math.floor((w.cp||0)/2)} credits</div></div>
+      <button class="linkbtn" data-conv="pool">Convert all</button></div>`:""}
+    ${chars.map(c=>`<div class="wb-item"><div class="wbi-main" style="cursor:default"><div class="wbi-name">${esc(c.name||"Unnamed")}${merc(c)?" <small>(Mercenary 1:1)</small>":""}</div>
+      <div class="wbi-sub">${cpOf(c)} points → ${merc(c)?cpOf(c):Math.floor(cpOf(c)/2)} credits</div></div>
+      <button class="linkbtn" data-conv="${c.id}">Convert all</button></div>`).join("")}
+    ${!chars.length&&!(w.cp||0)?`<div class="ng-note">No campaign points to convert.</div>`:""}
+    <div class="modal-actions"><button class="btn ghost sm" id="cvBack" style="margin-left:auto">Back</button></div>`;
+  body.querySelectorAll("[data-conv]").forEach(b=>b.onclick=()=>{
+    const k=b.dataset.conv;
+    if(k==="pool"){const cr=Math.floor((w.cp||0)/2);w.credits=creditsOf(w)+cr;w.cp=0;toast("+"+cr+" credits");}
+    else{const c=w.characters.find(x=>x.id===k);if(c){const cr=merc(c)?cpOf(c):Math.floor(cpOf(c)/2);w.credits=creditsOf(w)+cr;c.cp=0;toast("+"+cr+" credits");}}
+    save();render();openConvertCP(backToChar);
+  });
+  $("#cvBack").onclick=()=>{if(backToChar)openBuyGear(backToChar);else closeModal();};
+  showModal();
+}
 function renderXPGroup(c){
   const g=document.createElement("div");g.className="dgroup";
-  const total=c.xpTotal||0, rank=rankOf(total), nx=nextRank(total);
-  g.innerHTML=`<div class="ghead"><span class="eyebrow">Experience</span><span class="rule"></span><span class="gcost mono">${c.xp||0} XP</span></div>
+  const w=activeWB(), total=cpTotalOf(c), rank=rankOf(total), nx=nextRank(total);
+  g.innerHTML=`<div class="ghead"><span class="eyebrow">Campaign</span><span class="rule"></span><span class="gcost mono">${cpOf(c)} pts</span></div>
     <div class="camp-box" style="margin-bottom:8px">
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
         <b class="rank-badge">${esc(rank)}</b>
-        <span class="none-note" style="font-style:normal">${total} XP earned all told${nx?` · ${nx.at-total} to ${esc(nx.name)}`:" · highest rank"}</span>
+        <span class="none-note" style="font-style:normal">${total} earned all told${nx?` · ${nx.at-total} to ${esc(nx.name)}`:" · highest rank"}</span>
       </div>
+      <div class="none-note" style="font-style:normal;margin-top:5px">Warband pool: <b>${w.cp||0}</b> points · <b>${creditsOf(w)}</b> credits</div>
       <div class="modal-actions" style="margin-top:9px">
-        <button class="btn sm" id="dxpSpend"${(c.xp||0)>0?"":" disabled"}>⭐ Spend ${c.xp||0} XP</button>
-        <button class="linkbtn" id="dxpAdd" style="margin-left:auto">+1 XP</button>
+        <button class="btn sm" id="dxpSpend"${(cpOf(c)+(w.cp||0))>0?"":" disabled"}>⭐ Advance</button>
+        <button class="btn sm ghost" id="dxpGear">🛒 Buy gear</button>
+        <button class="linkbtn" id="dxpAdd" style="margin-left:auto">+1</button>
       </div>
-      <div class="none-note" style="font-style:normal;margin-top:6px">1 XP buys 1 point of upgrades — and raises what they cost to field.</div>
     </div>`;
   setTimeout(()=>{
-    const s=document.getElementById("dxpSpend");if(s)s.onclick=()=>openSpendXP(c.id);
-    const a=document.getElementById("dxpAdd");if(a)a.onclick=()=>{grantXP([c],1);save();buildDossier();render();toast("+1 XP");};
+    const s=document.getElementById("dxpSpend");if(s)s.onclick=()=>openSpendCP(c.id);
+    const gg=document.getElementById("dxpGear");if(gg)gg.onclick=()=>openBuyGear(c.id);
+    const a=document.getElementById("dxpAdd");if(a)a.onclick=()=>{grantCP([c],1);save();buildDossier();render();toast("+1 campaign point");};
   },0);
   return g;
 }
@@ -2979,29 +3098,41 @@ function openStash(){
 /* ---- lasting injuries ----
    The AI writes a table of scenario-specific injuries WHEN THE SCENARIO IS GENERATED, so no AI
    is needed at the table. Rolled when a character who went down reaches camp. */
-const FALLBACK_INJURIES=[
-  {name:"Cracked ribs",note:"Painful, but nothing that won't mend.",cause:"",permanent:false,effectNote:"No lasting harm.",skills:{},hp:0,addTraits:[]},
-  {name:"Deep scar",note:"A wound that closes ugly.",cause:"",permanent:true,effectNote:"Cosmetic — a mark of what they survived.",skills:{},hp:0,addTraits:[]},
-  {name:"Ruined eye",note:"Depth perception never quite returns.",cause:"",permanent:true,effectNote:"",skills:{AW:-1},hp:0,addTraits:[]},
-  {name:"Shattered leg",note:"Set badly, and it shows in every step.",cause:"",permanent:true,effectNote:"Moves 5cm instead of 10cm.",skills:{},hp:0,addTraits:[]},
-  {name:"Mangled arm",note:"The limb never grips properly again.",cause:"",permanent:true,effectNote:"May only use one-handed weapons.",skills:{},hp:-2,addTraits:[]},
-  {name:"Slow to rise",note:"Something in them broke that day.",cause:"",permanent:true,effectNote:"",skills:{A:-1},hp:0,addTraits:[]},
-  {name:"Hard lesson",note:"They walk away colder than before.",cause:"",permanent:false,effectNote:"No lasting harm.",skills:{},hp:0,addTraits:[]}
+/* Where the rulebook already has a trait for the injury, USE IT — Armless, Slow, Coward and
+   the rest are real rules with real (negative) point costs, so a maimed veteran also gets
+   cheaper to field. Only fall back to a skill shift or a written note when nothing fits. */
+/* The rulebook's own 1D8 character injury table. The AI's scenario injuries are used only for
+   FLAVOUR (a name and a line of prose that fits what actually happened) — the mechanics always
+   come from here, so a campaign stays legal. */
+const INJURY_TABLE=[
+  {roll:1,name:"Complete recovery",note:"A swift recovery from their wounds — they fight as normal next game.",permanent:false,heals:true,effectNote:"",skills:{},hp:0,addTraits:[],miss:0,games:0},
+  {roll:2,name:"Out of action",note:"Alive but bloodied. They take no part in the next game, then fight as normal.",permanent:false,heals:true,effectNote:"Misses the next game.",skills:{},hp:0,addTraits:[],miss:1,games:0},
+  {roll:3,name:"Shaken",note:"Their brush with death has left them traumatised.",permanent:true,heals:true,effectNote:"-1 (P) when making break tests, in all future games.",skills:{},hp:0,addTraits:[],miss:0,games:0,breakP:-1},
+  {roll:4,name:"Life long wounds",note:"They will never fully recover from this.",permanent:true,heals:true,effectNote:"Hit-points permanently reduced by 25%.",skills:{},hp:0,addTraits:[],miss:0,games:0,hpPct:-25},
+  {roll:5,name:"Shattered hand",note:"They narrowly avoided losing the limb.",permanent:false,heals:true,effectNote:"May only use a single one-handed weapon.",skills:{},hp:0,addTraits:[],miss:0,games:"1D4"},
+  {roll:6,name:"Crushed leg",note:"They limp onto the battlefield, the bones barely set.",permanent:true,heals:true,effectNote:"-1D4 Agility while it mends, and a permanent -3cm speed.",skills:{},hp:0,addTraits:[],miss:0,games:"1D4",agility:"1D4",speed:-3},
+  {roll:7,name:"Brain damage",note:"A vicious scar runs the length of their skull — a miracle they're alive.",permanent:true,heals:true,effectNote:"Permanent -2 to (AW) and (P).",skills:{AW:-2,P:-2},hp:0,addTraits:[],miss:0,games:0},
+  {roll:8,name:"Death",note:"They're dead, just dead. Divide their possessions amongst the warband and find a replacement.",permanent:true,heals:false,dead:true,effectNote:"",skills:{},hp:0,addTraits:[],miss:0,games:0}
 ];
+const d=(n)=>1+Math.floor(Math.random()*n);
+function rollDuration(v){return typeof v==="string"&&/^1D(\d+)$/i.test(v)?d(parseInt(v.slice(2),10)):(+v||0);}
+function injuryTraitsForAI(){
+  return Object.values(CAT.trait).filter(t=>t.cost<0).map(t=>t.name+" ("+t.cost+")").join(", ");
+}
 function coerceInjury(x){
   if(!x||typeof x!=="object")return null;
-  const sk={};["A","F","S","AW","P"].forEach(k=>{const v=Math.round(+((x.skills||{})[k]));if(isFinite(v)&&v)sk[k]=Math.max(-3,Math.min(3,v));});
   const n=String(x.name||"").slice(0,50); if(!n)return null;
-  return {name:n,note:String(x.note||"").slice(0,180),cause:String(x.cause||"").toLowerCase().slice(0,40),
-    permanent:x.permanent!==false,effectNote:String(x.effectNote||"").slice(0,120),
-    skills:sk,hp:Math.max(-6,Math.min(0,Math.round(+x.hp)||0)),
-    addTraits:(Array.isArray(x.addTraits)?x.addTraits:[]).map(t=>String(t).slice(0,40)).slice(0,3)};
+  return {name:n,note:String(x.note||"").slice(0,180),cause:String(x.cause||"").toLowerCase().slice(0,40)};
 }
-function injuryTableFor(scn){
-  const t=(scn&&Array.isArray(scn.injuries)?scn.injuries:[]).map(coerceInjury).filter(Boolean);
-  return t.length?t:FALLBACK_INJURIES.slice();
+// scenario-written flavour, matched to what put them down
+function flavourFor(scn,cause){
+  const list=(scn&&Array.isArray(scn.injuries)?scn.injuries:[]).map(coerceInjury).filter(Boolean);
+  if(!list.length)return null;
+  const c=normLabel(cause);
+  const hit=c?list.filter(x=>x.cause&&(normLabel(x.cause).includes(c)||c.includes(normLabel(x.cause)))):[];
+  const pool=hit.length?hit:list;
+  return pool[Math.floor(Math.random()*pool.length)];
 }
-// what could plausibly have put someone down in this scenario
 function injuryCauses(scn){
   const out=[];
   const add=v=>{const s=String(v||"").trim();if(s&&!out.some(x=>normLabel(x)===normLabel(s))&&out.length<8)out.push(s.slice(0,28));};
@@ -3010,58 +3141,64 @@ function injuryCauses(scn){
   ((scn&&scn.events)||[]).forEach(e=>add(e.title));
   return out;
 }
-function rollInjury(table,cause){
-  const c=normLabel(cause);
-  let pool=c?table.filter(x=>x.cause&&(normLabel(x.cause).includes(c)||c.includes(normLabel(x.cause)))):[];
-  if(!pool.length)pool=table;
-  return pool[Math.floor(Math.random()*pool.length)];
-}
-function applyInjury(c,inj,scnTitle){
+function injuryTableFor(scn){return (scn&&Array.isArray(scn.injuries))?scn.injuries:[];}
+function applyInjury(c,entry,flavour,scnTitle){
+  if(entry.dead){c._died=true;return;}
+  const games=rollDuration(entry.games), ag=entry.agility?d(4):0;
+  const rec={roll:entry.roll,name:(flavour&&flavour.name)||entry.name,ruleName:entry.name,
+    note:(flavour&&flavour.note)||entry.note,effectNote:entry.effectNote,
+    permanent:!!entry.permanent,from:scnTitle||"",at:Date.now(),
+    games:games,miss:entry.miss||0,agility:ag,speed:entry.speed||0,breakP:entry.breakP||0,served:0};
   c.injuries=c.injuries||[];
-  c.injuries.push({name:inj.name,note:inj.note,effectNote:inj.effectNote,permanent:inj.permanent!==false,from:scnTitle||"",at:Date.now()});
-  Object.keys(inj.skills||{}).forEach(k=>{if(typeof c.skills[k]==="number")c.skills[k]=Math.max(1,Math.min(10,c.skills[k]+inj.skills[k]));});
-  if(inj.hp){let hp=c.hp+inj.hp;if(hp<2)hp=2;if(hp%2)hp+=1;c.hp=hp;}
-  (inj.addTraits||[]).forEach(n=>{const o=findCat("trait",n);if(o&&!c.traits.includes(o.id))c.traits.push(o.id);});
+  c.injuries.push(rec);
+  Object.keys(entry.skills||{}).forEach(k=>{if(typeof c.skills[k]==="number")c.skills[k]=Math.max(1,Math.min(10,c.skills[k]+entry.skills[k]));});
+  if(entry.hpPct){const max=c.hp;c.hp=Math.max(2,Math.round(max*(1+entry.hpPct/100)/2)*2);}
+  (entry.addTraits||[]).forEach(n=>{const o=findCat("trait",n);if(o&&!c.traits.includes(o.id))c.traits.push(o.id);});
   const max=c.hp*memberCount(c); if(typeof c.curHP==="number"&&c.curHP>max)c.curHP=max;
 }
 function openInjuryRoll(c){
-  const p=c.pendingInjury||{};
-  const table=Array.isArray(p.table)&&p.table.length?p.table.map(coerceInjury).filter(Boolean):FALLBACK_INJURIES.slice();
-  const causes=Array.isArray(p.causes)?p.causes:[];
+  const p=c.pendingInjury||{}, causes=Array.isArray(p.causes)?p.causes:[];
   const body=$("#modalBody");
   const draw=cause=>{
-    const inj=rollInjury(table,cause);
+    const entry=INJURY_TABLE[d(8)-1];
+    const flav=flavourFor({injuries:p.table||[]},cause);
+    const title=(flav&&flav.name)||entry.name;
     const eff=[];
-    Object.keys(inj.skills||{}).forEach(k=>eff.push((inj.skills[k]>0?"+":"")+inj.skills[k]+" "+k));
-    if(inj.hp)eff.push(inj.hp+" HP");
-    (inj.addTraits||[]).forEach(t=>eff.push("gains "+t));
+    Object.keys(entry.skills||{}).forEach(k=>eff.push((entry.skills[k]>0?"+":"")+entry.skills[k]+" "+k));
+    if(entry.hpPct)eff.push(entry.hpPct+"% hit-points");
+    if(entry.speed)eff.push(entry.speed+"cm speed (permanent)");
+    if(entry.agility)eff.push("-1D4 Agility while it mends");
+    if(entry.miss)eff.push("misses the next game");
+    if(entry.games)eff.push("lasts "+entry.games+" games");
     body.innerHTML=`
-      <h3>${esc(inj.name)}</h3>
-      <p class="lead">${esc(inj.note||"")}</p>
+      <h3>${esc(title)}</h3>
+      <p class="lead">${esc((flav&&flav.note)||entry.note)}</p>
       <div class="camp-box" style="border-color:color-mix(in srgb,var(--danger) 45%,var(--line));background:var(--danger-bg)">
-        <div class="prep-h" style="color:var(--danger)">${inj.permanent!==false?"Permanent — this never heals":"Temporary — rest will mend it"}</div>
+        <div class="prep-h" style="color:var(--danger)">1D8 → ${entry.roll} · ${esc(entry.name)}${entry.dead?"":entry.permanent?" · permanent":" · temporary"}</div>
         ${eff.length?`<div style="margin-bottom:6px"><b>${esc(eff.join(" · "))}</b></div>`:""}
-        ${inj.effectNote?`<div class="pick-when">⏱ ${esc(inj.effectNote)}</div>`:""}
+        ${entry.effectNote?`<div class="pick-when">⏱ ${esc(entry.effectNote)}</div>`:""}
       </div>
       <div class="modal-actions">
-        <button class="btn primary sm" id="injTake">${inj.permanent!==false?"They carry it":"Accept"}</button>
+        <button class="btn primary sm" id="injTake">${entry.dead?"They're gone":"They carry it"}</button>
         <button class="btn ghost sm" id="injReroll">↻ Roll again</button>
-        <button class="btn ghost sm" id="injSkip" style="margin-left:auto">No lasting harm</button>
+        <button class="btn ghost sm" id="injSkip" style="margin-left:auto">Skip</button>
       </div>`;
     $("#injReroll").onclick=()=>draw(cause);
     $("#injSkip").onclick=()=>{delete c.pendingInjury;save();closeModal();render();toast("They walked it off");};
     $("#injTake").onclick=()=>{
-      const title=(c.pendingInjury||{}).title||"";
-      if(inj.permanent!==false)applyInjury(c,inj,title);
-      delete c.pendingInjury;save();closeModal();render();
-      toast(inj.permanent!==false?("“"+inj.name+"” will stay with them"):"Rest will mend it");
-      if(inj.permanent!==false)setTimeout(()=>openEarnedNames([{charId:c.id,name:c.name,reason:(c.name||"They")+" — "+inj.name+(inj.effectNote?" ("+inj.effectNote+")":"")}],"scar"),300);
+      const t=(c.pendingInjury||{}).title||"";
+      applyInjury(c,entry,flav,t);
+      delete c.pendingInjury;
+      if(c._died){delete c._died;save();closeModal();openDeathRites(c.id,title);return;}
+      save();closeModal();render();
+      toast("“"+title+"” — "+(entry.permanent?"it stays with them":"it will mend"));
+      setTimeout(()=>openEarnedNames([{charId:c.id,name:c.name,reason:(c.name||"They")+" — "+title+(entry.effectNote?" ("+entry.effectNote+")":"")}],"scar"),300);
     };
     showModal();
   };
   body.innerHTML=`
     <h3>What put ${esc(c.name||"them")} down?</h3>
-    <p class="lead">Pick what took them out — the injury is drawn from what this quest could actually do to a person.</p>
+    <p class="lead">Pick what took them out — the 1D8 injury roll decides what it cost them, and this scenario's own dangers give it a name.</p>
     <div class="chips-row">${causes.map(x=>`<button class="stylechip" data-cause="${esc(x)}">${esc(x)}</button>`).join("")}
       <button class="stylechip" data-cause="">Something else</button></div>
     <div class="modal-actions"><button class="btn ghost sm" id="injLater" style="margin-left:auto">Decide later</button></div>`;
@@ -3069,14 +3206,110 @@ function openInjuryRoll(c){
   $("#injLater").onclick=closeModal;
   showModal();
 }
+/* Death: possessions are divided amongst the survivors, and a replacement doesn't pay the
+   usual 10-point joining cost. */
+function openDeathRites(charId,injName){
+  const w=activeWB(), c=w.characters.find(x=>x.id===charId); if(!c)return;
+  const gear=[].concat((c.weapons||[]).map(e=>["weapon","weapons",e]),(c.armour||[]).map(e=>["armour","armour",e]),(c.items||[]).map(e=>["item","items",e]));
+  const worth=gearPts(c.weapons||[],"weapon")+gearPts(c.armour||[],"armour")+gearPts(c.items||[],"item");
+  const others=w.characters.filter(x=>x.id!==c.id);
+  const body=$("#modalBody");
+  body.innerHTML=`
+    <h3>${esc(c.name||"They")} is dead</h3>
+    <p class="lead">${esc(injName||"Killed in action")}. Divide their possessions amongst the warband — and remember, a replacement joins without paying the usual 10-point cost.</p>
+    ${gear.length?`<div class="camp-box" style="margin-bottom:10px"><div class="prep-h">They were carrying</div>
+      <div>${gear.map(([cat,f,e])=>esc((CAT[cat][e.id]||{}).name||"?")+(e.qty>1?" ×"+e.qty:"")).join(" · ")}</div>
+      <div class="none-note" style="font-style:normal;margin-top:5px">Worth ${worth} credits if sold.</div></div>`:`<div class="ng-note">They carried nothing.</div>`}
+    ${gear.length&&others.length?`<div class="eyebrow" style="margin:10px 0 6px">Hand everything to…</div>
+      <div class="chips-row">${others.map(o=>`<button class="stylechip" data-heir="${o.id}">${esc(o.name||"Unnamed")}</button>`).join("")}</div>`:""}
+    <div class="modal-actions">
+      ${gear.length?`<button class="btn sm" id="drSell">Sell it all — +${worth} credits</button>`:""}
+      <button class="btn danger ghost sm" id="drBury" style="margin-left:auto">Bury them</button>
+    </div>`;
+  const finish=()=>{
+    w.characters=w.characters.filter(x=>x.id!==c.id);
+    if(curCharId===c.id)curCharId=null;
+    save();closeModal();render();toast(esc(c.name||"They")+" has fallen");
+  };
+  body.querySelectorAll("[data-heir]").forEach(b=>b.onclick=()=>{
+    const h=w.characters.find(x=>x.id===b.dataset.heir); if(!h)return;
+    [["weapons"],["armour"],["items"]].forEach(([f])=>{
+      h[f]=Array.isArray(h[f])?h[f]:[];
+      (c[f]||[]).forEach(e=>{const ex=h[f].find(x=>x.id===e.id);if(ex)ex.qty=(ex.qty||1)+(e.qty||1);else h[f].push({id:e.id,qty:e.qty||1});});
+    });
+    toast("Their gear passes to "+(h.name||"the warband"));
+    finish();
+  });
+  const sell=$("#drSell"); if(sell)sell.onclick=()=>{w.credits=creditsOf(w)+worth;toast("+"+worth+" credits");finish();};
+  $("#drBury").onclick=finish;
+  showModal();
+}
+/* Treatment between games: serve at least one game with the wound, then roll a D6 —
+   on 4+ the surgeons manage it and you pay 10 campaign points. */
+function canTreat(c,inj){return inj&&!inj.dead&&(inj.served||0)>=1;}
+function openTreatInjury(charId,idx){
+  const w=activeWB(), c=w.characters.find(x=>x.id===charId); if(!c)return;
+  const inj=(c.injuries||[])[idx]; if(!inj)return;
+  const purse=cpOf(c)+(w.cp||0);
+  const body=$("#modalBody");
+  body.innerHTML=`
+    <h3>Treat ${esc(inj.name)}</h3>
+    <p class="lead">${esc(c.name||"They")} has carried this through ${inj.served||0} game${(inj.served||0)===1?"":"s"}. The surgeons charge ${CP_COSTS.heal} campaign points <b>for the attempt</b>, win or lose. Roll a D6 — on <b>4 or more</b> they put it right; on less, the points are spent anyway and they go into the next fight still carrying it.</p>
+    <div class="camp-box"><div class="prep-h">${esc(inj.ruleName||inj.name)}</div>
+      ${inj.effectNote?`<div class="pick-when">⏱ ${esc(inj.effectNote)}</div>`:""}
+      <div class="none-note" style="font-style:normal;margin-top:6px">Available: ${purse} campaign points</div></div>
+    <div class="modal-actions">
+      <button class="btn primary sm" id="trRoll"${purse>=CP_COSTS.heal?"":" disabled"}>🎲 Roll for treatment</button>
+      <button class="btn ghost sm" id="trClose" style="margin-left:auto">Not now</button>
+    </div>`;
+  $("#trClose").onclick=closeModal;
+  $("#trRoll").onclick=()=>{
+    const r=d(6), ok=r>=4;
+    // the attempt is paid for either way — surgeons charge whether or not they succeed
+    let owe=CP_COSTS.heal, own=Math.min(cpOf(c),owe); owe-=own;
+    c.cp=cpOf(c)-own; if(owe>0)w.cp=Math.max(0,(w.cp||0)-owe);
+    if(ok){
+      // undo what the wound did
+      if(inj.speed)c.speedMod=(c.speedMod||0)-inj.speed;
+      if(inj.breakP)c.breakMod=(c.breakMod||0)-inj.breakP;
+      const entry=INJURY_TABLE.find(e=>e.roll===inj.roll);
+      if(entry){Object.keys(entry.skills||{}).forEach(k=>{if(typeof c.skills[k]==="number")c.skills[k]=Math.max(1,Math.min(10,c.skills[k]-entry.skills[k]));});
+        if(entry.hpPct)c.hp=Math.max(2,Math.round(c.hp/(1+entry.hpPct/100)/2)*2);}
+      c.injuries.splice(idx,1);
+      save();closeModal();render();
+      toast("Rolled "+r+" — treated. "+CP_COSTS.heal+" points spent.");
+      setTimeout(()=>openEarnedNames([{charId:c.id,name:c.name,reason:(c.name||"They")+" is whole again — "+inj.name+" is behind them"}],"recovered"),300);
+    }else{
+      inj.treatTried=(inj.treatTried||0)+1;save();closeModal();render();
+      toast("Rolled "+r+" — the treatment failed. "+CP_COSTS.heal+" points spent anyway.");
+    }
+  };
+  showModal();
+}
+// one game served, durations tick down, expired wounds mend on their own
+function tickInjuries(c){
+  let changed=false;
+  (c.injuries||[]).forEach(inj=>{inj.served=(inj.served||0)+1;changed=true;});
+  const before=(c.injuries||[]).length;
+  c.injuries=(c.injuries||[]).filter(inj=>{
+    if(!inj.games)return true;
+    return (inj.served||0)<inj.games;   // 1D4-game wounds mend once served
+  });
+  if((c.injuries||[]).length!==before)changed=true;
+  return changed;
+}
 /* ---- earned names ----
    A character who goes down, or who grows through hard-won experience, can take a new name.
    Works with no AI (the Realm has none at the table); the Claude app adds tailored suggestions. */
 const EPITHET_SCAR=["the Scarred","the Broken","One-Eye","the Limping","the Bled","Half-Face","the Marked","Deathless","the Ruined","Ashen","the Twice-Dead","Gravebound"];
 const EPITHET_GLORY=["the Feared","the Undying","the Iron","Blooded","the Merciless","the Bold","Grim","the Unbowed","the Butcher","the Relentless","the Vow-Keeper","Wolf-of-the-Line"];
 function baseName(n){const s=String(n||"").trim();if(!s)return "Unnamed";const cut=s.split(/\s+(?:the|of|von|de)\s+/i)[0];return cut.split(/\s+/).slice(0,2).join(" ")||s;}
+const EPITHET_MENDED=["the Mended","the Returned","Twice-Made","the Unbroken","the Restored","Whole Again"];
 function suggestEarnedNames(name,kind){
-  const pool=(kind==="glory"?EPITHET_GLORY:EPITHET_SCAR).slice(), base=baseName(name), out=[];
+  const base=baseName(name), out=[];
+  // a healed character can simply drop the epithet they were carrying
+  if(kind==="recovered"&&base!==String(name||"").trim())out.push(base);
+  const pool=(kind==="glory"?EPITHET_GLORY:kind==="recovered"?EPITHET_MENDED:EPITHET_SCAR).slice();
   while(out.length<4&&pool.length)out.push(base+" "+pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
   return out;
 }
@@ -3095,8 +3328,8 @@ function openEarnedNames(entries,kind,then){
         ${kind==="glory"?"":""}</div>
     </div>`).join("");
   body.innerHTML=`
-    <h3>${kind==="glory"?"A name worth earning":"They carry it with them"}</h3>
-    <p class="lead">${kind==="glory"?"Deeds change what people call you. Take a new name, or keep the old one.":"Surviving what put you down leaves a mark — and often a new name. Change it, or leave it be."}</p>
+    <h3>${kind==="glory"?"A name worth earning":kind==="recovered"?"Mended":"They carry it with them"}</h3>
+    <p class="lead">${kind==="glory"?"Deeds change what people call you. Take a new name, or keep the old one.":kind==="recovered"?"The wound is behind them — they may not answer to the old name any more.":"Surviving what put you down leaves a mark — and often a new name. Change it, or leave it be."}</p>
     ${rows}
     <div id="earnAI"></div>
     <div class="modal-actions">
@@ -3144,7 +3377,7 @@ function pendingQuest(scn){
   let snap=null;
   if(scn&&scn.battle){
     const mine=myCombatantsIn(scn);
-    if(mine.length)snap={scnId:scn.id,title:scn.title||"",combatants:mine,injuries:injuryTableFor(scn),causes:injuryCauses(scn),xpAwards:xpAwardsFor(scn)};
+    if(mine.length)snap={scnId:scn.id,title:scn.title||"",combatants:mine,injuries:injuryTableFor(scn),causes:injuryCauses(scn)};
   }
   if(!snap&&scn){try{const raw=localStorage.getItem("p28_quest_"+scn.id);if(raw)snap=JSON.parse(raw);}catch(e){}}
   if(!snap||questClaims().includes(snap.scnId))return null;
@@ -3170,6 +3403,7 @@ function claimQuest(snap,then){
       if(!c.pickups.some(p=>p.itemId===f.itemId&&p.scnId===f.scnId)){c.pickups.push(f);found++;}
     });
   });
+  (snap.combatants||[]).forEach(m=>{const c=w.characters.find(x=>x.id===m.charId);if(c)tickInjuries(c);});
   markClaimed(snap.scnId);
   const ok=save();
   render();
@@ -3185,7 +3419,7 @@ function claimQuest(snap,then){
     const c=w.characters.find(x=>x.id===fell[0].charId);
     if(c&&c.pendingInjury)openInjuryRoll(c);
   };
-  setTimeout(()=>openXPAwards(snap,took,rollInjuries),350);
+  setTimeout(()=>openCPAwards(snap,took,rollInjuries),350);
 }
 function returnToCamp(){
   const snap=pendingQuest(liveScenario);
@@ -3434,11 +3668,10 @@ CONNECT THE CHECKLIST TO THE MAP — this is important. Every map feature needs 
 SEARCHING IS RESOLVED BY THE APP: a feature with role "cache" gets a Search button in play. Any item whose mapLabel points at that cache stays hidden until someone searches it, and the app picks which one turns up (at random if several share one cache). So it is GOOD to hide 1-3 items in caches, and fine for two different items to share a cache — that creates a real gamble. An item that just lies in the open (like the main objective) should point at a non-cache feature instead, so it needs no searching.
 ITEMS ARE THE MOST IMPORTANT PLACE TO GET THIS RIGHT, AND THE EASIEST TO FORGET: every entry in "items" MUST carry BOTH a "mapLabel" (where on the table it is found — normally the cache it is hidden in) AND a "when". Do not leave an item's mapLabel empty; if it is not hidden in a cache, point it at whatever feature it lies on or beside. An item with no mapLabel is useless to the host because they cannot place it.
 EVERY item MUST have a "when" field: one short, concrete sentence saying WHEN OR WHERE it matters, naming the specific special rule, hazard, event or place it interacts with — e.g. "Wear it before entering the flooded lower level; cancels the Deep-pressure -1 Athletics penalty" rather than a vague "useful later". If an item counters something, that something must exist in specialRules, events or a hazard feature — never invent a rule the scenario doesn't have. Do the same for npcs where it helps ("when" = when/where it shows up).
-EXPERIENCE — write an "xpAwards" list of 3-5 things this warband could achieve here, each worth 1-3 XP: the main objective, a hard secondary goal, surviving, beating a named threat. Make them specific to THIS scenario ("Carry the Hadal Core off your edge", not "win"). Keep the total modest — 4-8 XP for a very good night.
-LASTING INJURIES — this is a campaign, and a character taken down may carry something out of it forever. Write an "injuries" table of 5-7 entries covering the ways THIS scenario can maim someone (its creatures, weapons, hazards and environment — venom here, crush wounds there, pressure or cold or fire). Each entry: "cause" (a short tag matching a threat in this scenario — an enemy name, a hazard, an event — so the right injury is drawn for what actually happened), "permanent" (true for something that never heals, false for a scare that mends), "effectNote" (a plain-language house rule the players enforce themselves, e.g. "Moves 5cm instead of 10cm" or "May only use one-handed weapons" — use "" when there is no rule), and optionally small mechanical changes: "skills" (e.g. {"AW":-1}, never worse than -3, only where it makes sense), "hp" (0 or a small negative even number), "addTraits" (existing trait names only). Include at least one entry that leaves NO lasting harm, and don't make every entry crippling — most fighters should walk away marked but able.
+LASTING INJURIES — when a character is taken down the players roll on the rulebook's own 1D8 injury table, so do NOT invent mechanics. Instead write an "injuries" list of 5-7 SCENARIO-FLAVOURED wound descriptions this place could inflict — each just a "name" (e.g. "Venom-withered arm", "Pressure-burst eardrum"), a one-line "note" of prose, and a "cause" tag matching a threat in this scenario (an enemy name, a hazard, an event) so the right flavour is drawn for what actually happened. The app pairs your description with whatever the dice decide.
 SECRETS & SURPRISES — make the world feel alive: you MAY include plot twists and surprise reveals. Mark any NPC, item, or timed event that should be a SECRET (hidden from the host until it happens) with "secret": true. For a secret NPC or item, DO NOT spoil it in the checklist — instead give a non-spoiler "hint" telling the host only what to PREPARE (e.g. "a large monstrous miniature", "a mysterious relic token") while keeping the real name/note/round in the normal fields (the app hides them until the host reveals or the moment arrives). A collectible item whose effect should only be discovered on pickup should be marked "secret": true with a vague "hint". Not everything needs to be secret — obvious, up-front elements stay visible.
 Reply with ONLY a JSON object (no prose, no code fence) shaped EXACTLY like:
-{"title":"short evocative title","premise":"1-2 sentence hook","briefing":"vivid 4-6 sentence atmospheric second-person narration","scenery":"1-2 sentences describing the terrain to build","objectives":["a victory condition","..."],"specialRules":["an optional special rule","..."],"twist":"one mid-game complication (or empty string)","events":[{"round":4,"kind":"surprise","title":"short event name","text":"what happens this round, written atmospherically","effect":{"apply":true,"type":"damage","amount":"1D6","scope":"chosen","duration":"turn","negatedBy":["Power armour"]}}],"deployment":"how the warbands deploy, referencing table sides/centre","gameLength":"1D10+6 turns","terrain":[{"name":"terrain piece to build","note":"how many / what it looks like","mapLabel":"Wreck Spire","role":"cover-tall"}],"markers":[{"name":"objective/token to print","note":"what it marks","mapLabel":"Hadal Core","role":"objective"}],"npcs":[{"name":"extra character/creature","note":"what it is / when it appears","when":"when and where it shows up","mapLabel":"Vent Mouth","secret":false,"hint":""}],"items":[{"name":"collectible item","note":"what it does / what it changes about whoever picks it up","when":"the concrete moment it matters, naming the rule/hazard it answers","mapLabel":"Supply Locker","secret":false,"hint":""}],"xpAwards":[{"name":"Carry the power core off your table edge","xp":3,"note":""},{"name":"Every character survives","xp":1,"note":""}],"injuries":[{"name":"Venom-withered arm","note":"The limb never regains its strength.","cause":"Scorpion Swarm","permanent":true,"effectNote":"May only use one-handed weapons.","skills":{},"hp":-2,"addTraits":[]}],"map":{"note":"one-line caption of the battlefield","zones":[{"label":"short deployment label","side":"a","x":5,"y":5,"w":30,"h":18}],"features":[{"type":"terrain","role":"cover-tall","label":"Wreck Spire","x":50,"y":50}]}}
+{"title":"short evocative title","premise":"1-2 sentence hook","briefing":"vivid 4-6 sentence atmospheric second-person narration","scenery":"1-2 sentences describing the terrain to build","objectives":["a victory condition","..."],"specialRules":["an optional special rule","..."],"twist":"one mid-game complication (or empty string)","events":[{"round":4,"kind":"surprise","title":"short event name","text":"what happens this round, written atmospherically","effect":{"apply":true,"type":"damage","amount":"1D6","scope":"chosen","duration":"turn","negatedBy":["Power armour"]}}],"deployment":"how the warbands deploy, referencing table sides/centre","gameLength":"1D10+6 turns","terrain":[{"name":"terrain piece to build","note":"how many / what it looks like","mapLabel":"Wreck Spire","role":"cover-tall"}],"markers":[{"name":"objective/token to print","note":"what it marks","mapLabel":"Hadal Core","role":"objective"}],"npcs":[{"name":"extra character/creature","note":"what it is / when it appears","when":"when and where it shows up","mapLabel":"Vent Mouth","secret":false,"hint":""}],"items":[{"name":"collectible item","note":"what it does / what it changes about whoever picks it up","when":"the concrete moment it matters, naming the rule/hazard it answers","mapLabel":"Supply Locker","secret":false,"hint":""}],"injuries":[{"name":"Venom-withered arm","note":"The limb never regains its strength.","cause":"Scorpion Swarm"}],"map":{"note":"one-line caption of the battlefield","zones":[{"label":"short deployment label","side":"a","x":5,"y":5,"w":30,"h":18}],"features":[{"type":"terrain","role":"cover-tall","label":"Wreck Spire","x":50,"y":50}]}}
 Map coordinates are percentages of the 90×90 board: x from 0 (left) to 100 (right), y from 0 (top) to 100 (bottom). Provide 2-4 deployment zones (side is "a", "b" or "neutral") and 6-10 features (type is one of "terrain","cover","objective","hazard"; role is one of the roles listed above and is REQUIRED on every feature). Keep every map label under 22 characters and make each one distinctive enough to reference. Keep the checklist arrays short and concrete (omit any that don't apply), and give every checklist entry a "mapLabel" matching a map label exactly wherever it belongs on the table.`;
   try{
     const raw=await s.json(prompt,{modelTier:"default",cache:false});
@@ -3493,7 +3726,6 @@ function coerceScenario(raw,opts){
     items:itemsL.map((x,i)=>({name:x.name,note:x.note,when:x.when,mapLabel:x.mapLabel,role:x.role,secret:x.secret,hint:x.hint,revealed:false,found:false,id:"it"+i,heldBy:null})),
     searched:[],
     injuries:(Array.isArray(raw.injuries)?raw.injuries:[]).map(coerceInjury).filter(Boolean).slice(0,10),
-    xpAwards:(Array.isArray(raw.xpAwards)?raw.xpAwards:[]).map(coerceXpAward).filter(Boolean).slice(0,6),
     difficulty:opts.difficulty||"normal",
     round:1, rounds:opts.length||null,
     map:{note:String(m.note||""),zones,features:feats},
