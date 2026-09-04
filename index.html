@@ -1046,6 +1046,7 @@ let curVehId=null;     // vehicle open in editor
 let cardVehId=null;    // vehicle open in card view
 let portraitEditing=false, tmpPos={x:50,y:50};  // portrait reposition mode
 let cardCharObj=null, cardIsEnemy=false;         // viewing a character outside the warband (e.g. scenario enemy)
+let cardVehObj=null;                             // same, for an enemy vehicle (it isn't in any warband)
 let promptStyle="concept";
 let promptAspect="2:3";       // characters — portrait default
 let promptAspectVeh="3:2";    // vehicles — landscape default
@@ -1139,7 +1140,7 @@ function campId(){return normLabel(campName()).replace(/[^a-z0-9_-]+/g,"-").repl
 function wbForCloud(w){
   const c=JSON.parse(JSON.stringify(w));
   [].concat(c.characters||[],c.vehicles||[]).forEach(x=>{delete x.img;delete x.imgPos;});
-  (c.scenarios||[]).forEach(s=>{if(s.enemy&&Array.isArray(s.enemy.characters))s.enemy.characters.forEach(e=>{delete e.img;delete e.imgPos;});});
+  (c.scenarios||[]).forEach(s=>enemyAll(s).forEach(e=>{delete e.img;delete e.imgPos;}));
   return c;
 }
 function healWb(w){
@@ -1183,7 +1184,7 @@ async function restoreCamp(){
 function playerName(){try{return localStorage.getItem("p28_player")||"";}catch(e){return "";}}
 function setPlayerName(n){try{localStorage.setItem("p28_player",String(n||"").slice(0,40));}catch(e){}}
 function sessCode(){const a="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";let s="";for(let i=0;i<4;i++)s+=a[Math.floor(Math.random()*a.length)];return s;}
-function scnForDb(s){const c=JSON.parse(JSON.stringify(s));if(c.enemy&&Array.isArray(c.enemy.characters))c.enemy.characters.forEach(ch=>{delete ch.img;delete ch.imgPos;});return c;}
+function scnForDb(s){const c=JSON.parse(JSON.stringify(s));enemyAll(c).forEach(ch=>{delete ch.img;delete ch.imgPos;});return c;}
 function clearLive(){_liveUnsub.forEach(u=>{try{u();}catch(e){}});_liveUnsub=[];}
 
 function sampleErr(code){
@@ -1940,9 +1941,9 @@ function summaryText(w){
 }
 
 /* ============================ CHARACTER CARD (tabletop view) ============================ */
-function openCard(id){cardCharObj=null;cardIsEnemy=false;cardVehId=null;cardCharId=id;buildCard();$("#cardWrap").classList.add("show");syncScroll();$("#cardWrap").scrollTop=0;}
-function openEnemyCard(c){if(!c)return;cardCharObj=c;cardIsEnemy=true;cardVehId=null;cardCharId=c.id;buildCard();$("#cardWrap").classList.add("show");syncScroll();$("#cardWrap").scrollTop=0;}
-function closeCard(){$("#cardWrap").classList.remove("show");cardCharId=null;cardVehId=null;cardCharObj=null;cardIsEnemy=false;portraitEditing=false;syncScroll();}
+function openCard(id){cardCharObj=null;cardVehObj=null;cardIsEnemy=false;cardVehId=null;cardCharId=id;buildCard();$("#cardWrap").classList.add("show");syncScroll();$("#cardWrap").scrollTop=0;}
+function openEnemyCard(c){if(!c)return;cardCharObj=c;cardVehObj=null;cardIsEnemy=true;cardVehId=null;cardCharId=c.id;buildCard();$("#cardWrap").classList.add("show");syncScroll();$("#cardWrap").scrollTop=0;}
+function closeCard(){$("#cardWrap").classList.remove("show");cardCharId=null;cardVehId=null;cardCharObj=null;cardVehObj=null;cardIsEnemy=false;portraitEditing=false;syncScroll();}
 function cardChar(){return cardCharObj||activeWB().characters.find(c=>c.id===cardCharId)}
 function currentCardObj(){return cardCharId?cardChar():(cardVehId?vehCard():null);}
 
@@ -2443,9 +2444,12 @@ function applyWarbandName(w,nm){
 }
 
 /* ============================ VEHICLES ============================ */
-function vehCard(){return vehsOf(activeWB()).find(x=>x.id===cardVehId);}
+function vehCard(){return cardVehObj||vehsOf(activeWB()).find(x=>x.id===cardVehId);}
 function vehEdit(){return vehsOf(activeWB()).find(x=>x.id===curVehId);}
-function openVehicleCard(id){cardVehId=id;cardCharId=null;cardCharObj=null;cardIsEnemy=false;buildVehicleCard();$("#cardWrap").classList.add("show");syncScroll();$("#cardWrap").scrollTop=0;}
+function openVehicleCard(id){cardVehId=id;cardVehObj=null;cardCharId=null;cardCharObj=null;cardIsEnemy=false;buildVehicleCard();$("#cardWrap").classList.add("show");syncScroll();$("#cardWrap").scrollTop=0;}
+/* An enemy vehicle belongs to the scenario, not to any warband, so the card reads it from
+   the object itself rather than looking it up by id. */
+function openEnemyVehicleCard(v){if(!v)return;cardVehObj=v;cardVehId=v.id;cardCharId=null;cardCharObj=null;cardIsEnemy=true;buildVehicleCard();$("#cardWrap").classList.add("show");syncScroll();$("#cardWrap").scrollTop=0;}
 
 function buildVehicleCard(){
   const v=vehCard();if(!v)return;
@@ -2469,7 +2473,7 @@ function buildVehicleCard(){
         <div class="gc-top">
           <div class="gc-cost">${cost}<small>PTS</small></div>
           <div class="gc-id">
-            <div class="eyebrow">Planet 28 · Vehicle</div>
+            <div class="eyebrow"${cardIsEnemy?' style="color:var(--danger)"':''}>Planet 28 · ${cardIsEnemy?"Enemy Vehicle":"Vehicle"}</div>
             <h2 class="gc-name">${esc(v.name)||"Unnamed vehicle"}</h2>
             <div class="gc-role">${esc(v.role)||size[0]+" "+ty[0].toLowerCase()+" vehicle"}</div>
           </div>
@@ -2494,14 +2498,14 @@ function buildVehicleCard(){
       </div>
     </div>
     <div class="gc-actions">
-      <button class="btn ${isFielded(v)?"gc-fielded":""}" id="gcvField">${isFielded(v)?"◉ Fielded":"○ Benched"}</button>
+      ${cardIsEnemy?"":`<button class="btn ${isFielded(v)?"gc-fielded":""}" id="gcvField">${isFielded(v)?"◉ Fielded":"○ Benched"}</button>`}
       <button class="btn" id="gcvArt">✦ Art prompt</button>
-      <button class="btn primary" id="gcvEdit">Edit</button>
-      <button class="btn ghost" id="gcvClose">Close</button>
+      ${cardIsEnemy?"":`<button class="btn primary" id="gcvEdit">Edit</button>`}
+      <button class="btn ${cardIsEnemy?"primary":"ghost"}" id="gcvClose">Close</button>
     </div>`;
   $("#gcvClose").onclick=closeCard;
-  $("#gcvEdit").onclick=()=>{const id=cardVehId;closeCard();openVehicleDossier(id);};
-  $("#gcvField").onclick=()=>toggleFielded(v);
+  const vEd=$("#gcvEdit");if(vEd)vEd.onclick=()=>{const id=cardVehId;closeCard();openVehicleDossier(id);};
+  const vFd=$("#gcvField");if(vFd)vFd.onclick=()=>toggleFielded(v);
   $("#gcvArt").onclick=()=>openPrompt(vehCard(),true);
   wirePortrait(v);
 }
@@ -2697,6 +2701,17 @@ function healScnChars(s){
       ["A","F","S","AW","P"].forEach(k=>{if(typeof c.skills[k]!=="number")c.skills[k]=1;});
       if(typeof c.hp!=="number")c.hp=20;
     });
+  if(s&&s.enemy&&Array.isArray(s.enemy.vehicles))
+    s.enemy.vehicles.forEach(v=>{
+      if(!v||typeof v!=="object")return;
+      v.isVehicle=true;
+      ["sections","traits","abilities","weapons"].forEach(k=>arr(v,k));
+      if(!v.skills||typeof v.skills!=="object")v.skills={A:VRULES.aStart,S:VRULES.sStart};
+      if(typeof v.skills.A!=="number")v.skills.A=VRULES.aStart;
+      if(typeof v.skills.S!=="number")v.skills.S=VRULES.sStart;
+      if(typeof v.type!=="number")v.type=0;
+      if(typeof v.size!=="number")v.size=1;
+    });
   if(s&&s.battle&&Array.isArray(s.battle.combatants))
     s.battle.combatants.forEach(m=>{arr(m,"conditions");arr(m,"neg");});
   return s;
@@ -2710,7 +2725,7 @@ function fillScnArrayDefaults(s){
   if(!s.map||typeof s.map!=="object")s.map={note:"",zones:[],features:[]};
   s.map.zones=Array.isArray(s.map.zones)?s.map.zones:[];
   s.map.features=Array.isArray(s.map.features)?s.map.features:[];
-  if(s.enemy&&typeof s.enemy==="object"&&!Array.isArray(s.enemy.characters))s.enemy.characters=[];
+  if(s.enemy&&typeof s.enemy==="object"){if(!Array.isArray(s.enemy.characters))s.enemy.characters=[];if(!Array.isArray(s.enemy.vehicles))s.enemy.vehicles=[];}
   if(s.battle&&typeof s.battle==="object"&&!Array.isArray(s.battle.combatants))s.battle.combatants=[];
   return healScnChars(s);
 }
@@ -3145,7 +3160,7 @@ function flavourFor(scn,cause){
 function injuryCauses(scn){
   const out=[];
   const add=v=>{const s=String(v||"").trim();if(s&&!out.some(x=>normLabel(x)===normLabel(s))&&out.length<8)out.push(s.slice(0,28));};
-  ((scn&&scn.enemy&&scn.enemy.characters)||[]).forEach(c=>add(c.name));
+  enemyAll(scn).forEach(c=>add(c.name));
   ((scn&&scn.map&&scn.map.features)||[]).filter(f=>f&&f.role==="hazard").forEach(f=>add(f.label));
   ((scn&&scn.events)||[]).forEach(e=>add(e.title));
   return out;
@@ -3561,7 +3576,7 @@ function normalizeImportedScn(raw){
   s.map.zones=Array.isArray(s.map.zones)?s.map.zones:[]; s.map.features=Array.isArray(s.map.features)?s.map.features:[];
   s.difficulty=s.difficulty||"normal";
   s.round=+s.round||1; if(s.rounds!=null)s.rounds=+s.rounds||null;
-  if(s.enemy&&typeof s.enemy==="object"){ if(!Array.isArray(s.enemy.characters))s.enemy.characters=[]; }
+  if(s.enemy&&typeof s.enemy==="object"){ if(!Array.isArray(s.enemy.characters))s.enemy.characters=[]; if(!Array.isArray(s.enemy.vehicles))s.enemy.vehicles=[]; }
   if(s.battle&&(!s.battle.combatants||!Array.isArray(s.battle.combatants)))s.battle=null;
   return healScnChars(s);
 }
@@ -3773,6 +3788,18 @@ ${arm}
 ITEMS — cost credits:
 ${items}
 
+VEHICLE PARTS — only for units in the "vehicles" list, never for characters:
+TYPES (pick one by name): ${VEHICLE_TYPES.map(t=>`- ${t[0]} (${t[1]>0?"+":""}${t[1]} pts, speed ${t[2]}): ${t[3]}`).join("\n")}
+SIZES (pick one by name; size sets the vehicle's melee and how easily it hides): ${VEHICLE_SIZES.map(t=>`\n- ${t[0]}: ${t[1]}`).join("")}
+SECTIONS — a vehicle always has a core Engine and a core Crew section (10 HP each) for free; these are the extra sections you may bolt on, each adding its own hit-points:
+${Object.values(CAT.vsection).map(o=>`- ${o.name} (${o.cost} pts, ${o.hp} HP): ${o.desc}`).join("\n")}
+VEHICLE TRAITS:
+${Object.values(CAT.vtrait).map(o=>`- ${o.name} (${o.cost>=0?"+":""}${o.cost} pts): ${o.desc}`).join("\n")}
+VEHICLE ABILITIES:
+${Object.values(CAT.vability).map(o=>`- ${o.name} (${o.cost>=0?"+":""}${o.cost} pts): ${o.desc}`).join("\n")}
+VEHICLE WEAPONS — the heavy mounts, plus any Ranged character weapon from the list above may be pintle-mounted at its own cost:
+${VEHICLE_WEAPONS.map(w=>`- ${w[0]} (${w[4]} pts): damage ${w[1]}, range ${w[3]}, ${w[5]}${w[2]&&w[2]!=="—"?", keywords: "+w[2]:""}`).join("\n")}
+
 ARCANA — spellcasting is NOT in the abilities list and is never bought directly. A unit casts only if you give it the "Minor arcana" or "Major arcana" TRAIT; it then rolls its powers randomly at the start of each game (the app rolls them for the host). For a sorcerer, witch, psyker or preacher with powers, take the arcana trait — and consider Psychic, a Psy-staff, or a Psy-hood. Never list a spell as an ability; it will be discarded. The powers it may roll are:
 ${arc}`;
 }
@@ -3846,6 +3873,72 @@ function legaliseLoadout(c){
   });
   return c;
 }
+/* The DM may field vehicles as well as characters. They live in their own array because a
+   vehicle has nothing in common with a character mechanically — sections and facings instead
+   of skills and hit-points — but they carry the SAME deployment/reveal fields, so everything
+   that deals in arrival and surprise can treat both alike through enemyAll(). */
+function enemyChars(s){return (s&&s.enemy&&Array.isArray(s.enemy.characters))?s.enemy.characters:[];}
+function enemyVehs(s){return (s&&s.enemy&&Array.isArray(s.enemy.vehicles))?s.enemy.vehicles:[];}
+function enemyAll(s){return enemyChars(s).concat(enemyVehs(s));}
+function isEnemyVeh(u){return !!(u&&u.isVehicle);}
+function findVehType(n){n=normLabel(n);const i=VEHICLE_TYPES.findIndex(t=>normLabel(t[0])===n);return i<0?0:i;}
+function findVehSize(n){n=normLabel(n);const i=VEHICLE_SIZES.findIndex(t=>normLabel(t[0])===n);return i<0?1:i;}
+function buildEnemyVehicle(u){
+  if(!u||typeof u!=="object")return null;
+  const v=newVehicle();
+  v.isVehicle=true;
+  v.name=String(u.name||"Enemy vehicle").slice(0,42);
+  v.role=String(u.role||"").slice(0,40);
+  v.bg=String(u.background||"").slice(0,400);
+  v.type=findVehType(u.type); v.size=findVehSize(u.size);
+  v.skills.A=Math.max(VRULES.aStart,Math.min(VRULES.skillMax,Math.round(+u.agility)||VRULES.aStart));
+  v.skills.S=Math.max(VRULES.sStart,Math.min(VRULES.skillMax,Math.round(+u.shooting)||VRULES.sStart));
+  const gear=(cat,list)=>(Array.isArray(list)?list:[]).map(x=>{const o=findCat(cat,x&&x.name);return o?{id:o.id,qty:Math.max(1,Math.min(6,Math.round(+((x&&x.qty)||1))||1))}:null;}).filter(Boolean);
+  v.sections=gear("vsection",u.sections);
+  v.weapons=gear("vweapon",u.weapons);
+  v.traits=(Array.isArray(u.traits)?u.traits:[]).map(x=>findCat("vtrait",x)).filter(Boolean).map(o=>o.id);
+  v.abilities=(Array.isArray(u.abilities)?u.abilities:[]).map(x=>findCat("vability",x)).filter(Boolean).map(o=>o.id);
+  // shared with characters: when it shows up, and how much warning the players get
+  v.atStart=u.atStart!==false;
+  const rv=String(u.reveal||"").toLowerCase();
+  if(rv==="hidden"||rv==="foreshadowed"||rv==="open")v.reveal=rv;
+  v.tease=String(u.tease||"").slice(0,120);
+  v.omen=String(u.omen||"").slice(0,140);
+  v.hint=String(u.hint||"").slice(0,90);
+  v.deployNote=(function(){var t=String(u.deployNote||"");if(t.length<=240)return t;var cut=t.slice(0,240),i=cut.lastIndexOf(" ");return (i>180?cut.slice(0,i):cut)+"…";})();
+  legaliseVehicle(v);
+  v.fielded=true;
+  return v;
+}
+/* The rulebook's vehicle construction limits — same repair-don't-trust rule as characters. */
+function legaliseVehicle(v){
+  const sec=n=>findCat("vsection",n), q=o=>{const e=o&&v.sections.find(x=>x.id===o.id);return e?e.qty:0;};
+  const dozer=sec("Dozer blade");
+  if(dozer&&v.size===0)v.sections=v.sections.filter(e=>e.id!==dozer.id);       // medium/large only
+  // A vehicle mounts one weapon per hard point (turret hard points included)
+  const hp=sec("Hard point"), th=sec("Turret hard point");
+  let mounts=q(hp)+q(th);
+  if(mounts<1&&v.weapons.length){                                              // it needs somewhere to bolt them on
+    const add=Math.min(3,v.weapons.reduce((a,e)=>a+e.qty,0));
+    if(hp){v.sections.push({id:hp.id,qty:add});mounts=add;}
+  }
+  let left=mounts,kept=[];
+  v.weapons.forEach(e=>{const take=Math.min(e.qty,left);if(take>0){kept.push({id:e.id,qty:take});left-=take;}});
+  v.weapons=kept;
+  // Armour plating may be at most 50% of a small/medium vehicle, 25% of a large one
+  const plate=sec("Armour plating");
+  if(plate){
+    const pe=v.sections.find(e=>e.id===plate.id);
+    if(pe){
+      const ratio=v.size===2?0.25:0.5;
+      const other=2+v.sections.filter(e=>e.id!==plate.id).reduce((a,e)=>a+e.qty,0);   // +2 core sections
+      const cap=Math.floor(ratio*other/(1-ratio));
+      if(pe.qty>cap)pe.qty=cap;
+      if(pe.qty<1)v.sections=v.sections.filter(e=>e.id!==plate.id);
+    }
+  }
+  return v;
+}
 function scnLoreForAI(scn){
   const named=x=>(Array.isArray(x)?x:[]).map(v=>v&&(v.name||v.hint)).filter(Boolean);
   const evt=x=>(Array.isArray(x)?x:[]).map(e=>e&&(e.title||e.text)?`Turn ${e.round} (${e.kind}): ${e.title||""}${e.text?" — "+e.text:""}`:null).filter(Boolean);
@@ -3885,17 +3978,26 @@ EQUIPMENT IS LIMITED BY THE RULES — a unit that breaks these is unplayable at 
 Match the gear to the story you are telling about the unit: a sniper wants range and a rifle it can reroll with, an ambusher wants a short-range, high-damage weapon, a swarm wants cheap claws and numbers, a warlord wants presence and armour. Read each entry's effect text and pick things that combine — do not pick by cost alone.
 Use ONLY names spelled EXACTLY as in these catalogs:
 ${catalogForAI()}
-Reply with ONLY a JSON array (no prose, no code fence) of 3-8 units, each shaped exactly like:
+VEHICLES — you may also field vehicles, and their points come out of the same total. Add one ONLY when the scenario earns it: a road, a landing pad, a hangar, open ground, a convoy, a siege, a faction with the means to bring armour. Do not put a tank in a crawlspace, a sewer, a boarding action or a cave, and never add one just to spend points. At most two, and usually none or one — a single vehicle should feel like an event, not a given. A vehicle has no HP of its own: it is built from sections, each with its own hit-points, and it is destroyed section by section.
+Vehicle build rules: base 10 pts; Agility and Shooting both start at 2 and cost +10 per level to a max of 10 (a vehicle has no F, AW or P — its melee comes from its size); the type and each section, trait, ability and weapon cost their listed points. Hard limits: it may mount ONE weapon per hard point (a Turret hard point is a hard point that fires in any direction), so buy hard points for the guns you want; armour plating may be at most half of a small or medium vehicle and a quarter of a large one; a Dozer blade needs a medium or large vehicle; each Crew section lets it fire one more weapon in a shooting action; each Transport section carries 3 characters. Crewed vehicles pair well with a squad of characters riding in them — say so in the deployNote.
+Reply with ONLY a JSON object (no prose, no code fence) shaped exactly like {"units":[...],"vehicles":[...]}, with 3-8 entries in "units" and 0-2 in "vehicles" (an empty array when the scenario doesn't suit them). A unit is shaped exactly like:
 {"name":"Warboss Krael","role":"Leader","background":"Two vivid sentences: what this thing/person is, how it fits the scenario, and what makes it dangerous — atmospheric, not generic.","atStart":true,"deployNote":"sets up within 10cm of table side 3, behind the Rock Spire Cluster","reveal":"open","tease":"","omen":"","count":1,"skills":{"A":4,"F":6,"S":4,"AW":4,"P":2},"hp":26,"traits":["Fearsome","Brave"],"abilities":["Inspire"],"weapons":[{"name":"Power fist","qty":1}],"armour":[{"name":"Ballistic plate","qty":1}],"items":[{"name":"Med kit","qty":1}]}
+A vehicle is shaped exactly like:
+{"name":"The Rust Hymn","role":"Gun-truck","background":"Two vivid sentences tying this machine to the scenario — what it is, who drives it, why it is here.","type":"Ground","size":"Medium","agility":4,"shooting":5,"atStart":true,"deployNote":"rolls on from table side 3 along the causeway, three raiders riding it","reveal":"open","tease":"","omen":"","hint":"","sections":[{"name":"Hard point","qty":2},{"name":"Armour plating","qty":2},{"name":"Transport section","qty":1}],"traits":["Open-topped"],"abilities":["Turbo boost"],"weapons":[{"name":"Heavy machine gun","qty":1},{"name":"Heavy slug rifle","qty":1}]}
 MOST OF THE FORCE MUST BE ON THE TABLE AT TURN 1. An empty battlefield on the first turn is almost always wrong, because the players would walk the objective before anything opposed them. Unless the scenario text explicitly demands a completely empty start, deploy the bulk of the enemy AND its leader at the start, and hold back only genuine reinforcements or one scripted late arrival. If the scenario says a unit is present from deployment or deploys at the start, that unit MUST be atStart:true no matter what later events mention it.
 DECIDE HOW MUCH WARNING EACH LATE ARRIVAL GETS — this is a storytelling judgement, so make it deliberately per unit with a "reveal" field. Use "open" when knowing about it makes the game better: a threat the players should plan around, a clock they can see ticking, something the briefing would obviously mention. Use "foreshadowed" when the tension of knowing something is coming — but not what — is worth more than either extreme; also give a short atmospheric "tease" line the host can read out (e.g. "Something vast shifts in the canopy overhead"), and the players will be told roughly which turn to brace for. Use "hidden" for a genuine ambush that should land as a shock — and give it an "omen": one atmospheric sensory line the players are told from the outset that betrays NOTHING about what it is, when it comes or where from, e.g. "You hear something moving through the trees; nothing shows itself", "A tremor runs up through the deck plates, and no one can say what caused it", "The birds went quiet an hour ago." Dread without information — the players should feel watched without being able to plan around it. Do NOT default everything to one setting: a scenario is best when it mixes them — perhaps a visible enemy push, one dread you can hear coming, and one thing nobody saw at all. Units that deploy at the start are always "open".
 DEPLOYMENT IS REQUIRED ON EVERY UNIT — the host must know exactly what to put on the table before turn 1. Set "atStart":true for units that start on the battlefield, and give "deployNote" a concrete placement (a table side, a deployment zone, or a named map feature). Set "atStart":false for anything that ARRIVES LATER — reinforcements, burrowing creatures, a boss that erupts from a lair — and make its "deployNote" say exactly when and from where, naming the turn and the timed event it belongs to (e.g. "does not deploy at start; erupts from the Broodmother's Warren on turn 5 (The Warren Wakes)"). If the scenario's events describe something arriving, the matching unit MUST be atStart:false and reference that event.
+The deployment and reveal rules above apply to VEHICLES exactly as they do to characters — a vehicle can rumble on as a scripted arrival, be foreshadowed by engine noise, or stay hidden behind an omen.
 Every unit needs a vivid "background" tying it to this specific scenario. Give it character: a leader, some troopers (or a squad), and maybe a specialist — but only where the scenario supports it. Spend close to ${target} points in total.`;
   try{
     const list=await s.json(prompt,{modelTier:"default",cache:false});
-    const chars=(Array.isArray(list)?list:[]).map(buildEnemyChar).filter(Boolean);
-    if(!chars.length)throw {code:"empty_completion"};
-    scn.enemy={characters:chars,target,generatedAt:Date.now()};
+    // accept both shapes: the {units,vehicles} object, and a bare array from an older reply
+    const rawU=Array.isArray(list)?list:(list&&Array.isArray(list.units)?list.units:[]);
+    const rawV=(list&&!Array.isArray(list)&&Array.isArray(list.vehicles))?list.vehicles:[];
+    const chars=rawU.map(buildEnemyChar).filter(Boolean);
+    const vehs=rawV.map(buildEnemyVehicle).filter(Boolean).slice(0,2);
+    if(!chars.length&&!vehs.length)throw {code:"empty_completion"};
+    scn.enemy={characters:chars,vehicles:vehs,target,generatedAt:Date.now()};
     repairEnemyDeploy(scn);save();
     renderScenarioView();toast("Enemy warband mustered");
   }catch(e){
@@ -3930,6 +4032,14 @@ function enemyMiniCard(c){
       <div class="ec-stats"><span class="none-note" style="font-style:normal">${scnReadOnly?"you know it is coming — not what it is":"tap to reveal early"}</span></div>
     </div>`;
   }
+  if(isEnemyVeh(c)){
+    const ty=VEHICLE_TYPES[c.type]||VEHICLE_TYPES[0], sz=VEHICLE_SIZES[c.size]||VEHICLE_SIZES[1];
+    return `<button class="enemy-card" data-evid="${c.id}">
+      <div class="ec-top"><span class="ec-name">▰ ${esc(c.name)||"Enemy vehicle"}</span><span class="ec-cost">${vehicleCost(c)}</span></div>
+      <div class="ec-role">${esc(c.role)||sz[0]+" "+ty[0].toLowerCase()+" vehicle"}</div>
+      <div class="ec-stats"><span><b>${c.skills.A}</b>A</span><span><b>${c.skills.S}</b>S</span><span><b>${ty[2]}</b>SPD</span><span class="hp"><b>${vehicleHP(c)}</b>HP</span></div>
+    </button>`;
+  }
   return `<button class="enemy-card" data-eid="${c.id}">
     <div class="ec-top"><span class="ec-name">${esc(c.name)||"Enemy"}</span><span class="ec-cost">${unitCost(c)}</span></div>
     <div class="ec-role">${esc(c.role)||"&nbsp;"}${n>1?` <span class="ec-squad">×${n}</span>`:""}</div>
@@ -3938,11 +4048,13 @@ function enemyMiniCard(c){
 }
 function enemyBlock(s){
   const diff=diffOf(s), bonus=diff.enemyBonus, target=s.points+bonus;
-  if(s.enemy&&Array.isArray(s.enemy.characters)&&s.enemy.characters.length){
-    const total=s.enemy.characters.reduce((a,c)=>a+unitCost(c),0);
+  if(enemyAll(s).length){
+    const vehs=enemyVehs(s);
+    const total=enemyChars(s).reduce((a,c)=>a+unitCost(c),0)+vehs.reduce((a,v)=>a+vehicleCost(v),0);
+    const nUnits=enemyAll(s).length;
     return `<div class="scn-block"><div class="bh">Enemy force — run by the DM</div>
-      <p style="margin-bottom:10px">Target <b>${s.enemy.target||target} pts</b> (your ${s.points} + ${bonus}, ${diff.label}) · built <b style="color:var(--danger)">${total} pts</b> across ${s.enemy.characters.length} units. Tap a unit for its full card.</p>
-      ${(()=>{const cs=s.enemy.characters,any=cs.some(c=>c.deployNote||c.atStart===false);
+      <p style="margin-bottom:10px">Target <b>${s.enemy.target||target} pts</b> (your ${s.points} + ${bonus}, ${diff.label}) · built <b style="color:var(--danger)">${total} pts</b> across ${nUnits} unit${nUnits===1?"":"s"}${vehs.length?` (including ${vehs.length} vehicle${vehs.length>1?"s":""})`:""}. Tap a unit for its full card.</p>
+      ${(()=>{const cs=enemyAll(s),any=cs.some(c=>c.deployNote||c.atStart===false);
         if(!any)return `<div class="enemy-grid">${cs.map(enemyMiniCard).join("")}</div>`;
         // players never see a fully hidden unit; a foreshadowed one they DO see, as a warning
         const visible=scnReadOnly?cs.filter(c=>!enemyHidden(c)):cs;
@@ -4127,8 +4239,11 @@ function myCombatants(owner,idPrefix){
 function buildBattle(s){
   const me=campName()||playerName()||"You", combatants=myCombatants(me,"p_");
   (livePlayers||[]).forEach(p=>(p.combatants||[]).forEach(m=>{if(m&&m.id&&!combatants.some(x=>x.id===m.id))combatants.push(JSON.parse(JSON.stringify(m)));}));
-  if(s.mode==="coop"&&s.enemy&&Array.isArray(s.enemy.characters))
-    s.enemy.characters.forEach(c=>{const n=memberCount(c);combatants.push({id:"e_"+c.id,side:"enemy",owner:"Enemy",name:(c.name||"Enemy")+(n>1?" ×"+n:""),maxHP:c.hp*n,curHP:c.hp*n,conditions:[],neg:negListOf(c)});});
+  if(s.mode==="coop"){
+    enemyChars(s).forEach(c=>{const n=memberCount(c);combatants.push({id:"e_"+c.id,side:"enemy",owner:"Enemy",name:(c.name||"Enemy")+(n>1?" ×"+n:""),maxHP:c.hp*n,curHP:c.hp*n,conditions:[],neg:negListOf(c)});});
+    // a vehicle's hull is the sum of its sections; it is destroyed section by section
+    enemyVehs(s).forEach(v=>{const hp=vehicleHP(v);combatants.push({id:"e_"+v.id,side:"enemy",owner:"Enemy",name:"▰ "+(v.name||"Enemy vehicle"),maxHP:hp,curHP:hp,conditions:[],neg:[]});});
+  }
   s.battle={started:true,combatants};save();
 }
 function mergePlayersIntoHostedBattle(){
@@ -4143,7 +4258,10 @@ function battleHTML(s){
     if(scnReadOnly)return "";
     return `<div class="scn-battle"><div class="mh">Battle roster</div><p class="none-note" style="font-style:normal;margin-bottom:10px">Track live hit-points &amp; conditions and auto-apply event effects. Loads your fielded warband${s.mode==="coop"?" and the enemy force":""}.</p><button class="btn primary sm" id="btlStart">Start battle roster</button></div>`;
   }
-  const rows=s.battle.combatants.map(m=>{
+  // The roster would otherwise name a hidden unit the moment the battle starts, spoiling the
+  // ambush for every player. The host still tracks it; guests don't even get a row to count.
+  const sealed=scnReadOnly?enemyAll(s).filter(enemyHidden).map(c=>"e_"+c.id):[];
+  const rows=s.battle.combatants.filter(m=>sealed.indexOf(m.id)<0).map(m=>{
     const down=m.curHP<=0, low=m.curHP<=m.maxHP*0.25;
     const conds=(m.conditions||[]).map((cd,ci)=>`<span class="cond">${esc(cd.label)}${cd.expireTurn?` <small>→T${cd.expireTurn}</small>`:""}${scnReadOnly?"":` <button data-cond="${m.id}|${ci}" aria-label="remove">×</button>`}</span>`).join("");
     return `<div class="btl-row ${m.side} ${down?"down":""}">
@@ -4290,7 +4408,7 @@ function cacheList(s){
 /* A late-arriving unit that the scenario marks as a secret NPC stays sealed in the roster
    until its turn comes round, so the host isn't spoiled by their own enemy list. */
 function sealEnemySecrets(s){
-  const cs=(s.enemy&&s.enemy.characters)||[]; if(!cs.length)return false;
+  const cs=enemyAll(s); if(!cs.length)return false;
   const secrets=(s.npcs||[]).filter(n=>n&&n.secret);
   let changed=false;
   cs.forEach(c=>{
@@ -4305,7 +4423,7 @@ function sealEnemySecrets(s){
 }
 // once the turn arrives, it's no longer a secret
 function revealDueEnemies(s){
-  const cs=(s.enemy&&s.enemy.characters)||[]; const cur=curRound(s);
+  const cs=enemyAll(s); const cur=curRound(s);
   let shown=null;
   cs.forEach(c=>{
     if(!enemyHidden(c))return;
@@ -4315,7 +4433,7 @@ function revealDueEnemies(s){
   return shown;
 }
 function repairEnemyDeploy(s){
-  const cs=(s.enemy&&s.enemy.characters)||[]; if(!cs.length)return false;
+  const cs=enemyAll(s); if(!cs.length)return false;
   let changed=false;
   const evs=s.events||[], npcs=(s.npcs||[]).filter(n=>n&&n.when);
   const zoneB=(((s.map||{}).zones)||[]).find(z=>z&&z.side==="b");
@@ -4346,7 +4464,7 @@ function scenarioGaps(s){
   if(loose.length)g.push(loose.length+" item"+(loose.length>1?"s have":" has")+" no place on the map — hide them in a search point below, or just place them where you like: "+loose.map(i=>i.secret&&!i.revealed?(i.hint||"an unknown find"):i.name).join(", "));
   const empties=cacheList(s).filter(c=>!c.inside.length);
   if(empties.length)g.push("Search point"+(empties.length>1?"s":"")+" with nothing inside: "+empties.map(c=>"#"+c.n+" "+c.name).join(", "));
-  const ec=(s.enemy&&s.enemy.characters)||[];
+  const ec=enemyAll(s);
   if(ec.length&&!ec.some(c=>c.deployNote||c.atStart===false))
     g.push("The enemy force has no deployment notes — regenerate it to be told which units start on the table and which arrive later.");
   if(ec.length&&!ec.some(c=>c.atStart!==false))
@@ -4650,7 +4768,7 @@ function renderScenarioDetail(scnOverride){
   const eGen=$("#enemyGen");if(eGen)eGen.onclick=()=>generateEnemyWarband(s,$("#enemyStatus"));
   const eReg=$("#enemyRegen");if(eReg)eReg.onclick=()=>generateEnemyWarband(s,$("#enemyStatus"));
   const eFW=$("#enemyFirstWave");if(eFW)eFW.onclick=()=>{
-    const cs=(s.enemy&&s.enemy.characters)||[];
+    const cs=enemyAll(s);
     const turnOf=c=>{const m=String(c.deployNote||"").match(/turn (\d+)/i);return m?+m[1]:99;};
     const soonest=Math.min.apply(null,cs.map(turnOf));
     let n=0;
@@ -4658,9 +4776,10 @@ function renderScenarioDetail(scnOverride){
     if(!n&&cs.length){cs[0].atStart=true;n=1;}
     save();renderScenarioView();toast(n+" unit"+(n===1?"":"s")+" now start on the table");
   };
-  el.querySelectorAll("[data-eid]").forEach(b=>b.onclick=()=>{const c=(s.enemy.characters||[]).find(x=>x.id===b.dataset.eid);if(c&&!enemyHidden(c))openEnemyCard(c);});
+  el.querySelectorAll("[data-eid]").forEach(b=>b.onclick=()=>{const c=enemyChars(s).find(x=>x.id===b.dataset.eid);if(c&&!enemyHidden(c))openEnemyCard(c);});
+  el.querySelectorAll("[data-evid]").forEach(b=>b.onclick=()=>{const v=enemyVehs(s).find(x=>x.id===b.dataset.evid);if(v&&!enemyHidden(v))openEnemyVehicleCard(v);});
   el.querySelectorAll("[data-reveal-enemy]").forEach(b=>b.onclick=()=>{
-    const c=(s.enemy.characters||[]).find(x=>x.id===b.dataset.revealEnemy);if(!c)return;
+    const c=enemyAll(s).find(x=>x.id===b.dataset.revealEnemy);if(!c)return;
     askConfirm("Reveal what's waiting? You'll see it before it arrives.",()=>{c.revealed=true;save();renderScenarioView();toast("It's "+(c.name||"revealed"));},{danger:false,yesLabel:"Reveal"});
   });
   // round tracker
