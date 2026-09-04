@@ -264,6 +264,38 @@ textarea.input{resize:vertical;min-height:56px;line-height:1.45}
 .linkbtn{color:var(--ink-mute);font-family:var(--disp);font-size:11px;text-transform:uppercase;letter-spacing:.06em;padding:4px 6px}
 .linkbtn:hover{color:var(--amber)}
 .linkbtn.del:hover{color:var(--danger)}
+
+/* ---------- round cheat sheet (phone-first, opens beside the tracker) ---------- */
+.cheatfab{position:fixed;right:14px;bottom:16px;z-index:74;width:52px;height:52px;border-radius:50%;
+  border:1px solid var(--amber);background:var(--panel);color:var(--amber);font-size:22px;line-height:0;
+  box-shadow:var(--shadow);display:grid;place-items:center}
+.cheatfab:hover{background:var(--amber);color:#191308}
+.cheat{position:fixed;z-index:76;top:0;right:0;height:100%;width:min(420px,100%);background:var(--ground);
+  border-left:1px solid var(--line);box-shadow:-24px 0 60px -30px rgba(0,0,0,.8);
+  display:flex;flex-direction:column;transform:translateX(100%);transition:transform .24s cubic-bezier(.32,.72,0,1)}
+.cheat.show{transform:none}
+.cheat-head{padding:14px 16px;border-bottom:1px solid var(--line);background:var(--panel);display:flex;align-items:center;gap:10px}
+.cheat-head h3{font-size:16px;flex:1}
+.cheat-body{flex:1;overflow-y:auto;padding:10px 14px 30px;-webkit-overflow-scrolling:touch}
+.cheat-roll{font-size:12.5px;color:var(--ink-dim);background:var(--sunk);border:1px solid var(--line);
+  border-radius:8px;padding:9px 11px;margin-bottom:12px;line-height:1.5}
+.cheat-roll b{color:var(--amber)}
+.cheat-sec{border-bottom:1px solid var(--line-soft)}
+.cheat-q{width:100%;text-align:left;display:flex;align-items:center;gap:9px;padding:12px 2px;
+  font-family:var(--disp);font-weight:600;font-size:14px;color:var(--ink)}
+.cheat-q .cq-ico{color:var(--amber);font-size:13px;width:16px;flex:none}
+.cheat-q .cq-arrow{margin-left:auto;color:var(--ink-mute);font-size:12px;transition:transform .18s}
+.cheat-sec.open .cheat-q .cq-arrow{transform:rotate(90deg)}
+.cheat-a{padding:0 2px 14px;display:none}
+.cheat-sec.open .cheat-a{display:block}
+.cheat-item{margin-bottom:13px}
+.cheat-item:last-child{margin-bottom:0}
+.cheat-item .ci-n{font-family:var(--disp);font-weight:600;font-size:13.5px;color:var(--ink);margin-bottom:3px}
+.cheat-item .ci-d{font-size:12.5px;color:var(--ink-dim);line-height:1.5}
+.cheat-item ol,.cheat-item ul{margin:5px 0 0;padding-left:18px}
+.cheat-item li{font-size:12.5px;color:var(--ink-dim);line-height:1.5;margin-bottom:3px}
+.cheat-item .ci-mod{font-family:var(--mono);font-size:12px;color:var(--warn)}
+@media(max-width:600px){.cheatfab{right:12px;bottom:12px}}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--panel);border:1px solid var(--amber);color:var(--ink);padding:11px 18px;border-radius:9px;font-family:var(--disp);font-weight:600;font-size:13px;letter-spacing:.03em;z-index:95;opacity:0;transition:.25s;box-shadow:var(--shadow);pointer-events:none}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 /* ---------- tabletop character card ---------- */
@@ -758,6 +790,9 @@ textarea.input{resize:vertical;min-height:56px;line-height:1.45}
     <button class="btn sm confirm-danger" id="confirmYes">Confirm</button>
   </div>
 </div></div>
+
+<button class="cheatfab" id="cheatFab" hidden aria-label="Open the round cheat sheet" title="Round cheat sheet">☷</button>
+<div class="cheat" id="cheatDrawer" hidden aria-label="Round cheat sheet"></div>
 
 <div class="toast" id="toast"></div>
 
@@ -2684,7 +2719,102 @@ function switchView(v){
   $("#manifest").style.display=(v==="warband")?"":"none";
   document.querySelectorAll("#topnav .topnav-btn").forEach(b=>b.classList.toggle("active",b.dataset.view===v));
   if(v==="scenarios")renderScenarioView();
+  syncCheatFab();
   window.scrollTo(0,0);
+}
+
+/* ---- ROUND CHEAT SHEET ----
+   Straight off the rulebook, for the phone in your hand while the tracker is open. Grouped by
+   the question you actually have mid-turn ("what can I do", "how do I shoot", "they charged
+   me"), not by page order, and each procedure is written as the sequence you follow. */
+const CHEAT=[
+ {ico:"◉",title:"Your two actions",items:[
+  {n:"How a turn runs",d:"Every character gets 2 actions. Activate by Agility, highest first, both sides interleaved — not all of one player's characters together. Tied (A)? The higher (AW) chooses where to go. Tied on both? Both roll 1D10; lowest decides who acts first."},
+  {n:"Move",d:"Move up to your speed (10cm as standard). Measure from one point on the base and finish the move from that same point."},
+  {n:"Charge",d:"End a move in base contact with an enemy and you get one extra fight action at +1D4 Fighting. Only that first fight gets the bonus."},
+  {n:"Fight",d:"Attack anyone you have charged, are locked in combat with, or are within 5cm of."},
+  {n:"Shoot",d:"Fire one weapon at someone in range you can see. Not while you are locked in combat, and never at someone who is."},
+  {n:"Ability",d:"Use one of your abilities, or cast if you have an arcana trait."},
+  {n:"Item",d:"Use an item from your inventory, or swap weapons."},
+  {n:"Hold",d:"Declare you are holding and act later in the turn instead. Holding is free — it costs no action — but held actions are lost at the end of the turn."},
+  {n:"Universal action",d:"Anything that takes time but needs no roll — reloading, crouching, searching a body, picking up a dropped weapon."}
+ ]},
+ {ico:"⚔",title:"Attacking",items:[
+  {n:"Shoot — step by step",steps:[
+    "Check range, and that you can see part of their body (head, torso, arms or legs — not weapons or base).",
+    "Roll 1D10 under your Shooting, applying the modifiers below.",
+    "On a hit, roll your weapon's damage dice.",
+    "They roll armour — plus an extra 1D6 if they are in cover.",
+    "Whatever is left comes off their hit-points."],
+   mod:"−1 for each move you or the target made this turn · −1 if they are 5cm+ above you · +1 if you are 5cm+ above them"},
+  {n:"Fight — step by step",steps:[
+    "Declare who you are attacking.",
+    "Move your base into contact with theirs — this is not a move action and does not count as a charge.",
+    "Roll 1D10 under your Fighting.",
+    "On a hit, roll damage; they roll armour; the rest comes off their hit-points."]},
+  {n:"Pushback",d:"Dealt damage in a fight? You may shove them 3cm directly away. Doing so breaks you both out of combat — sometimes exactly what you want, sometimes not."},
+  {n:"Fighting several enemies",d:"Locked with more than one? Take a focus test before attacking: subtract the number of enemies in combat with you from your (AW) and roll under that. Pass and you fight normally for the rest of the turn. Fail and you take −1 Fighting for every enemy in base contact. You may split your two actions between different targets."},
+  {n:"One weapon per action",d:"Shooting or fighting, you use a single weapon per action. Two pistols means two separate shoot actions, not one double shot."}
+ ]},
+ {ico:"⛨",title:"Defending",items:[
+  {n:"Counter",d:"Being attacked and have not acted yet this turn? Spend an action to fight back — but you must declare it BEFORE they roll.",steps:[
+    "Both of you roll against Fighting.",
+    "Both succeed — you both take damage, then both push back 3cm.",
+    "Both fail — you stay locked in combat.",
+    "One succeeds — that character finishes the attack as normal, even if they were the one being attacked."]},
+  {n:"Block a charge",d:"Charged? Roll under your Awareness. Succeed and they still get their extra fight action, but without the +1D4."},
+  {n:"Cover",d:"If any part of your body is covered by terrain you are in cover: an extra 1D6 armour roll against shooting, on top of your normal armour."},
+  {n:"Leave combat",d:"Move out of base contact at any time, at −1D4cm speed (roll each time you do it). Every opponent gets one free fight action first, and you may not counter it."}
+ ]},
+ {ico:"☠",title:"When it goes wrong",items:[
+  {n:"Below half hit-points",d:"All your skills drop by 1 for the rest of the game, until you are healed back above half."},
+  {n:"Break test",d:"Taken below half? Roll under your Psyche. Fail and you immediately run at full speed for the nearest board edge — that move is free, not an action.",steps:[
+    "Below half, you test again every single time you take damage.",
+    "Each successive test in a turn is at −1 Psyche.",
+    "Keep spending actions on tests until you pass or leave the table.",
+    "Reach the board edge before passing one and you are out of the game.",
+    "Down to exactly 1 hit-point? You never test again."]},
+  {n:"Climbing",d:"Anything vertical, or an obstacle 5cm or higher, needs an Agility roll per action, moving up to your speed. Stopping mid-climb needs another roll to hold on until your next action, and you can do nothing else until you are up."},
+  {n:"Falling",d:"Fail a climb roll and you fall. Take 1 damage for every cm above 5, with no armour roll, and land directly below where you fell."},
+  {n:"Out of hit-points",d:"Removed from the game. Back at camp they roll on the injury table for what it cost them."}
+ ]},
+ {ico:"⚄",title:"Rolling dice",items:[
+  {n:"The one rule",d:"Roll 1D10 UNDER the skill to succeed. Equal or over is a failure. A 1 always succeeds and a 10 always fails, whatever the modifiers."},
+  {n:"Measuring",d:"Between characters, measure base edge to base edge. For movement, start and finish from the same point on the model. Everything is in centimetres."}
+ ]}
+];
+let cheatOpen={0:true};
+function renderCheat(){
+  const d=$("#cheatDrawer"); if(!d)return;
+  d.innerHTML=`<div class="cheat-head"><h3>Round cheat sheet</h3>
+      <button class="iconbtn" id="cheatClose" aria-label="Close">✕</button></div>
+    <div class="cheat-body">
+      <div class="cheat-roll"><b>Roll 1D10 under the skill.</b> Equal or over fails. A 1 always succeeds, a 10 always fails.</div>
+      ${CHEAT.map((s,i)=>`<div class="cheat-sec${cheatOpen[i]?" open":""}">
+        <button class="cheat-q" data-cheat="${i}"><span class="cq-ico">${s.ico}</span>${esc(s.title)}<span class="cq-arrow">›</span></button>
+        <div class="cheat-a">${s.items.map(it=>`<div class="cheat-item">
+          <div class="ci-n">${esc(it.n)}</div>
+          ${it.d?`<div class="ci-d">${esc(it.d)}</div>`:""}
+          ${it.steps?`<ol>${it.steps.map(x=>`<li>${esc(x)}</li>`).join("")}</ol>`:""}
+          ${it.mod?`<div class="ci-d ci-mod" style="margin-top:5px">${esc(it.mod)}</div>`:""}
+        </div>`).join("")}</div>
+      </div>`).join("")}
+    </div>`;
+  $("#cheatClose").onclick=closeCheat;
+  d.querySelectorAll("[data-cheat]").forEach(b=>b.onclick=()=>{
+    const i=+b.dataset.cheat; cheatOpen[i]=!cheatOpen[i];
+    b.parentElement.classList.toggle("open",!!cheatOpen[i]);
+  });
+}
+function openCheat(){const d=$("#cheatDrawer");if(!d)return;renderCheat();d.hidden=false;requestAnimationFrame(()=>d.classList.add("show"));}
+function closeCheat(){const d=$("#cheatDrawer");if(!d)return;d.classList.remove("show");setTimeout(()=>{d.hidden=true;},240);}
+function toggleCheat(){const d=$("#cheatDrawer");if(d&&d.classList.contains("show"))closeCheat();else openCheat();}
+// the sheet belongs to play, so it rides along with the scenario view only
+function syncCheatFab(){
+  const f=$("#cheatFab"); if(!f)return;
+  const on=(currentView==="scenarios");
+  f.hidden=!on;
+  if(!on)closeCheat();
 }
 
 /* ============================ SCENARIOS ============================ */
@@ -5175,6 +5305,7 @@ $("#btnShareWB").onclick=()=>exportCurrent(false);
 $("#wbName").addEventListener("input",e=>{activeWB().name=e.target.value;save()});
 $("#wbGen").onclick=openWarbandNameGen;
 document.querySelectorAll("#topnav .topnav-btn").forEach(b=>b.onclick=()=>switchView(b.dataset.view));
+$("#cheatFab").onclick=toggleCheat;
 $("#wbBudget").addEventListener("input",e=>{
   let v=parseInt(e.target.value.replace(/\D/g,""),10);if(isNaN(v))v=0;activeWB().budget=v;renderHeader();save();
 });
@@ -5233,7 +5364,7 @@ document.addEventListener("keydown",e=>{
 })();
 
 /* boot */
-load();render();
+load();render();syncCheatFab();
 </script>
 
 <style>
