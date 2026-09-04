@@ -1276,6 +1276,22 @@ function load(){
   const w=newWarband("Void Reavers");w.characters.push(seededCharacter());
   store={warbands:[w],activeId:w.id};save();
 }
+/* Wipes everything this device holds and starts from an EMPTY warband — not the demo one,
+   which is what `load()` creates for a first-time visitor. */
+function resetDevice(){
+  const n=store.warbands.length, scn=store.warbands.reduce((s,w)=>s+((w.scenarios||[]).length),0);
+  askConfirm("Erase everything on this device? "+n+" warband"+(n===1?"":"s")+", "+scn+" scenario"+(scn===1?"":"s")+", your camp name, table passphrase and quest history all go. Anything stashed at your table is NOT touched — you can recover it afterwards.",()=>{
+    try{["p28_claimed","p28_camp","p28_player","p28_pass"].forEach(k=>localStorage.removeItem(k));
+      Object.keys(localStorage).filter(k=>k.indexOf("p28_quest_")===0).forEach(k=>localStorage.removeItem(k));
+    }catch(e){}
+    roomKey="";clearLive();liveRole="solo";liveScenario=null;liveCode="";hostCode="";hostScenarioId="";livePlayers=[];
+    const w=newWarband("New Warband");
+    store={warbands:[w],activeId:w.id};
+    scnCurrentId=null;scnScreen="list";
+    save();closeModal();switchView("warband");render();
+    toast("This device is empty — start fresh");
+  },{danger:true,yesLabel:"Erase everything"});
+}
 function seededCharacter(){
   const c=newChar();c.name="Sgt. Vex Kalloran";c.role="Warband leader";
   c.bg="A grizzled ex-corporate enforcer turned freebooter, holding the crew together with equal parts discipline and threat.";
@@ -1747,8 +1763,12 @@ function openLibrary(){
     </div>
     ${(activeWB().scenarios||[]).length?`<div class="modal-actions" style="margin-top:8px">
       <button class="btn sm danger ghost" id="mWipeScns">Delete all ${(activeWB().scenarios||[]).length} scenario${(activeWB().scenarios||[]).length===1?"":"s"}</button>
-      <span class="none-note" style="font-style:normal;margin-left:auto">Start fresh — characters and scars are kept.</span>
+      <span class="none-note" style="font-style:normal;margin-left:auto">Characters and scars are kept.</span>
     </div>`:""}
+    <div class="modal-actions" style="margin-top:8px">
+      <button class="btn sm danger ghost" id="mResetAll">🧨 Reset this device</button>
+      <span class="none-note" style="font-style:normal;margin-left:auto">Erases everything here. Your table is untouched.</span>
+    </div>
     <div class="modal-actions"><button class="btn ghost sm" id="mClose" style="margin-left:auto">Close</button></div>`;
   body.querySelectorAll("[data-load]").forEach(b=>b.onclick=()=>{store.activeId=b.dataset.load;save();render();closeModal();toast("Loaded "+esc(activeWB().name))});
   body.querySelectorAll("[data-dup]").forEach(b=>b.onclick=()=>{
@@ -1767,6 +1787,7 @@ function openLibrary(){
   $("#mNew").onclick=()=>{const w=newWarband("New Warband");store.warbands.push(w);store.activeId=w.id;save();render();closeModal();openDossierNewHint()};
   const st=$("#mStash");if(st)st.onclick=openStash;
   const st2=$("#mStashOpen");if(st2)st2.onclick=openStash;
+  const ra=$("#mResetAll");if(ra)ra.onclick=resetDevice;
   const cw=$("#mWipeScns");if(cw)cw.onclick=()=>{
     const n=(activeWB().scenarios||[]).length;
     askConfirm("Delete all "+n+" scenario"+(n===1?"":"s")+" in “"+activeWB().name+"”? Your characters, gear and scars are untouched.",()=>{
