@@ -590,6 +590,27 @@ textarea.input{resize:vertical;min-height:56px;line-height:1.45}
 .gap-box{margin-top:10px;padding:9px 12px;border:1px dashed color-mix(in srgb,var(--warn) 55%,var(--line));background:color-mix(in srgb,var(--warn) 8%,transparent);border-radius:var(--r-sm)}
 .gap-box .prep-h{color:var(--warn)}
 .gap-box .scn-list li{font-size:12.5px}
+.save-warn{position:fixed;left:12px;right:12px;bottom:12px;z-index:200;background:var(--danger-bg);border:1px solid var(--danger);color:var(--ink);border-radius:var(--r);padding:11px 14px;font-size:13px;line-height:1.5;box-shadow:var(--shadow);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.save-warn b{color:var(--danger)}
+.save-warn .btn{margin-left:auto}
+.camp-box{border:1px solid color-mix(in srgb,var(--teal) 40%,var(--line));background:color-mix(in srgb,var(--teal) 7%,transparent);border-radius:var(--r-sm);padding:11px 13px}
+.chip.hp.hurt{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 50%,var(--line))}
+.chip.hp.down{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 55%,var(--line));font-weight:700}
+.chip.scar{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 40%,var(--line))}
+.earn-row{border:1px solid var(--line);border-radius:var(--r-sm);padding:11px 12px;margin-bottom:11px;background:var(--panel-2)}
+.earn-row .prep-h{color:var(--amber);margin-bottom:7px}
+.chip.rank{color:var(--teal);border-color:color-mix(in srgb,var(--teal) 45%,var(--line));font-family:var(--disp);font-weight:600}
+.chip.xp{color:var(--amber);border-color:color-mix(in srgb,var(--amber) 45%,var(--line))}
+.rank-badge{font-family:var(--disp);font-size:15px;color:var(--teal);letter-spacing:.02em}
+.xp-award{display:block;border:1px solid var(--line);border-radius:var(--r-sm);padding:9px 11px;margin-bottom:7px;cursor:pointer;background:var(--panel-2)}
+.xp-award:hover{border-color:var(--amber)}
+.xp-val{color:var(--amber);font-weight:700;float:right}
+.xp-total{font-family:var(--disp);font-weight:600;color:var(--amber);text-align:right;margin:6px 2px 2px}
+.xp-bar{display:flex;align-items:center;gap:9px;background:var(--sunk);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 12px;font-size:13px}
+.xp-bar b{font-size:17px;color:var(--amber)}
+.xp-bar b.spent{color:var(--ink-mute)}
+.stylechip.unaffordable{opacity:.4;cursor:not-allowed}
+.stylechip .short{margin-left:6px;font-family:var(--mono);font-size:9.5px;color:var(--danger);opacity:.85}
 ::-webkit-scrollbar{width:10px;height:10px}
 ::-webkit-scrollbar-thumb{background:var(--line);border-radius:6px;border:2px solid var(--ground)}
 ::-webkit-scrollbar-thumb:hover{background:var(--ink-mute)}
@@ -1080,6 +1101,7 @@ function fbDb(root){
     const ref=base.ref(root+"/"+path);
     return {
       doc(id){ return docRef(path+"/"+id); },
+      async get(){ const s=await ref.once("value"); const v=s.val()||{}; return {docs:Object.keys(v).map(k=>({id:k,data:()=>v[k]||{}}))}; },
       onSnapshot(next,err){ const h=ref.on("value",s=>{const v=s.val()||{};const docs=Object.keys(v).map(k=>({id:k,data:()=>v[k]||{}}));next({docs});},err||function(){}); return ()=>ref.off("value",h); }
     };
   }
@@ -1096,6 +1118,56 @@ async function getDb(){
 }
 let liveRole="solo", liveCode="", liveScenario=null, hostCode="", hostScenarioId="", livePlayers=[], scnReadOnly=false, guestPlayerRef=null, guestPid="";
 let _liveUnsub=[], _hostSyncTimer=null;
+/* Your CAMP is your own space (this device: your warbands). Your TABLE is the shared
+   passphrase room where scenarios are hosted. Naming the camp separates the two, and lets
+   the camp be backed up to — and restored from — the table on any device. */
+function campName(){try{return localStorage.getItem("p28_camp")||localStorage.getItem("p28_player")||"";}catch(e){return "";}}
+function setCampName(n){const v=String(n||"").slice(0,40);try{localStorage.setItem("p28_camp",v);localStorage.setItem("p28_player",v);}catch(e){}}
+function campId(){return normLabel(campName()).replace(/[^a-z0-9_-]+/g,"-").replace(/^-+|-+$/g,"").slice(0,40);}
+function wbForCloud(w){
+  const c=JSON.parse(JSON.stringify(w));
+  [].concat(c.characters||[],c.vehicles||[]).forEach(x=>{delete x.img;delete x.imgPos;});
+  (c.scenarios||[]).forEach(s=>{if(s.enemy&&Array.isArray(s.enemy.characters))s.enemy.characters.forEach(e=>{delete e.img;delete e.imgPos;});});
+  return c;
+}
+function healWb(w){
+  w=w&&typeof w==="object"?w:{};
+  ["characters","vehicles","scenarios"].forEach(k=>{if(!Array.isArray(w[k]))w[k]=[];});
+  w.id=w.id||uid(); w.name=String(w.name||"Restored Warband"); if(typeof w.budget!=="number")w.budget=500;
+  [].concat(w.characters,w.vehicles).forEach(c=>{
+    if(!c||typeof c!=="object")return;
+    ["traits","abilities","weapons","armour","items","pickups","sections"].forEach(k=>{if(!Array.isArray(c[k]))c[k]=[];});
+    if(!c.skills||typeof c.skills!=="object")c.skills={A:1,F:1,S:1,AW:1,P:1};
+    if(typeof c.hp!=="number")c.hp=20;
+  });
+  w.scenarios.forEach(s=>fillScnArrayDefaults(s));
+  return w;
+}
+async function backupCamp(){
+  const id=campId(); if(!id){toast("Name your camp first");return;}
+  const db=await getDb(); if(!db){toast("Set your group passphrase first");return;}
+  try{
+    await db.doc("camps/"+id).set({name:campName(),savedAt:Date.now(),warbands:store.warbands.map(wbForCloud)});
+    toast("Camp backed up to your table");
+  }catch(e){ toast("Backup failed — try again"); }
+}
+async function restoreCamp(){
+  const id=campId(); if(!id){toast("Name your camp first");return;}
+  const db=await getDb(); if(!db){toast("Set your group passphrase first");return;}
+  let snap; try{snap=await db.doc("camps/"+id).get();}catch(e){toast("Couldn't reach your table");return;}
+  const v=snap.exists?snap.data():null;
+  if(!v||!Array.isArray(v.warbands)||!v.warbands.length){toast("No backup found for “"+campName()+"”");return;}
+  askConfirm("Restore "+v.warbands.length+" warband"+(v.warbands.length>1?"s":"")+" saved "+new Date(v.savedAt||0).toLocaleString()+"? Warbands with the same id are replaced. Portraits aren't included in backups.",()=>{
+    v.warbands.forEach(bw=>{
+      const h=healWb(bw);
+      const i=store.warbands.findIndex(x=>x.id===h.id);
+      if(i>=0)store.warbands[i]=h; else store.warbands.push(h);
+    });
+    if(!store.warbands.some(x=>x.id===store.activeId))store.activeId=store.warbands[0].id;
+    const ok=save(); render(); closeModal();
+    toast(ok?"Camp restored":"⚠ Restored but NOT saved — storage is full");
+  },{danger:false,yesLabel:"Restore"});
+}
 function playerName(){try{return localStorage.getItem("p28_player")||"";}catch(e){return "";}}
 function setPlayerName(n){try{localStorage.setItem("p28_player",String(n||"").slice(0,40));}catch(e){}}
 function sessCode(){const a="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";let s="";for(let i=0;i<4;i++)s+=a[Math.floor(Math.random()*a.length)];return s;}
@@ -1152,7 +1224,53 @@ function rebuildOpenCard(){if(cardCharId)buildCard();else if(cardVehId)buildVehi
 function toggleFielded(o){o.fielded=!isFielded(o);save();renderHeader();renderRoster();rebuildOpenCard();}
 
 /* ============================ PERSISTENCE ============================ */
-function save(){try{localStorage.setItem(LS_KEY,JSON.stringify(store));return true}catch(e){return false}}
+/* A silent save failure used to lose work invisibly: the screen looked right, then the
+   data was gone on reload. Storage fills up mainly from character portraits. */
+let _saveFailed=false;
+function storageKB(){try{return Math.round(JSON.stringify(store).length/1024);}catch(e){return 0;}}
+function save(){
+  try{
+    localStorage.setItem(LS_KEY,JSON.stringify(store));
+    if(_saveFailed){_saveFailed=false;const b=document.getElementById("saveWarn");if(b)b.remove();}
+    return true;
+  }catch(e){
+    if(!_saveFailed){_saveFailed=true;try{toast("⚠ NOT SAVED — storage is full");}catch(_){}}
+    showSaveWarning();
+    return false;
+  }
+}
+function showSaveWarning(){
+  if(document.getElementById("saveWarn"))return;
+  const d=document.createElement("div");d.id="saveWarn";d.className="save-warn";
+  d.innerHTML=`<b>⚠ Changes are NOT being saved</b> — this device's storage for the app is full (${storageKB()} KB in use), so anything you add now disappears when you reload. Free some space, then everything saves normally again. <button class="btn sm" id="saveWarnFix">Free up space</button>`;
+  document.body.appendChild(d);
+  const f=document.getElementById("saveWarnFix");if(f)f.onclick=openStorageManager;
+}
+function openStorageManager(){
+  const body=$("#modalBody");
+  const rows=store.warbands.map(w=>{
+    const imgs=[].concat(w.characters||[],w.vehicles||[]).filter(c=>c&&c.img).length;
+    const kb=Math.round(JSON.stringify(w).length/1024);
+    return `<div class="wb-item"><div class="wbi-main" style="cursor:default"><div class="wbi-name">${esc(w.name)}</div>
+      <div class="wbi-sub">${kb} KB · ${imgs} portrait${imgs===1?"":"s"} · ${(w.scenarios||[]).length} scenario${(w.scenarios||[]).length===1?"":"s"}</div></div>
+      ${imgs?`<button class="linkbtn del" data-striproom="${w.id}">Remove portraits</button>`:""}</div>`;
+  }).join("");
+  body.innerHTML=`
+    <h3>Storage</h3>
+    <p class="lead">This device is holding <b>${storageKB()} KB</b> for the app. Portraits take by far the most room — removing them keeps every stat, item and scenario intact, and you can always paste a picture back later.</p>
+    <div class="wb-switch">${rows}</div>
+    <div class="modal-actions"><button class="btn ghost sm" id="stClose" style="margin-left:auto">Close</button></div>`;
+  body.querySelectorAll("[data-striproom]").forEach(b=>b.onclick=()=>{
+    const w=store.warbands.find(x=>x.id===b.dataset.striproom);if(!w)return;
+    askConfirm("Remove all portraits from “"+w.name+"”? Stats, gear and scenarios are untouched.",()=>{
+      [].concat(w.characters||[],w.vehicles||[]).forEach(c=>{if(c){delete c.img;delete c.imgPos;}});
+      if(save())toast("Portraits removed — saving works again");
+      render();openStorageManager();
+    },{danger:true,yesLabel:"Remove"});
+  });
+  $("#stClose").onclick=closeModal;
+  showModal();
+}
 function load(){
   try{const raw=localStorage.getItem(LS_KEY);if(raw){const p=JSON.parse(raw);if(p&&p.warbands&&p.warbands.length){store=p;store.warbands.forEach(w=>{if(!w.vehicles)w.vehicles=[];if(!w.scenarios)w.scenarios=[];});return}}}catch(e){}
   const w=newWarband("Void Reavers");w.characters.push(seededCharacter());
@@ -1224,8 +1342,13 @@ function renderRoster(){
       <div class="card-foot">
         <div class="chips">
           ${n>1?`<span class="chip squad">⛊ Squad ×${n}</span>`:""}
-          <span class="chip hp">${c.hp} HP</span>
+          ${(()=>{const max=c.hp*n,cur=(typeof c.curHP==="number"&&c.curHP<max)?c.curHP:null;
+            return cur===null?`<span class="chip hp">${c.hp} HP</span>`
+              :`<span class="chip hp ${cur<=0?"down":"hurt"}">${cur<=0?"DOWN":cur+"/"+max+" HP"}</span>`;})()}
           <span class="chip">${RULES.speed}cm</span>
+          ${(c.xpTotal||0)>0?`<span class="chip rank">${esc(rankOf(c.xpTotal))}</span>`:""}
+          ${(c.xp||0)>0?`<span class="chip xp">⭐ ${c.xp} XP</span>`:""}
+          ${(c.injuries||[]).length?`<span class="chip scar">⚠ ${(c.injuries||[]).length} scar${(c.injuries||[]).length>1?"s":""}</span>`:""}
           ${nGear?`<span class="chip">${nGear} gear</span>`:""}
         </div>
         <button class="fieldtog ${fielded?"on":""}" data-tog title="Bring in / out of the battle">${fielded?"◉ Fielded":"○ Benched"}</button>
@@ -1428,6 +1551,7 @@ function buildDossier(){
   b.appendChild(dg);
 
   // campaign pick-ups (collected scenario items that can change the character)
+  b.appendChild(renderXPGroup(c));
   if((c.pickups||[]).length)b.appendChild(renderPickupsGroup(c));
 
   // traits, abilities
@@ -1576,11 +1700,55 @@ function openLibrary(){
     <p class="lead">Everything is saved automatically in this browser. Use export to back up or move a warband to another device.</p>
     <div class="wb-switch">${rows}</div>
     <button class="btn ghost" id="mNew" style="width:100%;justify-content:center;margin-bottom:16px">+ New warband</button>
-    <div class="eyebrow" style="margin-bottom:8px">Backup &amp; transfer</div>
+    <div class="eyebrow" style="margin-bottom:8px">⛺ Your camp</div>
+    ${(()=>{const chars=activeWB().characters||[];
+      const pend=chars.filter(c=>c.pendingInjury);
+      const hurt=chars.filter(c=>typeof c.curHP==="number"&&c.curHP<c.hp*memberCount(c));
+      let h="";
+      if(pend.length)h+=`<div class="camp-box" style="margin-bottom:12px;border-color:color-mix(in srgb,var(--danger) 55%,var(--line));background:var(--danger-bg)">
+        <div class="prep-h" style="color:var(--danger)">🩸 Taken down — roll for what it cost them</div>
+        ${pend.map(c=>`<div class="wb-item"><div class="wbi-main" style="cursor:default"><div class="wbi-name">${esc(c.name||"Unnamed")}</div>
+          <div class="wbi-sub">fell at ${esc((c.pendingInjury||{}).title||"a quest")}</div></div>
+          <button class="linkbtn" data-injury="${c.id}">Roll injury</button></div>`).join("")}
+      </div>`;
+      if(hurt.length)h+=`<div class="camp-box" style="margin-bottom:12px;border-color:color-mix(in srgb,var(--warn) 45%,var(--line));background:color-mix(in srgb,var(--warn) 9%,transparent)">
+        <div class="prep-h" style="color:var(--warn)">🩹 Back from a quest, still hurt</div>
+        <ul class="scn-list">${hurt.map(c=>`<li><b>${esc(c.name||"Unnamed")}</b> — ${c.curHP<=0?"was taken down":c.curHP+"/"+(c.hp*memberCount(c))+" HP"}</li>`).join("")}</ul>
+        <button class="btn sm" id="mHealAll" style="margin-top:8px">🩹 Rest and heal</button>
+        <div class="none-note" style="font-style:normal;margin-top:6px">Rest restores health only — lasting scars stay with them.</div>
+      </div>`;
+      const spoils=spoilsOf(activeWB());
+      if(spoils.length)h+=`<div class="camp-box" style="margin-bottom:12px;border-color:color-mix(in srgb,var(--amber) 50%,var(--line));background:var(--amber-glow)">
+        <div class="prep-h" style="color:var(--amber)">🎒 Spoils waiting to be decided</div>
+        <ul class="scn-list">${spoils.slice(0,5).map(({c,p})=>`<li><b>${esc(p.name)}</b> — carried by ${esc(c.name||"someone")}</li>`).join("")}${spoils.length>5?`<li>…and ${spoils.length-5} more</li>`:""}</ul>
+        <button class="btn sm" id="mStash" style="margin-top:8px">🎒 Sort the spoils</button>
+        <div class="none-note" style="font-style:normal;margin-top:6px">Free during the quest you found them — keep, or leave them behind.</div>
+      </div>`;
+      const scarred=chars.filter(c=>(c.injuries||[]).length);
+      if(scarred.length)h+=`<div class="camp-box" style="margin-bottom:12px">
+        <div class="prep-h">⚔ Scars they carry</div>
+        <ul class="scn-list">${scarred.map(c=>`<li><b>${esc(c.name)}</b> — ${(c.injuries||[]).map(x=>esc(x.name)+(x.effectNote?" <i>("+esc(x.effectNote)+")</i>":"")).join("; ")}</li>`).join("")}</ul>
+      </div>`;
+      return h;})()}
+    <div class="camp-box">
+      <div class="field" style="margin-bottom:8px"><label>Camp name</label>
+        <input class="input" id="mCampName" value="${esc(campName())}" placeholder="e.g. Rhyno's Camp" maxlength="40" autocapitalize="words"></div>
+      <div class="none-note" style="font-style:normal;margin-bottom:9px">This is your own space — your warbands live here. Your table (the group passphrase) is the shared space where scenarios are hosted. Backing up copies your warbands to your table so you can restore them on any device.${fbAvailable()?"":" Live features are only available in the Realm."}</div>
+      <div class="modal-actions" style="margin-top:0">
+        <button class="btn sm" id="mCampSave">☁ Stash camp at the table</button>
+        <button class="btn sm ghost" id="mCampLoad">⇩ Recover camp here</button>
+      </div>
+    </div>
+    <div class="eyebrow" style="margin:16px 0 8px">Backup &amp; transfer</div>
     <div class="modal-actions" style="margin-top:0">
       <button class="btn sm" id="mExport">Export current</button>
       <button class="btn sm" id="mImport">Import…</button>
+      <button class="btn sm ghost" id="mStashOpen">🎒 Spoils</button>
     </div>
+    ${(activeWB().scenarios||[]).length?`<div class="modal-actions" style="margin-top:8px">
+      <button class="btn sm danger ghost" id="mWipeScns">Delete all ${(activeWB().scenarios||[]).length} scenario${(activeWB().scenarios||[]).length===1?"":"s"}</button>
+      <span class="none-note" style="font-style:normal;margin-left:auto">Start fresh — characters and scars are kept.</span>
+    </div>`:""}
     <div class="modal-actions"><button class="btn ghost sm" id="mClose" style="margin-left:auto">Close</button></div>`;
   body.querySelectorAll("[data-load]").forEach(b=>b.onclick=()=>{store.activeId=b.dataset.load;save();render();closeModal();toast("Loaded "+esc(activeWB().name))});
   body.querySelectorAll("[data-dup]").forEach(b=>b.onclick=()=>{
@@ -1597,6 +1765,27 @@ function openLibrary(){
     },{danger:true,yesLabel:"Delete"});
   });
   $("#mNew").onclick=()=>{const w=newWarband("New Warband");store.warbands.push(w);store.activeId=w.id;save();render();closeModal();openDossierNewHint()};
+  const st=$("#mStash");if(st)st.onclick=openStash;
+  const st2=$("#mStashOpen");if(st2)st2.onclick=openStash;
+  const cw=$("#mWipeScns");if(cw)cw.onclick=()=>{
+    const n=(activeWB().scenarios||[]).length;
+    askConfirm("Delete all "+n+" scenario"+(n===1?"":"s")+" in “"+activeWB().name+"”? Your characters, gear and scars are untouched.",()=>{
+      activeWB().scenarios=[];scnCurrentId=null;scnScreen="list";
+      if(save())toast("Scenarios cleared");render();openLibrary();
+    },{danger:true,yesLabel:"Delete all"});
+  };
+  body.querySelectorAll("[data-injury]").forEach(b=>b.onclick=()=>{
+    const c=activeWB().characters.find(x=>x.id===b.dataset.injury);
+    if(c&&c.pendingInjury)openInjuryRoll(c);
+  });
+  const hl=$("#mHealAll");if(hl)hl.onclick=()=>{
+    (activeWB().characters||[]).forEach(c=>{delete c.curHP;});
+    if(save())toast("Rested — everyone back to full health");
+    render();openLibrary();
+  };
+  const cn=$("#mCampName");if(cn)cn.oninput=e=>setCampName(e.target.value);
+  const cs=$("#mCampSave");if(cs)cs.onclick=backupCamp;
+  const cl=$("#mCampLoad");if(cl)cl.onclick=restoreCamp;
   $("#mExport").onclick=exportCurrent;
   $("#mImport").onclick=importDialog;
   $("#mClose").onclick=closeModal;
@@ -2455,8 +2644,24 @@ function scheduleHostSync(s){
 async function openJoinDialog(){
   const db=await getDb();
   if(!db){toast(fbAvailable()?"Enter your group passphrase to use live play.":"Live play isn't available in this version.");return;}
-  askPlayerName("Join a live game","Enter the game code your host gave you — the 4-letter code shown on their screen (not your group passphrase). You'll see their scenario update live while you build and run your own warband.",nm=>{const c=($("#lgCode").value||"").toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,6);if(!c){toast("Enter the game code");return;}joinGame(c,nm);},
+  askPlayerName("Embark on a quest","Enter the game code your host gave you — the 4-letter code shown on their screen (not your group passphrase). You'll see their scenario update live while you build and run your own warband.",nm=>{const c=($("#lgCode").value||"").toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,6);if(!c){toast("Enter the game code");return;}joinGame(c,nm);},
     `<div class="field" style="margin-bottom:10px"><label>Game code</label><input class="input" id="lgCode" placeholder="e.g. AB3K" maxlength="6" style="max-width:160px;letter-spacing:.2em;text-transform:uppercase;font-family:var(--mono)"><div class="none-note" style="font-style:normal;margin-top:4px">This is different from your passphrase — find it on the host's screen: "📡 Hosting · code XXXX".</div></div>`);
+}
+/* Firebase drops empty arrays one level deeper too: an enemy unit with no traits/armour
+   comes back missing those fields entirely and the points maths throws on it. Heal them. */
+function healScnChars(s){
+  const arr=(o,k)=>{if(o&&!Array.isArray(o[k]))o[k]=[];};
+  if(s&&s.enemy&&Array.isArray(s.enemy.characters))
+    s.enemy.characters.forEach(c=>{
+      if(!c||typeof c!=="object")return;
+      ["traits","abilities","weapons","armour","items","pickups","sections"].forEach(k=>arr(c,k));
+      if(!c.skills||typeof c.skills!=="object")c.skills={A:1,F:1,S:1,AW:1,P:1};
+      ["A","F","S","AW","P"].forEach(k=>{if(typeof c.skills[k]!=="number")c.skills[k]=1;});
+      if(typeof c.hp!=="number")c.hp=20;
+    });
+  if(s&&s.battle&&Array.isArray(s.battle.combatants))
+    s.battle.combatants.forEach(m=>{arr(m,"conditions");arr(m,"neg");});
+  return s;
 }
 function fillScnArrayDefaults(s){
   // Firebase Realtime Database silently drops any field that was an empty array/object
@@ -2469,7 +2674,7 @@ function fillScnArrayDefaults(s){
   s.map.features=Array.isArray(s.map.features)?s.map.features:[];
   if(s.enemy&&typeof s.enemy==="object"&&!Array.isArray(s.enemy.characters))s.enemy.characters=[];
   if(s.battle&&typeof s.battle==="object"&&!Array.isArray(s.battle.combatants))s.battle.combatants=[];
-  return s;
+  return healScnChars(s);
 }
 async function joinGame(code,name){
   const db=await getDb();if(!db){toast("Live play unavailable here.");return;}
@@ -2478,7 +2683,13 @@ async function joinGame(code,name){
   let snap;try{snap=await ref.get();}catch(e){if(res)res.innerHTML=`<div class="ng-note">Couldn't reach the game — check your connection and try again.</div>`;toast("Couldn't reach the game");return;}
   if(!snap.exists){if(res)res.innerHTML=`<div class="ng-note">No live game with code ${esc(code)} at your table. Double-check the code on the host's screen, and that you both set the same group passphrase.</div>`;toast("No game found with that code");return;}
   clearLive();liveRole="guest";liveCode=code;liveScenario=fillScnArrayDefaults((snap.data()||{}).scenario||null);
-  try{ _liveUnsub.push(ref.onSnapshot(sn=>{if(sn.exists){liveScenario=fillScnArrayDefaults((sn.data()||{}).scenario)||liveScenario;if(liveRole==="guest")renderScenarioView();}else{toast("The host ended the game");leaveGame();}},()=>{})); }catch(e){}
+  try{ _liveUnsub.push(ref.onSnapshot(sn=>{
+    if(sn.exists){
+      liveScenario=fillScnArrayDefaults((sn.data()||{}).scenario)||liveScenario;
+      rememberQuestState(liveScenario);      // keep our own copy so spoils survive the host leaving
+      if(liveRole==="guest")renderScenarioView();
+    }else{toast("The host packed up — bring your warband home");returnToCamp();}
+  },()=>{})); }catch(e){}
   const pid=(name.replace(/[^A-Za-z0-9_-]/g,"")||"guest").slice(0,20)+"_"+Math.random().toString(36).slice(2,6);
   guestPid=pid; guestPlayerRef=ref.collection("players").doc(pid);
   try{ await guestPlayerRef.set({name,warbandName:activeWB().name,combatants:myCombatants(name,"g"+pid+"_"),joinedAt:Date.now()}); }catch(e){}
@@ -2490,7 +2701,480 @@ async function resendWarband(){
   try{ await guestPlayerRef.set({name:nm,warbandName:activeWB().name,combatants:myCombatants(nm,"g"+guestPid+"_"),joinedAt:Date.now()}); toast("Sent your warband to the host"); }
   catch(e){ toast("Couldn't send — try again."); }
 }
-function leaveGame(){clearLive();liveRole="solo";liveScenario=null;liveCode="";guestPlayerRef=null;guestPid="";renderScenarioView();toast("Left the game");}
+/* ---- returning from a quest ----
+   Your own device keeps the last roster it saw, so your characters can still come home even
+   if the host has already packed up. Claims are recorded per quest so nothing lands twice. */
+// a combatant is "mine" when it came from a character in this device's warband
+function myCombatantsIn(scn){
+  const w=activeWB(); if(!w||!scn||!scn.battle||!Array.isArray(scn.battle.combatants))return [];
+  const cid=campId();
+  return scn.battle.combatants.filter(m=>m&&m.side==="player"&&m.charId&&
+    (w.characters.some(c=>c.id===m.charId)||(cid&&m.campId===cid)));
+}
+function rememberQuestState(scn){
+  try{
+    if(!scn||!scn.battle)return;
+    const mine=myCombatantsIn(scn);
+    if(!mine.length)return;
+    localStorage.setItem("p28_quest_"+scn.id,JSON.stringify({scnId:scn.id,title:scn.title||"",at:Date.now(),combatants:mine,
+      injuries:injuryTableFor(scn),causes:injuryCauses(scn),xpAwards:xpAwardsFor(scn)}));
+  }catch(e){}
+}
+/* ---- experience & rank ----
+   1 XP = 1 point of upgrades. Spending grows the character's points value, so veterans cost
+   more and you field fewer of them. Ranks come from lifetime XP, never spent away. */
+const RANKS=[
+  {at:0,name:"Recruit"},{at:8,name:"Trooper"},{at:20,name:"Blooded"},{at:36,name:"Veteran"},
+  {at:56,name:"Sergeant"},{at:80,name:"Lieutenant"},{at:110,name:"Captain"},{at:150,name:"Warlord"}
+];
+function rankOf(total){let r=RANKS[0];RANKS.forEach(x=>{if((total||0)>=x.at)r=x;});return r.name;}
+function nextRank(total){return RANKS.find(x=>(total||0)<x.at)||null;}
+const FALLBACK_XP=[
+  {name:"Survived the quest",xp:1,note:"every character who walked away"},
+  {name:"Completed the main objective",xp:2,note:""},
+  {name:"Took down an enemy leader",xp:2,note:""},
+  {name:"Recovered something valuable",xp:1,note:""}
+];
+function coerceXpAward(x){
+  if(!x||typeof x!=="object")return null;
+  const n=String(x.name||"").slice(0,70); if(!n)return null;
+  return {name:n,xp:Math.max(0,Math.min(10,Math.round(+x.xp)||0)),note:String(x.note||"").slice(0,120)};
+}
+function xpAwardsFor(scn){
+  const a=(scn&&Array.isArray(scn.xpAwards)?scn.xpAwards:[]).map(coerceXpAward).filter(Boolean);
+  return a.length?a:FALLBACK_XP.slice();
+}
+function grantXP(chars,amount,why){
+  chars.forEach(c=>{
+    const before=c.xpTotal||0;
+    c.xp=(c.xp||0)+amount; c.xpTotal=before+amount;
+    const r1=rankOf(before), r2=rankOf(c.xpTotal);
+    if(r1!==r2)c._rankedUp=r2;
+  });
+}
+function openXPAwards(snap,charIds,then){
+  const awards=xpAwardsFor({xpAwards:snap.xpAwards});
+  const w=activeWB();
+  const took=charIds.map(id=>w.characters.find(x=>x.id===id)).filter(Boolean);
+  if(!took.length||!awards.length){if(then)then();return;}
+  const body=$("#modalBody");
+  body.innerHTML=`
+    <h3>What did they achieve?</h3>
+    <p class="lead">Tick what your warband managed at “${esc(snap.title||"the quest")}”. Everyone who took part earns it — ${took.length} character${took.length>1?"s":""}.</p>
+    ${awards.map((a,i)=>`<label class="xp-award"><input type="checkbox" data-xp="${i}"> <b>${esc(a.name)}</b> <span class="mono xp-val">+${a.xp}</span>${a.note?`<div class="none-note" style="font-style:normal">${esc(a.note)}</div>`:""}</label>`).join("")}
+    <div class="xp-total" id="xpTotalLine">0 XP each</div>
+    <div class="modal-actions">
+      <button class="btn primary sm" id="xpGive">Award XP</button>
+      <button class="btn ghost sm" id="xpNone" style="margin-left:auto">Nothing this time</button>
+    </div>`;
+  const total=()=>[...body.querySelectorAll("[data-xp]")].reduce((s,b)=>s+(b.checked?awards[+b.dataset.xp].xp:0),0);
+  const upd=()=>{$("#xpTotalLine").textContent=total()+" XP each";};
+  body.querySelectorAll("[data-xp]").forEach(b=>b.onchange=upd);
+  const finish=amount=>{
+    if(amount>0){grantXP(took,amount);save();render();toast("+"+amount+" XP to "+took.length+" character"+(took.length>1?"s":""));}
+    closeModal();
+    const up=took.filter(c=>c._rankedUp);
+    up.forEach(c=>{delete c._rankedUp;});
+    if(up.length)setTimeout(()=>openEarnedNames(up.map(c=>({charId:c.id,name:c.name,reason:(c.name||"They")+" rose to "+rankOf(c.xpTotal)})),"glory",then),300);
+    else if(then)then();
+  };
+  $("#xpGive").onclick=()=>finish(total());
+  $("#xpNone").onclick=()=>finish(0);
+  showModal();
+}
+/* Locked-down upgrade mode: additions only, budget is XP, nothing else can be edited. */
+function openSpendXP(charId){
+  const orig=activeWB().characters.find(x=>x.id===charId); if(!orig)return;
+  const avail=orig.xp||0;
+  if(avail<=0){toast("No XP to spend yet");return;}
+  const baseCost=charCost(orig);
+  let draft=JSON.parse(JSON.stringify(orig));
+  const spent=()=>charCost(draft)-baseCost;
+  const left=()=>avail-spent();
+  const body=$("#modalBody");
+  const draw=(filter)=>{
+    const f=normLabel(filter||"");
+    const rem=left();
+    const skillRow=SKILLS.map(([k,label])=>{
+      const v=draft.skills[k], maxed=v>=10, short=RULES.skillStep-rem;
+      const off=maxed||short>0;
+      return `<button class="stylechip${off?" unaffordable":""}" data-sk="${k}"${off?` disabled title="${maxed?"Already at 10":"Needs "+short+" more XP"}"`:""}>${k} ${v}${maxed?"":"→"+(v+1)} <b class="mono">${maxed?"max":RULES.skillStep}</b>${!maxed&&short>0?`<span class="short">+${short}</span>`:""}</button>`;
+    }).join("");
+    // everything is listed — what you can't afford yet is greyed out, so you can save toward it
+    const gearRows=[["trait","traits"],["ability","abilities"],["weapon","weapons"],["armour","armour"],["item","items"]].map(([cat,field])=>{
+      const list=Object.values(CAT[cat]).filter(o=>!f||normLabel(o.name).includes(f));
+      if(!list.length)return "";
+      return `<div class="eyebrow" style="margin:10px 0 6px">${cat[0].toUpperCase()+cat.slice(1)}s</div>
+        <div class="chips-row">${list.slice(0,60).map(o=>{
+          const short=o.cost-rem;
+          return `<button class="stylechip${short>0?" unaffordable":""}" data-buy="${cat}|${o.id}"${short>0?` disabled title="Needs ${short} more XP"`:""}>${esc(o.name)} <b class="mono">${o.cost>=0?"+":""}${o.cost}</b>${short>0?`<span class="short">+${short}</span>`:""}</button>`;
+        }).join("")}</div>`;
+    }).join("");
+    const added=[];
+    SKILLS.forEach(([k])=>{if(draft.skills[k]>orig.skills[k])added.push(k+" "+orig.skills[k]+"→"+draft.skills[k]);});
+    if(draft.hp>orig.hp)added.push("+"+(draft.hp-orig.hp)+" HP");
+    [["trait","traits"],["ability","abilities"]].forEach(([cat,field])=>{
+      (draft[field]||[]).forEach((id,i)=>{if((orig[field]||[]).filter(x=>x===id).length<=(draft[field]||[]).slice(0,i+1).filter(x=>x===id).length-1||!(orig[field]||[]).includes(id)){if(CAT[cat][id]&&!added.includes(CAT[cat][id].name))added.push(CAT[cat][id].name);}});
+    });
+    [["weapon","weapons"],["armour","armour"],["item","items"]].forEach(([cat,field])=>{
+      (draft[field]||[]).forEach(e=>{const o0=(orig[field]||[]).find(x=>x.id===e.id);const d=(e.qty||1)-((o0&&o0.qty)||0);if(d>0&&CAT[cat][e.id])added.push(CAT[cat][e.id].name+(d>1?" ×"+d:""));});
+    });
+    body.innerHTML=`
+      <h3>⭐ Spend XP — ${esc(orig.name||"Unnamed")}</h3>
+      <p class="lead">Only additions here — nothing else about them can be changed. Every point spent raises what they cost to field.</p>
+      <div class="xp-bar"><span>XP left</span><b class="mono ${rem<=0?"spent":""}">${rem}</b><span class="none-note" style="font-style:normal;margin-left:auto">${baseCost} → ${charCost(draft)} pts</span></div>
+      ${added.length?`<div class="camp-box" style="margin:10px 0"><div class="prep-h">Buying</div><div>${added.map(esc).join(" · ")}</div></div>`:""}
+      <div class="eyebrow" style="margin:12px 0 6px">Skills</div>
+      <div class="chips-row">${skillRow}</div>
+      <div class="chips-row" style="margin-top:8px">${(()=>{const short=RULES.hpPts-rem;
+        return `<button class="stylechip${short>0?" unaffordable":""}" data-hp="1"${short>0?` disabled title="Needs ${short} more XP"`:""}>+2 HP <b class="mono">${RULES.hpPts}</b>${short>0?`<span class="short">+${short}</span>`:""}</button>`;})()}</div>
+      <div class="field" style="margin:12px 0 4px"><label>Search gear &amp; traits</label><input class="input" id="xpSearch" value="${esc(filter||"")}" placeholder="e.g. brave, plate, pistol"></div>
+      <div style="max-height:34vh;overflow:auto">${gearRows||`<div class="ng-note">Nothing matches that search.</div>`}</div>
+      <div class="none-note" style="font-style:normal;margin-top:6px">Greyed-out entries cost more than you have — unspent XP carries over, so you can save for them.</div>
+      <div class="modal-actions">
+        <button class="btn primary sm" id="xpConfirm"${spent()>0?"":" disabled"}>Confirm — spend ${spent()} XP</button>
+        <button class="btn ghost sm" id="xpReset">Start over</button>
+        <button class="btn ghost sm" id="xpCancel" style="margin-left:auto">Cancel</button>
+      </div>`;
+    const si=$("#xpSearch");
+    if(si)si.oninput=e=>{const v=e.target.value;draw(v);const n=$("#xpSearch");if(n){n.focus();n.setSelectionRange(v.length,v.length);}};
+    body.querySelectorAll("[data-sk]").forEach(b=>b.onclick=()=>{const k=b.dataset.sk;if(draft.skills[k]<10&&RULES.skillStep<=left()){draft.skills[k]++;draw(filter);}});
+    body.querySelectorAll("[data-hp]").forEach(b=>b.onclick=()=>{if(RULES.hpPts<=left()){draft.hp+=RULES.hpStep;draw(filter);}});
+    body.querySelectorAll("[data-buy]").forEach(b=>b.onclick=()=>{
+      const[cat,id]=b.dataset.buy.split("|");const o=CAT[cat][id];if(!o||o.cost>left())return;
+      if(cat==="trait"||cat==="ability"){const fld=cat==="trait"?"traits":"abilities";if(!draft[fld].includes(id))draft[fld].push(id);}
+      else{const fld=cat==="weapon"?"weapons":cat==="armour"?"armour":"items";const ex=draft[fld].find(e=>e.id===id);if(ex)ex.qty=(ex.qty||1)+1;else draft[fld].push({id,qty:1});}
+      draw(filter);
+    });
+    $("#xpReset").onclick=()=>{draft=JSON.parse(JSON.stringify(orig));draw(filter);};
+    $("#xpCancel").onclick=closeModal;
+    $("#xpConfirm").onclick=()=>{
+      const cost=spent(); if(cost<=0)return;
+      ["skills","hp","traits","abilities","weapons","armour","items"].forEach(k=>{orig[k]=draft[k];});
+      orig.xp=avail-cost;
+      save();closeModal();render();buildDossier();
+      toast("Spent "+cost+" XP — now "+charCost(orig)+" pts");
+      // growing into something new is worth a name
+      setTimeout(()=>openEarnedNames([{charId:orig.id,name:orig.name,
+        reason:(orig.name||"They")+" grew stronger — "+added.join(", ")+" ("+rankOf(orig.xpTotal||0)+")"}],"glory",
+        ()=>buildDossier()),300);
+    };
+    showModal();
+  };
+  draw("");
+}
+function renderXPGroup(c){
+  const g=document.createElement("div");g.className="dgroup";
+  const total=c.xpTotal||0, rank=rankOf(total), nx=nextRank(total);
+  g.innerHTML=`<div class="ghead"><span class="eyebrow">Experience</span><span class="rule"></span><span class="gcost mono">${c.xp||0} XP</span></div>
+    <div class="camp-box" style="margin-bottom:8px">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <b class="rank-badge">${esc(rank)}</b>
+        <span class="none-note" style="font-style:normal">${total} XP earned all told${nx?` · ${nx.at-total} to ${esc(nx.name)}`:" · highest rank"}</span>
+      </div>
+      <div class="modal-actions" style="margin-top:9px">
+        <button class="btn sm" id="dxpSpend"${(c.xp||0)>0?"":" disabled"}>⭐ Spend ${c.xp||0} XP</button>
+        <button class="linkbtn" id="dxpAdd" style="margin-left:auto">+1 XP</button>
+      </div>
+      <div class="none-note" style="font-style:normal;margin-top:6px">1 XP buys 1 point of upgrades — and raises what they cost to field.</div>
+    </div>`;
+  setTimeout(()=>{
+    const s=document.getElementById("dxpSpend");if(s)s.onclick=()=>openSpendXP(c.id);
+    const a=document.getElementById("dxpAdd");if(a)a.onclick=()=>{grantXP([c],1);save();buildDossier();render();toast("+1 XP");};
+  },0);
+  return g;
+}
+/* ---- spoils ----
+   Gear found on a quest is free for THAT quest. Afterwards it must be paid for in points to
+   keep using it, kept as a trophy with no game effect, or dropped. */
+const SPOIL_CATS=[["weapon","weapons"],["armour","armour"],["item","items"]];
+function spoilsOf(w){
+  const out=[];
+  (w.characters||[]).forEach(c=>(c.pickups||[]).forEach(p=>{if(p&&!p.kept&&!p.applied)out.push({c,p});}));
+  return out;
+}
+function openSpoilChoose(charId,p){
+  const c=activeWB().characters.find(x=>x.id===charId); if(!c)return;
+  const body=$("#modalBody");
+  const draw=(filter)=>{
+    const f=normLabel(filter||"");
+    const rows=SPOIL_CATS.map(([cat,field])=>{
+      const list=Object.values(CAT[cat]).filter(o=>!f||normLabel(o.name).includes(f));
+      if(!list.length)return "";
+      return `<div class="eyebrow" style="margin:10px 0 6px">${cat==="weapon"?"Weapons":cat==="armour"?"Armour":"Items"}</div>
+        <div class="chips-row">${list.map(o=>`<button class="stylechip" data-pickgear="${cat}|${o.id}">${esc(o.name)} <b class="mono">${o.cost}</b></button>`).join("")}</div>`;
+    }).join("");
+    body.innerHTML=`
+      <h3>Keep “${esc(p.name)}”</h3>
+      <p class="lead">Choose what it counts as in the rules. Keeping it costs its points from now on — it was only free during the quest you found it.</p>
+      <div class="field" style="margin-bottom:6px"><label>Search</label><input class="input" id="spSearch" value="${esc(filter||"")}" placeholder="e.g. pistol, plate, kit"></div>
+      <div style="max-height:44vh;overflow:auto">${rows||`<div class="ng-note">Nothing matches.</div>`}</div>
+      <div class="modal-actions"><button class="btn ghost sm" id="spBack" style="margin-left:auto">Cancel</button></div>`;
+    const si=$("#spSearch");
+    if(si){si.oninput=e=>{const v=e.target.value;draw(v);const n=$("#spSearch");if(n){n.focus();n.setSelectionRange(v.length,v.length);}};}
+    $("#spBack").onclick=()=>openStash();
+    body.querySelectorAll("[data-pickgear]").forEach(b=>b.onclick=()=>{
+      const[cat,id]=b.dataset.pickgear.split("|");
+      const field=(SPOIL_CATS.find(x=>x[0]===cat)||[])[1]; if(!field)return;
+      c[field]=Array.isArray(c[field])?c[field]:[];
+      const ex=c[field].find(e=>e.id===id);
+      if(ex)ex.qty=(ex.qty||1)+1; else c[field].push({id,qty:1});
+      p.kept="gear"; p.gearCat=cat; p.gearId=id;
+      save();render();toast("“"+p.name+"” kept — "+(CAT[cat][id]||{}).name+" added");
+      openStash();
+    });
+    showModal();
+  };
+  draw("");
+}
+function openStash(){
+  const w=activeWB(), body=$("#modalBody");
+  const spoils=spoilsOf(w);
+  const keptRows=(w.characters||[]).flatMap(c=>(c.pickups||[]).filter(p=>p.kept).map(p=>({c,p})));
+  body.innerHTML=`
+    <h3>🎒 Spoils</h3>
+    <p class="lead">Anything your warband carried out of a quest. Gear was free for that quest — to keep using it you now pay its points, or keep it as a trophy, or leave it behind.</p>
+    ${spoils.length?spoils.map(({c,p})=>`
+      <div class="earn-row">
+        <div class="prep-h">${esc(c.name||"Unnamed")}</div>
+        <div style="margin-bottom:4px"><b>${esc(p.name)}</b>${p.note?` <span class="pick-note">— ${esc(p.note)}</span>`:""}</div>
+        ${p.when?`<div class="pick-when">⏱ ${esc(p.when)}</div>`:""}
+        <div class="modal-actions" style="margin-top:8px">
+          <button class="btn sm" data-keepgear="${c.id}|${p.itemId}|${p.scnId}">Keep as gear</button>
+          <button class="btn sm ghost" data-trophy="${c.id}|${p.itemId}|${p.scnId}">Keep as trophy</button>
+          <button class="btn sm danger ghost" data-dropspoil="${c.id}|${p.itemId}|${p.scnId}" style="margin-left:auto">Leave it</button>
+        </div>
+      </div>`).join(""):`<div class="ng-note">Nothing waiting — everything's been decided.</div>`}
+    ${keptRows.length?`<div class="eyebrow" style="margin:14px 0 8px">Already decided</div>
+      <ul class="scn-list">${keptRows.map(({c,p})=>`<li><b>${esc(c.name)}</b> — ${esc(p.name)} <span class="pick-note">(${p.kept==="gear"?"kept as "+esc((CAT[p.gearCat]||{})[p.gearId]?CAT[p.gearCat][p.gearId].name:"gear"):"trophy"})</span></li>`).join("")}</ul>`:""}
+    <div class="modal-actions"><button class="btn ghost sm" id="stashClose" style="margin-left:auto">Close</button></div>`;
+  const find=(k)=>{const[cid,itemId,scnId]=k.split("|");const c=w.characters.find(x=>x.id===cid);const p=c&&(c.pickups||[]).find(x=>x.itemId===itemId&&x.scnId===scnId);return {c,p};};
+  body.querySelectorAll("[data-keepgear]").forEach(b=>b.onclick=()=>{const{c,p}=find(b.dataset.keepgear);if(c&&p)openSpoilChoose(c.id,p);});
+  body.querySelectorAll("[data-trophy]").forEach(b=>b.onclick=()=>{const{p}=find(b.dataset.trophy);if(p){p.kept="trophy";save();render();openStash();toast("Kept as a trophy");}});
+  body.querySelectorAll("[data-dropspoil]").forEach(b=>b.onclick=()=>{const{c,p}=find(b.dataset.dropspoil);if(c&&p){c.pickups=(c.pickups||[]).filter(x=>x!==p);save();render();openStash();toast("Left behind");}});
+  $("#stashClose").onclick=closeModal;
+  showModal();
+}
+/* ---- lasting injuries ----
+   The AI writes a table of scenario-specific injuries WHEN THE SCENARIO IS GENERATED, so no AI
+   is needed at the table. Rolled when a character who went down reaches camp. */
+const FALLBACK_INJURIES=[
+  {name:"Cracked ribs",note:"Painful, but nothing that won't mend.",cause:"",permanent:false,effectNote:"No lasting harm.",skills:{},hp:0,addTraits:[]},
+  {name:"Deep scar",note:"A wound that closes ugly.",cause:"",permanent:true,effectNote:"Cosmetic — a mark of what they survived.",skills:{},hp:0,addTraits:[]},
+  {name:"Ruined eye",note:"Depth perception never quite returns.",cause:"",permanent:true,effectNote:"",skills:{AW:-1},hp:0,addTraits:[]},
+  {name:"Shattered leg",note:"Set badly, and it shows in every step.",cause:"",permanent:true,effectNote:"Moves 5cm instead of 10cm.",skills:{},hp:0,addTraits:[]},
+  {name:"Mangled arm",note:"The limb never grips properly again.",cause:"",permanent:true,effectNote:"May only use one-handed weapons.",skills:{},hp:-2,addTraits:[]},
+  {name:"Slow to rise",note:"Something in them broke that day.",cause:"",permanent:true,effectNote:"",skills:{A:-1},hp:0,addTraits:[]},
+  {name:"Hard lesson",note:"They walk away colder than before.",cause:"",permanent:false,effectNote:"No lasting harm.",skills:{},hp:0,addTraits:[]}
+];
+function coerceInjury(x){
+  if(!x||typeof x!=="object")return null;
+  const sk={};["A","F","S","AW","P"].forEach(k=>{const v=Math.round(+((x.skills||{})[k]));if(isFinite(v)&&v)sk[k]=Math.max(-3,Math.min(3,v));});
+  const n=String(x.name||"").slice(0,50); if(!n)return null;
+  return {name:n,note:String(x.note||"").slice(0,180),cause:String(x.cause||"").toLowerCase().slice(0,40),
+    permanent:x.permanent!==false,effectNote:String(x.effectNote||"").slice(0,120),
+    skills:sk,hp:Math.max(-6,Math.min(0,Math.round(+x.hp)||0)),
+    addTraits:(Array.isArray(x.addTraits)?x.addTraits:[]).map(t=>String(t).slice(0,40)).slice(0,3)};
+}
+function injuryTableFor(scn){
+  const t=(scn&&Array.isArray(scn.injuries)?scn.injuries:[]).map(coerceInjury).filter(Boolean);
+  return t.length?t:FALLBACK_INJURIES.slice();
+}
+// what could plausibly have put someone down in this scenario
+function injuryCauses(scn){
+  const out=[];
+  const add=v=>{const s=String(v||"").trim();if(s&&!out.some(x=>normLabel(x)===normLabel(s))&&out.length<8)out.push(s.slice(0,28));};
+  ((scn&&scn.enemy&&scn.enemy.characters)||[]).forEach(c=>add(c.name));
+  ((scn&&scn.map&&scn.map.features)||[]).filter(f=>f&&f.role==="hazard").forEach(f=>add(f.label));
+  ((scn&&scn.events)||[]).forEach(e=>add(e.title));
+  return out;
+}
+function rollInjury(table,cause){
+  const c=normLabel(cause);
+  let pool=c?table.filter(x=>x.cause&&(normLabel(x.cause).includes(c)||c.includes(normLabel(x.cause)))):[];
+  if(!pool.length)pool=table;
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+function applyInjury(c,inj,scnTitle){
+  c.injuries=c.injuries||[];
+  c.injuries.push({name:inj.name,note:inj.note,effectNote:inj.effectNote,permanent:inj.permanent!==false,from:scnTitle||"",at:Date.now()});
+  Object.keys(inj.skills||{}).forEach(k=>{if(typeof c.skills[k]==="number")c.skills[k]=Math.max(1,Math.min(10,c.skills[k]+inj.skills[k]));});
+  if(inj.hp){let hp=c.hp+inj.hp;if(hp<2)hp=2;if(hp%2)hp+=1;c.hp=hp;}
+  (inj.addTraits||[]).forEach(n=>{const o=findCat("trait",n);if(o&&!c.traits.includes(o.id))c.traits.push(o.id);});
+  const max=c.hp*memberCount(c); if(typeof c.curHP==="number"&&c.curHP>max)c.curHP=max;
+}
+function openInjuryRoll(c){
+  const p=c.pendingInjury||{};
+  const table=Array.isArray(p.table)&&p.table.length?p.table.map(coerceInjury).filter(Boolean):FALLBACK_INJURIES.slice();
+  const causes=Array.isArray(p.causes)?p.causes:[];
+  const body=$("#modalBody");
+  const draw=cause=>{
+    const inj=rollInjury(table,cause);
+    const eff=[];
+    Object.keys(inj.skills||{}).forEach(k=>eff.push((inj.skills[k]>0?"+":"")+inj.skills[k]+" "+k));
+    if(inj.hp)eff.push(inj.hp+" HP");
+    (inj.addTraits||[]).forEach(t=>eff.push("gains "+t));
+    body.innerHTML=`
+      <h3>${esc(inj.name)}</h3>
+      <p class="lead">${esc(inj.note||"")}</p>
+      <div class="camp-box" style="border-color:color-mix(in srgb,var(--danger) 45%,var(--line));background:var(--danger-bg)">
+        <div class="prep-h" style="color:var(--danger)">${inj.permanent!==false?"Permanent — this never heals":"Temporary — rest will mend it"}</div>
+        ${eff.length?`<div style="margin-bottom:6px"><b>${esc(eff.join(" · "))}</b></div>`:""}
+        ${inj.effectNote?`<div class="pick-when">⏱ ${esc(inj.effectNote)}</div>`:""}
+      </div>
+      <div class="modal-actions">
+        <button class="btn primary sm" id="injTake">${inj.permanent!==false?"They carry it":"Accept"}</button>
+        <button class="btn ghost sm" id="injReroll">↻ Roll again</button>
+        <button class="btn ghost sm" id="injSkip" style="margin-left:auto">No lasting harm</button>
+      </div>`;
+    $("#injReroll").onclick=()=>draw(cause);
+    $("#injSkip").onclick=()=>{delete c.pendingInjury;save();closeModal();render();toast("They walked it off");};
+    $("#injTake").onclick=()=>{
+      const title=(c.pendingInjury||{}).title||"";
+      if(inj.permanent!==false)applyInjury(c,inj,title);
+      delete c.pendingInjury;save();closeModal();render();
+      toast(inj.permanent!==false?("“"+inj.name+"” will stay with them"):"Rest will mend it");
+      if(inj.permanent!==false)setTimeout(()=>openEarnedNames([{charId:c.id,name:c.name,reason:(c.name||"They")+" — "+inj.name+(inj.effectNote?" ("+inj.effectNote+")":"")}],"scar"),300);
+    };
+    showModal();
+  };
+  body.innerHTML=`
+    <h3>What put ${esc(c.name||"them")} down?</h3>
+    <p class="lead">Pick what took them out — the injury is drawn from what this quest could actually do to a person.</p>
+    <div class="chips-row">${causes.map(x=>`<button class="stylechip" data-cause="${esc(x)}">${esc(x)}</button>`).join("")}
+      <button class="stylechip" data-cause="">Something else</button></div>
+    <div class="modal-actions"><button class="btn ghost sm" id="injLater" style="margin-left:auto">Decide later</button></div>`;
+  body.querySelectorAll("[data-cause]").forEach(b=>b.onclick=()=>draw(b.dataset.cause));
+  $("#injLater").onclick=closeModal;
+  showModal();
+}
+/* ---- earned names ----
+   A character who goes down, or who grows through hard-won experience, can take a new name.
+   Works with no AI (the Realm has none at the table); the Claude app adds tailored suggestions. */
+const EPITHET_SCAR=["the Scarred","the Broken","One-Eye","the Limping","the Bled","Half-Face","the Marked","Deathless","the Ruined","Ashen","the Twice-Dead","Gravebound"];
+const EPITHET_GLORY=["the Feared","the Undying","the Iron","Blooded","the Merciless","the Bold","Grim","the Unbowed","the Butcher","the Relentless","the Vow-Keeper","Wolf-of-the-Line"];
+function baseName(n){const s=String(n||"").trim();if(!s)return "Unnamed";const cut=s.split(/\s+(?:the|of|von|de)\s+/i)[0];return cut.split(/\s+/).slice(0,2).join(" ")||s;}
+function suggestEarnedNames(name,kind){
+  const pool=(kind==="glory"?EPITHET_GLORY:EPITHET_SCAR).slice(), base=baseName(name), out=[];
+  while(out.length<4&&pool.length)out.push(base+" "+pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
+  return out;
+}
+/* entries: [{charId, name, reason}] — kind "scar" (went down) or "glory" (grew stronger) */
+function openEarnedNames(entries,kind,then){
+  entries=(entries||[]).filter(e=>e&&e.charId);
+  if(!entries.length){if(then)then();return;}
+  const body=$("#modalBody");
+  const rows=entries.map((e,i)=>`
+    <div class="earn-row" data-earn="${e.charId}">
+      <div class="prep-h">${esc(e.reason||"")}</div>
+      <div class="field" style="margin-bottom:7px"><label>Name</label>
+        <input class="input earn-name" id="earn${i}" value="${esc(e.name||"")}" maxlength="42"></div>
+      <div class="chips-row">${suggestEarnedNames(e.name,kind).map(n=>`<button class="stylechip" data-suggest="${i}|${esc(n)}">${esc(n)}</button>`).join("")}
+        <button class="linkbtn" data-reroll="${i}">↻ more</button>
+        ${kind==="glory"?"":""}</div>
+    </div>`).join("");
+  body.innerHTML=`
+    <h3>${kind==="glory"?"A name worth earning":"They carry it with them"}</h3>
+    <p class="lead">${kind==="glory"?"Deeds change what people call you. Take a new name, or keep the old one.":"Surviving what put you down leaves a mark — and often a new name. Change it, or leave it be."}</p>
+    ${rows}
+    <div id="earnAI"></div>
+    <div class="modal-actions">
+      <button class="btn primary sm" id="earnSave">Save names</button>
+      ${typeof getSample==="function"?`<button class="btn ghost sm" id="earnAImore">✦ Suggest with AI</button>`:""}
+      <button class="btn ghost sm" id="earnSkip" style="margin-left:auto">Keep as they are</button>
+    </div>`;
+  const setName=(i,v)=>{const el=$("#earn"+i);if(el)el.value=v;};
+  body.querySelectorAll("[data-suggest]").forEach(b=>b.onclick=()=>{const[i,n]=b.dataset.suggest.split("|");setName(i,n);});
+  body.querySelectorAll("[data-reroll]").forEach(b=>b.onclick=()=>{
+    const i=+b.dataset.reroll, row=b.closest(".earn-row"), chips=row.querySelector(".chips-row");
+    const fresh=suggestEarnedNames(entries[i].name,kind);
+    [...chips.querySelectorAll("[data-suggest]")].forEach((c,k)=>{if(fresh[k]){c.textContent=fresh[k];c.dataset.suggest=i+"|"+fresh[k];}});
+  });
+  const done=save_=>{
+    if(save_)entries.forEach((e,i)=>{
+      const el=$("#earn"+i);if(!el)return;
+      const v=el.value.trim();if(!v)return;
+      const c=activeWB().characters.find(x=>x.id===e.charId);
+      if(c&&c.name!==v){c.name=v;}
+    });
+    if(save_)save();
+    closeModal();render();if(then)then();
+  };
+  $("#earnSave").onclick=()=>done(true);
+  $("#earnSkip").onclick=()=>done(false);
+  const ai=$("#earnAImore");
+  if(ai)ai.onclick=async()=>{
+    const st=$("#earnAI");st.innerHTML=`<div class="ng-note spin">Asking Claude…</div>`;
+    const s=await getSample();
+    if(!s){st.innerHTML=`<div class="ng-note">AI naming only works in the Claude app.</div>`;return;}
+    try{
+      const list=await s.json(`Grimdark sci-fi skirmish game. For each character below, suggest ONE new name they might earn — keep their existing given name and add an earned epithet that fits what happened. Reply with ONLY a JSON array of strings, same order, no prose.\n`+
+        entries.map((e,i)=>`${i+1}) "${e.name}" — ${e.reason}`).join("\n"),{modelTier:"quick",cache:false});
+      (Array.isArray(list)?list:[]).forEach((n,i)=>{if(typeof n==="string"&&n.trim())setName(i,n.trim().slice(0,42));});
+      st.innerHTML="";
+    }catch(e){st.innerHTML=`<div class="ng-note">${sampleErr(e&&e.code)}</div>`;}
+  };
+  showModal();
+}
+function questClaims(){try{return JSON.parse(localStorage.getItem("p28_claimed")||"[]");}catch(e){return [];}}
+function markClaimed(id){try{const a=questClaims();if(!a.includes(id)){a.push(id);localStorage.setItem("p28_claimed",JSON.stringify(a.slice(-50)));}}catch(e){}}
+function pendingQuest(scn){
+  // prefer the live roster; fall back to the last copy this device kept
+  let snap=null;
+  if(scn&&scn.battle){
+    const mine=myCombatantsIn(scn);
+    if(mine.length)snap={scnId:scn.id,title:scn.title||"",combatants:mine,injuries:injuryTableFor(scn),causes:injuryCauses(scn),xpAwards:xpAwardsFor(scn)};
+  }
+  if(!snap&&scn){try{const raw=localStorage.getItem("p28_quest_"+scn.id);if(raw)snap=JSON.parse(raw);}catch(e){}}
+  if(!snap||questClaims().includes(snap.scnId))return null;
+  return snap;
+}
+function claimQuest(snap,then){
+  const w=activeWB();
+  let wounded=0,downed=0,found=0;
+  const fell=[];
+  (snap.combatants||[]).forEach(m=>{
+    const c=w.characters.find(x=>x.id===m.charId); if(!c)return;
+    if(m.curHP<=0){
+      fell.push({charId:c.id,name:c.name});
+      // they'll roll for a lasting injury at camp — the table travels with them
+      c.pendingInjury={scnId:snap.scnId,title:snap.title||"",table:snap.injuries||[],causes:snap.causes||[]};
+    }
+    const max=c.hp*memberCount(c);
+    if(typeof m.curHP==="number"&&m.curHP<max){ c.curHP=Math.max(0,m.curHP); if(m.curHP<=0)downed++; else wounded++; }
+    else { c.curHP=max; }
+    if(m.curHP<=0){ c.downedIn=c.downedIn||[]; if(!c.downedIn.includes(snap.scnId))c.downedIn.push(snap.scnId); }
+    (m.finds||[]).forEach(f=>{
+      c.pickups=c.pickups||[];
+      if(!c.pickups.some(p=>p.itemId===f.itemId&&p.scnId===f.scnId)){c.pickups.push(f);found++;}
+    });
+  });
+  markClaimed(snap.scnId);
+  const ok=save();
+  render();
+  const bits=[];
+  if(wounded)bits.push(wounded+" wounded");
+  if(downed)bits.push(downed+" taken down");
+  if(found)bits.push(found+" find"+(found>1?"s":""));
+  toast(ok?("Back at camp"+(bits.length?" — "+bits.join(", "):"")):"⚠ Returned but NOT saved — storage is full");
+  if(then)then();
+  // XP for the quest first, then anyone who fell rolls for what it cost them
+  const took=(snap.combatants||[]).map(m=>m.charId).filter(id=>w.characters.some(c=>c.id===id));
+  const rollInjuries=()=>{ if(!fell.length)return;
+    const c=w.characters.find(x=>x.id===fell[0].charId);
+    if(c&&c.pendingInjury)openInjuryRoll(c);
+  };
+  setTimeout(()=>openXPAwards(snap,took,rollInjuries),350);
+}
+function returnToCamp(){
+  const snap=pendingQuest(liveScenario);
+  const finish=()=>{clearLive();liveRole="solo";liveScenario=null;liveCode="";guestPlayerRef=null;guestPid="";renderScenarioView();};
+  if(!snap){finish();toast("Back at camp");return;}
+  const names=(snap.combatants||[]).map(m=>m.name).slice(0,4).join(", ");
+  askConfirm("Bring your warband home from “"+(snap.title||"the quest")+"”? Wounds and anything they picked up ("+names+") come back with them.",
+    ()=>claimQuest(snap,finish),{danger:false,yesLabel:"Return to camp"});
+}
+function leaveGame(){returnToCamp();}
 
 function renderScenarioList(){
   const w=activeWB(), el=$("#scenarioView");
@@ -2505,23 +3189,78 @@ function renderScenarioList(){
     </button>`).join("");
   el.innerHTML=`
     ${fbAvailable()?(roomKey?`<div class="live-panel">
-      <div class="lp-main"><b>Live game</b> <span class="none-note" style="font-style:normal">Host a scenario for your table, or join one your host is running. Everyone plays on their own device.</span><div class="lp-tablebadge">◉ At your table <button class="linkbtn" id="lpLeaveTable">change passphrase</button></div></div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm ghost" id="lpImport">⇩ Import scenario</button><button class="btn sm" id="lpJoin">📡 Join a live game</button></div>
+      <div class="lp-main"><b>Live game</b> <span class="none-note" style="font-style:normal">Host a scenario for your table, or join one your host is running. Everyone plays on their own device.</span><div class="lp-tablebadge">${campName()?`⛺ ${esc(campName())} · `:""}◉ at your table <button class="linkbtn" id="lpLeaveTable">change passphrase</button></div></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm ghost" id="lpTableScns">🗄 My table's scenarios</button><button class="btn sm ghost" id="lpImport">⇩ Import scenario</button><button class="btn sm" id="lpJoin">⚔ Embark on a quest</button></div>
     </div>`:`<div class="live-panel live-panel-gate">
       <div class="lp-main"><b>Live game</b> <span class="none-note" style="font-style:normal">Host or join a live game with your table — set a shared passphrase first so everyone lands in the same game.</span></div>
       <button class="btn primary" id="lpTable">🔑 Set group passphrase</button>
     </div>`):""}
-    <div class="section-head"><span class="eyebrow">Scenarios &amp; Campaigns</span><span class="rule"></span></div>
+    <div class="section-head"><span class="eyebrow">Scenarios &amp; Campaigns</span><span class="rule"></span><span class="none-note" style="font-style:normal">${esc(w.name)}</span></div>
     <div class="scn-grid">
       ${cards}
       <button class="scn-card add" id="scnNew"><div class="plus">+</div><span>New scenario</span></button>
-    </div>`;
+    </div>
+    ${(()=>{ // scenarios are stored per warband — never let them vanish just because you switched
+      const others=store.warbands.filter(x=>x.id!==w.id).flatMap(x=>(x.scenarios||[]).map(s=>({s,wb:x})));
+      if(!others.length)return "";
+      return `<div class="section-head" style="margin-top:26px"><span class="eyebrow">In your other warbands</span><span class="rule"></span></div>
+      <div class="scn-grid">${others.map(({s,wb})=>`
+        <button class="scn-card" data-openother="${wb.id}|${s.id}">
+          <div class="scn-mini">${scenarioMapSVG(s.map,true)}</div>
+          <div class="scn-cbody">
+            <div class="scn-mode ${s.mode==="coop"?"coop":"pvp"}">${s.mode==="coop"?"Co-op":"PvP"} · ${s.players} players</div>
+            <div class="scn-title">${esc(s.title||"Untitled scenario")}</div>
+            <div class="scn-sub">🛡 ${esc(wb.name)}</div>
+          </div>
+        </button>`).join("")}</div>
+      <div class="none-note" style="font-style:normal;margin-top:8px">Opening one of these switches you to that warband.</div>`;})()}`;
   el.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>{scnCurrentId=b.dataset.open;scnScreen="detail";renderScenarioView();});
+  el.querySelectorAll("[data-openother]").forEach(b=>b.onclick=()=>{
+    const[wid,sid]=b.dataset.openother.split("|");
+    store.activeId=wid;save();render();
+    scnCurrentId=sid;scnScreen="detail";switchView("scenarios");renderScenarioView();
+  });
   $("#scnNew").onclick=openScenarioWizard;
   const lpj=$("#lpJoin");if(lpj)lpj.onclick=openJoinDialog;
   const lpi=$("#lpImport");if(lpi)lpi.onclick=openImportScenario;
+  const lts=$("#lpTableScns");if(lts)lts.onclick=openTableScenarios;
   const lt=$("#lpTable");if(lt)lt.onclick=async()=>{if(await ensureRoom())renderScenarioView();};
   const ll=$("#lpLeaveTable");if(ll)ll.onclick=()=>{forgetRoom();clearLive();liveRole="solo";liveScenario=null;renderScenarioView();toast("Left the table — set a passphrase to rejoin");};
+}
+/* Your table doubles as durable scenario storage: anything ever hosted in this passphrase
+   room can be pulled back down onto any device, so a wiped browser never loses a scenario. */
+async function openTableScenarios(){
+  const body=$("#modalBody");
+  body.innerHTML=`<h3>Scenarios at your table</h3><div class="ng-note spin">Looking…</div>`;showModal();
+  const db=await getDb();
+  if(!db){body.innerHTML=`<h3>Scenarios at your table</h3><p class="lead">Set your group passphrase first.</p><div class="modal-actions"><button class="btn ghost sm" id="tsX" style="margin-left:auto">Close</button></div>`;$("#tsX").onclick=closeModal;return;}
+  let docs=[];
+  try{ docs=(await db.collection("sessions").get()).docs; }catch(e){}
+  const w=activeWB(), mine=(w.scenarios||[]).map(x=>normLabel(x.title));
+  const rows=docs.map(d=>{const v=d.data()||{},s=v.scenario||{};return {code:d.id,title:s.title||"Untitled",host:v.hostName||"",when:v.updatedAt||0,have:mine.includes(normLabel(s.title))};})
+    .sort((a,b)=>b.when-a.when);
+  body.innerHTML=`
+    <h3>Scenarios at your table</h3>
+    <p class="lead">Everything hosted at this table is kept here, so you can pull a scenario back onto any device — even after clearing a browser.</p>
+    ${rows.length?`<div class="wb-switch">${rows.map(r=>`<div class="wb-item">
+      <div class="wbi-main" style="cursor:default"><div class="wbi-name">${esc(r.title)}</div>
+        <div class="wbi-sub">code ${esc(r.code)}${r.host?" · hosted by "+esc(r.host):""}${r.when?" · "+new Date(r.when).toLocaleString():""}</div></div>
+      ${r.have?`<span class="none-note" style="font-style:normal">already here</span>`:`<button class="linkbtn" data-pull="${esc(r.code)}">Load</button>`}</div>`).join("")}</div>`
+      :`<div class="ng-note">Nothing has been hosted at this table yet.</div>`}
+    <div class="modal-actions"><button class="btn ghost sm" id="tsX" style="margin-left:auto">Close</button></div>`;
+  $("#tsX").onclick=closeModal;
+  body.querySelectorAll("[data-pull]").forEach(b=>b.onclick=async()=>{
+    b.textContent="Loading…";
+    try{
+      const snap=await db.doc("sessions/"+b.dataset.pull).get();
+      const raw=(snap.data()||{}).scenario;
+      if(!raw){toast("That game is no longer there");return;}
+      const s=normalizeImportedScn(raw);
+      const wb=activeWB();(wb.scenarios=wb.scenarios||[]).unshift(s);
+      if(!save()){toast("⚠ Loaded but NOT saved — free up space");}
+      closeModal();scnCurrentId=s.id;scnScreen="detail";renderScenarioView();toast("Loaded “"+(s.title||"scenario")+"”");
+    }catch(e){toast("Couldn't load that one");}
+  });
 }
 function openImportScenario(){
   const body=$("#modalBody");
@@ -2537,8 +3276,10 @@ function openImportScenario(){
     let s;try{s=JSON.parse(raw);}catch(e){err.innerHTML=`<div class="ng-note">That doesn't look like a valid scenario code.</div>`;return;}
     if(!s||typeof s!=="object"||(!s.title&&!s.premise&&!s.objectives)){err.innerHTML=`<div class="ng-note">That code isn't a scenario.</div>`;return;}
     s=normalizeImportedScn(s);
-    const w=activeWB();(w.scenarios=w.scenarios||[]).unshift(s);save();
-    closeModal();scnCurrentId=s.id;scnScreen="detail";renderScenarioView();toast("Scenario imported");
+    const w=activeWB();(w.scenarios=w.scenarios||[]).unshift(s);
+    const ok=save();
+    closeModal();scnCurrentId=s.id;scnScreen="detail";renderScenarioView();
+    toast(ok?"Scenario imported":"⚠ Imported but NOT saved — storage is full");
   };
   showModal();
 }
@@ -2558,7 +3299,7 @@ function normalizeImportedScn(raw){
   s.round=+s.round||1; if(s.rounds!=null)s.rounds=+s.rounds||null;
   if(s.enemy&&typeof s.enemy==="object"){ if(!Array.isArray(s.enemy.characters))s.enemy.characters=[]; }
   if(s.battle&&(!s.battle.combatants||!Array.isArray(s.battle.combatants)))s.battle=null;
-  return s;
+  return healScnChars(s);
 }
 function exportScenarioCode(s){
   const body=$("#modalBody");
@@ -2672,9 +3413,11 @@ CONNECT THE CHECKLIST TO THE MAP — this is important. Every map feature needs 
 SEARCHING IS RESOLVED BY THE APP: a feature with role "cache" gets a Search button in play. Any item whose mapLabel points at that cache stays hidden until someone searches it, and the app picks which one turns up (at random if several share one cache). So it is GOOD to hide 1-3 items in caches, and fine for two different items to share a cache — that creates a real gamble. An item that just lies in the open (like the main objective) should point at a non-cache feature instead, so it needs no searching.
 ITEMS ARE THE MOST IMPORTANT PLACE TO GET THIS RIGHT, AND THE EASIEST TO FORGET: every entry in "items" MUST carry BOTH a "mapLabel" (where on the table it is found — normally the cache it is hidden in) AND a "when". Do not leave an item's mapLabel empty; if it is not hidden in a cache, point it at whatever feature it lies on or beside. An item with no mapLabel is useless to the host because they cannot place it.
 EVERY item MUST have a "when" field: one short, concrete sentence saying WHEN OR WHERE it matters, naming the specific special rule, hazard, event or place it interacts with — e.g. "Wear it before entering the flooded lower level; cancels the Deep-pressure -1 Athletics penalty" rather than a vague "useful later". If an item counters something, that something must exist in specialRules, events or a hazard feature — never invent a rule the scenario doesn't have. Do the same for npcs where it helps ("when" = when/where it shows up).
+EXPERIENCE — write an "xpAwards" list of 3-5 things this warband could achieve here, each worth 1-3 XP: the main objective, a hard secondary goal, surviving, beating a named threat. Make them specific to THIS scenario ("Carry the Hadal Core off your edge", not "win"). Keep the total modest — 4-8 XP for a very good night.
+LASTING INJURIES — this is a campaign, and a character taken down may carry something out of it forever. Write an "injuries" table of 5-7 entries covering the ways THIS scenario can maim someone (its creatures, weapons, hazards and environment — venom here, crush wounds there, pressure or cold or fire). Each entry: "cause" (a short tag matching a threat in this scenario — an enemy name, a hazard, an event — so the right injury is drawn for what actually happened), "permanent" (true for something that never heals, false for a scare that mends), "effectNote" (a plain-language house rule the players enforce themselves, e.g. "Moves 5cm instead of 10cm" or "May only use one-handed weapons" — use "" when there is no rule), and optionally small mechanical changes: "skills" (e.g. {"AW":-1}, never worse than -3, only where it makes sense), "hp" (0 or a small negative even number), "addTraits" (existing trait names only). Include at least one entry that leaves NO lasting harm, and don't make every entry crippling — most fighters should walk away marked but able.
 SECRETS & SURPRISES — make the world feel alive: you MAY include plot twists and surprise reveals. Mark any NPC, item, or timed event that should be a SECRET (hidden from the host until it happens) with "secret": true. For a secret NPC or item, DO NOT spoil it in the checklist — instead give a non-spoiler "hint" telling the host only what to PREPARE (e.g. "a large monstrous miniature", "a mysterious relic token") while keeping the real name/note/round in the normal fields (the app hides them until the host reveals or the moment arrives). A collectible item whose effect should only be discovered on pickup should be marked "secret": true with a vague "hint". Not everything needs to be secret — obvious, up-front elements stay visible.
 Reply with ONLY a JSON object (no prose, no code fence) shaped EXACTLY like:
-{"title":"short evocative title","premise":"1-2 sentence hook","briefing":"vivid 4-6 sentence atmospheric second-person narration","scenery":"1-2 sentences describing the terrain to build","objectives":["a victory condition","..."],"specialRules":["an optional special rule","..."],"twist":"one mid-game complication (or empty string)","events":[{"round":4,"kind":"surprise","title":"short event name","text":"what happens this round, written atmospherically","effect":{"apply":true,"type":"damage","amount":"1D6","scope":"chosen","duration":"turn","negatedBy":["Power armour"]}}],"deployment":"how the warbands deploy, referencing table sides/centre","gameLength":"1D10+6 turns","terrain":[{"name":"terrain piece to build","note":"how many / what it looks like","mapLabel":"Wreck Spire","role":"cover-tall"}],"markers":[{"name":"objective/token to print","note":"what it marks","mapLabel":"Hadal Core","role":"objective"}],"npcs":[{"name":"extra character/creature","note":"what it is / when it appears","when":"when and where it shows up","mapLabel":"Vent Mouth","secret":false,"hint":""}],"items":[{"name":"collectible item","note":"what it does / what it changes about whoever picks it up","when":"the concrete moment it matters, naming the rule/hazard it answers","mapLabel":"Supply Locker","secret":false,"hint":""}],"map":{"note":"one-line caption of the battlefield","zones":[{"label":"short deployment label","side":"a","x":5,"y":5,"w":30,"h":18}],"features":[{"type":"terrain","role":"cover-tall","label":"Wreck Spire","x":50,"y":50}]}}
+{"title":"short evocative title","premise":"1-2 sentence hook","briefing":"vivid 4-6 sentence atmospheric second-person narration","scenery":"1-2 sentences describing the terrain to build","objectives":["a victory condition","..."],"specialRules":["an optional special rule","..."],"twist":"one mid-game complication (or empty string)","events":[{"round":4,"kind":"surprise","title":"short event name","text":"what happens this round, written atmospherically","effect":{"apply":true,"type":"damage","amount":"1D6","scope":"chosen","duration":"turn","negatedBy":["Power armour"]}}],"deployment":"how the warbands deploy, referencing table sides/centre","gameLength":"1D10+6 turns","terrain":[{"name":"terrain piece to build","note":"how many / what it looks like","mapLabel":"Wreck Spire","role":"cover-tall"}],"markers":[{"name":"objective/token to print","note":"what it marks","mapLabel":"Hadal Core","role":"objective"}],"npcs":[{"name":"extra character/creature","note":"what it is / when it appears","when":"when and where it shows up","mapLabel":"Vent Mouth","secret":false,"hint":""}],"items":[{"name":"collectible item","note":"what it does / what it changes about whoever picks it up","when":"the concrete moment it matters, naming the rule/hazard it answers","mapLabel":"Supply Locker","secret":false,"hint":""}],"xpAwards":[{"name":"Carry the power core off your table edge","xp":3,"note":""},{"name":"Every character survives","xp":1,"note":""}],"injuries":[{"name":"Venom-withered arm","note":"The limb never regains its strength.","cause":"Scorpion Swarm","permanent":true,"effectNote":"May only use one-handed weapons.","skills":{},"hp":-2,"addTraits":[]}],"map":{"note":"one-line caption of the battlefield","zones":[{"label":"short deployment label","side":"a","x":5,"y":5,"w":30,"h":18}],"features":[{"type":"terrain","role":"cover-tall","label":"Wreck Spire","x":50,"y":50}]}}
 Map coordinates are percentages of the 90×90 board: x from 0 (left) to 100 (right), y from 0 (top) to 100 (bottom). Provide 2-4 deployment zones (side is "a", "b" or "neutral") and 6-10 features (type is one of "terrain","cover","objective","hazard"; role is one of the roles listed above and is REQUIRED on every feature). Keep every map label under 22 characters and make each one distinctive enough to reference. Keep the checklist arrays short and concrete (omit any that don't apply), and give every checklist entry a "mapLabel" matching a map label exactly wherever it belongs on the table.`;
   try{
     const raw=await s.json(prompt,{modelTier:"default",cache:false});
@@ -2728,6 +3471,8 @@ function coerceScenario(raw,opts){
     terrain:terrainL, markers:markersL, npcs:npcsL,
     items:itemsL.map((x,i)=>({name:x.name,note:x.note,when:x.when,mapLabel:x.mapLabel,role:x.role,secret:x.secret,hint:x.hint,revealed:false,found:false,id:"it"+i,heldBy:null})),
     searched:[],
+    injuries:(Array.isArray(raw.injuries)?raw.injuries:[]).map(coerceInjury).filter(Boolean).slice(0,10),
+    xpAwards:(Array.isArray(raw.xpAwards)?raw.xpAwards:[]).map(coerceXpAward).filter(Boolean).slice(0,6),
     difficulty:opts.difficulty||"normal",
     round:1, rounds:opts.length||null,
     map:{note:String(m.note||""),zones,features:feats},
@@ -2984,13 +3729,23 @@ function negListOf(c){
   (c.armour||[]).forEach(e=>{if(CAT.armour[e.id])nm.push(CAT.armour[e.id].name);});
   return nm.map(x=>x.toLowerCase());
 }
+/* Combatants carry the camp + character they came from, so whatever happens to them at the
+   quest can be routed back to the right character on the right player's own device. */
+function injuryNotes(c){return (c.injuries||[]).filter(x=>x&&x.name).map(x=>x.name+(x.effectNote?" ("+x.effectNote+")":""));}
 function myCombatants(owner,idPrefix){
-  const w=activeWB(), out=[];
-  w.characters.filter(isFielded).forEach(c=>{const n=memberCount(c);out.push({id:(idPrefix||"p_")+c.id,side:"player",owner:owner||"",name:(c.name||"Unnamed")+(n>1?" ×"+n:""),maxHP:c.hp*n,curHP:c.hp*n,conditions:[],neg:negListOf(c)});});
+  const w=activeWB(), out=[], cid=campId();
+  w.characters.filter(isFielded).forEach(c=>{
+    const n=memberCount(c), max=c.hp*n;
+    // a character carries its lingering wounds into the next quest
+    const cur=(typeof c.curHP==="number"&&c.curHP>0&&c.curHP<max)?c.curHP*1:max;
+    out.push({id:(idPrefix||"p_")+c.id,side:"player",owner:owner||"",campId:cid,charId:c.id,
+      name:(c.name||"Unnamed")+(n>1?" ×"+n:""),maxHP:max,curHP:cur,conditions:[],neg:negListOf(c),
+      scars:injuryNotes(c),finds:[]});
+  });
   return out;
 }
 function buildBattle(s){
-  const me=playerName()||"You", combatants=myCombatants(me,"p_");
+  const me=campName()||playerName()||"You", combatants=myCombatants(me,"p_");
   (livePlayers||[]).forEach(p=>(p.combatants||[]).forEach(m=>{if(m&&m.id&&!combatants.some(x=>x.id===m.id))combatants.push(JSON.parse(JSON.stringify(m)));}));
   if(s.mode==="coop"&&s.enemy&&Array.isArray(s.enemy.characters))
     s.enemy.characters.forEach(c=>{const n=memberCount(c);combatants.push({id:"e_"+c.id,side:"enemy",owner:"Enemy",name:(c.name||"Enemy")+(n>1?" ×"+n:""),maxHP:c.hp*n,curHP:c.hp*n,conditions:[],neg:negListOf(c)});});
@@ -3017,7 +3772,7 @@ function battleHTML(s){
     </div>`;
   }).join("");
   return `<div class="scn-battle"><div class="mh">Battle roster${scnReadOnly?" · live":""}</div>${rows}
-    ${scnReadOnly?"":`<div class="round-actions" style="margin-top:8px"><span class="none-note" style="font-style:normal">${s.battle.combatants.length} combatants · ± adjusts HP</span><button class="linkbtn" id="btlReset">Rebuild</button></div>`}</div>`;
+    ${scnReadOnly?"":`<div class="round-actions" style="margin-top:8px"><span class="none-note" style="font-style:normal">${s.battle.combatants.length} combatants · ± adjusts HP</span>${pendingQuest(s)?`<button class="linkbtn" id="btlHome">🏕 Return to camp</button>`:""}<button class="linkbtn" id="btlReset">Rebuild</button></div>`}</div>`;
 }
 function rollDice(str){
   str=String(str||"").trim();
@@ -3225,9 +3980,12 @@ function collectHTML(s){
     const nums=numBadges(mapNumsFor(s.map,it.mapLabel));
     const whenLine=it.when?`<div class="pick-when">⏱ ${esc(it.when)}</div>`:"";
     if(it.heldBy){
-      const ch=chars.find(c=>c.id===it.heldBy);
+      const m=((s.battle&&s.battle.combatants)||[]).find(x=>x.id===it.heldBy);
+      const ch=chars.find(c=>c.id===((m&&m.charId)||String(it.heldBy).replace(/^p_/,"")));
+      const who=(m&&m.name)||(ch&&ch.name)||"held";
+      const camp=m&&m.owner?` <small style="opacity:.7">${esc(m.owner)}</small>`:"";
       return `<div class="pick-row"><div class="pick-main">${nums}<b>${esc(it.name)}</b>${it.note?` <span class="pick-note">— ${esc(it.note)}</span>`:""}${whenLine}</div>
-        <div class="pick-held">🎒 ${esc(ch?ch.name||"a character":"held")}${scnReadOnly?"":` <button class="linkbtn del" data-drop="${it.id}">drop</button>`}</div></div>`;
+        <div class="pick-held">🎒 ${esc(who)}${camp}${scnReadOnly?"":` <button class="linkbtn del" data-drop="${it.id}">drop</button>`}</div></div>`;
     }
     const hidden=itemIsHidden(s,it);
     const label=(it.secret&&!it.revealed)?`<i>${esc(it.hint||"an unknown find")}</i>`:`<b>${esc(it.name)}</b>`;
@@ -3240,7 +3998,12 @@ function collectHTML(s){
       return `<div class="pick-row"><div class="pick-main">${nums}${label}${nh}${whenLine}</div></div>`;
     }
     if(pickupOpenId===it.id){
-      const chips=chars.length?chars.map(c=>`<button class="pick-chip" data-assign="${it.id}|${c.id}">${esc(c.name)||"Unnamed"}</button>`).join(""):`<span class="none-note" style="font-style:normal">Add characters to your warband first.</span>`;
+      // every player model at the quest can claim a find — including guests' warbands
+      const roster=((s.battle&&s.battle.combatants)||[]).filter(m=>m&&m.side==="player");
+      const opts=roster.length?roster.map(m=>({key:m.id,label:m.name,who:m.owner||""}))
+        :chars.map(c=>({key:"p_"+c.id,label:c.name||"Unnamed",who:campName()||""}));
+      const chips=opts.length?opts.map(o=>`<button class="pick-chip" data-assign="${it.id}|${esc(o.key)}">${esc(o.label)}${o.who?` <small style="opacity:.7">${esc(o.who)}</small>`:""}</button>`).join("")
+        :`<span class="none-note" style="font-style:normal">Start the battle roster (or add characters) first.</span>`;
       return `<div class="pick-row open"><div class="pick-main">${nums}<b>${esc(it.name)}</b></div>
         <div class="pick-choose"><span class="pick-lbl">Picked up by…</span>${chips}<button class="linkbtn" data-pickcancel="1">cancel</button></div></div>`;
     }
@@ -3250,18 +4013,29 @@ function collectHTML(s){
   }).join("");
   return `<div class="scn-collect"><div class="mh">Collectibles — pick-ups</div>${searchBlock}${rows}</div>`;
 }
-function assignPickup(s,itemId,charId){
+/* combatKey is a battle-roster id ("p_<charId>" for the host's own, "g<pid>_<charId>" for a
+   guest's). The find is recorded on the COMBATANT so it syncs to that player's device, and
+   also applied locally when the model belongs to this device's warband. */
+function assignPickup(s,itemId,combatKey){
   const it=(s.items||[]).find(x=>x.id===itemId);if(!it)return;
-  const c=activeWB().characters.find(x=>x.id===charId);if(!c)return;
-  it.heldBy=charId;
+  const m=((s.battle&&s.battle.combatants)||[]).find(x=>x.id===combatKey);
+  const localId=(m&&m.charId)||String(combatKey).replace(/^p_/,"");
+  const c=activeWB().characters.find(x=>x.id===localId);
+  const mine=!!c&&(!m||!m.campId||m.campId===campId());
+  it.heldBy=combatKey;
   if(it.secret)it.revealed=true;   // its effect is revealed once picked up
-  c.pickups=c.pickups||[];
-  if(!c.pickups.some(p=>p.itemId===itemId&&p.scnId===s.id))c.pickups.push({itemId,scnId:s.id,name:it.name,note:it.note,when:it.when||""});
-  pickupOpenId=null;save();renderScenarioView();toast((c.name||"Character")+" picked up "+it.name);
+  const rec={itemId,scnId:s.id,name:it.name,note:it.note,when:it.when||""};
+  if(m){ m.finds=Array.isArray(m.finds)?m.finds:[]; if(!m.finds.some(f=>f.itemId===itemId))m.finds.push(rec); }
+  if(mine){ c.pickups=c.pickups||[]; if(!c.pickups.some(p=>p.itemId===itemId&&p.scnId===s.id))c.pickups.push(rec); }
+  pickupOpenId=null;save();renderScenarioView();
+  toast(((m&&m.name)||(c&&c.name)||"Character")+" picked up "+it.name);
 }
 function dropPickup(s,itemId){
   const it=(s.items||[]).find(x=>x.id===itemId);if(!it)return;
-  const c=activeWB().characters.find(x=>x.id===it.heldBy);
+  const m=((s.battle&&s.battle.combatants)||[]).find(x=>x.id===it.heldBy);
+  if(m&&Array.isArray(m.finds))m.finds=m.finds.filter(f=>f.itemId!==itemId);
+  const localId=(m&&m.charId)||String(it.heldBy||"").replace(/^p_/,"");
+  const c=activeWB().characters.find(x=>x.id===localId);
   if(c&&c.pickups)c.pickups=c.pickups.filter(p=>!(p.itemId===itemId&&p.scnId===s.id));
   it.heldBy=null;save();renderScenarioView();
 }
@@ -3403,7 +4177,7 @@ function renderScenarioDetail(scnOverride){
     </div>`:"";
   el.innerHTML=`
     <div class="scn-detail">
-      <button class="scn-back" id="scnBack">${scnReadOnly?"⎋ Leave game · "+esc(liveCode):"‹ All scenarios"}</button>
+      <button class="scn-back" id="scnBack">${scnReadOnly?"🏕 Return to camp · "+esc(liveCode):"‹ All scenarios"}</button>
       ${scnReadOnly?`<div class="live-badge guest">◉ Live · watching the host's game (read-only)</div>
         <div class="guest-wb">🛡 <b>${esc(activeWB().name)}</b> — ${activeWB().characters.filter(isFielded).length} fielded sent to the host's roster. <button class="linkbtn" id="gResend">Re-send my warband</button><div class="none-note" style="font-style:normal;margin-top:4px">Change your fielded characters on the Warband tab, then re-send.</div></div>`:(liveRole==="host"&&s.id===hostScenarioId?`<div class="live-badge host">📡 Hosting · code <b>${esc(hostCode)}</b> · ${livePlayers.length} joined <button class="linkbtn" id="hostStop">Stop</button></div>`:"")}
       <div class="scn-dmode" style="color:${s.mode==="coop"?"var(--teal)":"var(--amber)"}">${s.mode==="coop"?"Co-operative":"PvP"} · ${s.players} players · ${s.points} pts · ${esc(diffOf(s).label)}</div>
@@ -3446,7 +4220,7 @@ function renderScenarioDetail(scnOverride){
         </div>
       </div>
       <div style="margin-top:22px;display:flex;gap:10px;flex-wrap:wrap">
-        ${scnReadOnly?`<button class="btn ghost sm" id="scnCopy">Copy as text</button><button class="btn primary sm" id="scnLeave" style="margin-left:auto">⎋ Leave game</button>`:`
+        ${scnReadOnly?`<button class="btn ghost sm" id="scnCopy">Copy as text</button><button class="btn primary sm" id="scnLeave" style="margin-left:auto">🏕 Return to camp</button>`:`
         <button class="btn" id="scnRegen">✦ Regenerate</button>
         <button class="btn ghost sm" id="scnCopy">Copy as text</button>
         <button class="btn ghost sm" id="scnShare" title="Copy a code to bring this scenario into the World App to host it live">🌍 Move to World App</button>
@@ -3464,6 +4238,9 @@ function renderScenarioDetail(scnOverride){
   // battle roster
   const bs=$("#btlStart");if(bs)bs.onclick=()=>{buildBattle(s);renderScenarioView();};
   const br=$("#btlReset");if(br)br.onclick=()=>{buildBattle(s);renderScenarioView();toast("Battle roster rebuilt");};
+  const bh=$("#btlHome");if(bh)bh.onclick=()=>{const snap=pendingQuest(s);if(!snap){toast("Nothing to bring home");return;}
+    askConfirm("Bring your warband home from “"+(snap.title||"the quest")+"”? Wounds and finds come back with them, and this quest won't be claimed again.",
+      ()=>claimQuest(snap,()=>renderScenarioView()),{danger:false,yesLabel:"Return to camp"});};
   el.querySelectorAll("[data-hp]").forEach(b=>b.onclick=()=>{const[id,d]=b.dataset.hp.split("|");const m=(s.battle.combatants||[]).find(x=>x.id===id);if(m){m.curHP=Math.max(0,Math.min(m.maxHP,m.curHP+ +d));save();renderScenarioView();}});
   el.querySelectorAll("[data-cond]").forEach(b=>b.onclick=()=>{const[id,ci]=b.dataset.cond.split("|");const m=(s.battle.combatants||[]).find(x=>x.id===id);if(m){m.conditions.splice(+ci,1);save();renderScenarioView();}});
   // pickups
