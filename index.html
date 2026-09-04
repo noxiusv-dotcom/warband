@@ -2009,13 +2009,12 @@ function buildCard(){
      .map(o=>({name:o.name,val:fmtSigned(o.cost)+" pts",desc:o.desc}));
   const abils=c.abilities.map(id=>CAT.ability[id]).filter(Boolean)
      .map(o=>({name:o.name,val:fmtSigned(o.cost)+" pts",desc:o.desc}));
-  const weaps=c.weapons.map(e=>({o:CAT.weapon[e.id],q:e.qty})).filter(x=>x.o)
-     .map(({o,q})=>({name:o.name+(q>1?" ×"+q:""),val:o.cost*q+" cr",
-       desc:`${o.type} · ${o.size} · dmg ${o.dmg}${o.range!=="—"?" · "+o.range:""}${o.rules!=="—"?" · "+o.rules:""}`}));
-  const arm=c.armour.map(e=>({o:CAT.armour[e.id],q:e.qty})).filter(x=>x.o)
-     .map(({o})=>({name:o.name,val:o.cost+" cr",desc:(o.def!=="—"?"Defence "+o.def:"")+(o.desc!=="—"?(o.def!=="—"?" · ":"")+o.desc:"")}));
-  const items=c.items.map(e=>({o:CAT.item[e.id],q:e.qty})).filter(x=>x.o)
-     .map(({o,q})=>({name:o.name+(q>1?" ×"+q:""),val:o.cost*q+" cr",desc:o.desc}));
+  const weaps=c.weapons.map(e=>({o:CAT.weapon[e.id],q:e.qty,e})).filter(x=>x.o)
+     .map(({o,q,e})=>({name:gearLabel(o,e,q),val:o.cost*q+" cr",desc:gearNote("weapon",o,e)}));
+  const arm=c.armour.map(e=>({o:CAT.armour[e.id],q:e.qty,e})).filter(x=>x.o)
+     .map(({o,e})=>({name:gearLabel(o,e,1),val:o.cost+" cr",desc:gearNote("armour",o,e)}));
+  const items=c.items.map(e=>({o:CAT.item[e.id],q:e.qty,e})).filter(x=>x.o)
+     .map(({o,q,e})=>({name:gearLabel(o,e,q),val:o.cost*q+" cr",desc:gearNote("item",o,e)}));
 
   const anyGear=weaps.length+arm.length+items.length;
   const anyPow=traits.length+abils.length;
@@ -2463,8 +2462,8 @@ function buildVehicleCard(){
       .map(({o,q})=>({name:o.name+(q>1?" ×"+q:""),val:"HP "+(o.hp*q)+" · "+(o.cost*q)+" pts",desc:o.desc})));
   const vtraits=(v.traits||[]).map(id=>CAT.vtrait[id]).filter(Boolean).map(o=>({name:o.name,val:fmtSigned(o.cost)+" pts",desc:o.desc}));
   const vabils=(v.abilities||[]).map(id=>CAT.vability[id]).filter(Boolean).map(o=>({name:o.name,val:fmtSigned(o.cost)+" pts",desc:o.desc}));
-  const vweaps=(v.weapons||[]).map(e=>({o:CAT.vweapon[e.id],q:e.qty})).filter(x=>x.o)
-      .map(({o,q})=>({name:o.name+(q>1?" ×"+q:""),val:o.cost*q+" pts",desc:entryDesc("vweapon",o)}));
+  const vweaps=(v.weapons||[]).map(e=>({o:CAT.vweapon[e.id],q:e.qty,e})).filter(x=>x.o)
+      .map(({o,q,e})=>({name:gearLabel(o,e,q),val:o.cost*q+" pts",desc:gearNote("vweapon",o,e)}));
   const gc=$("#gameCard");
   gc.innerHTML=`
     <div class="gc-layout">
@@ -2700,6 +2699,7 @@ function healScnChars(s){
       if(!c.skills||typeof c.skills!=="object")c.skills={A:1,F:1,S:1,AW:1,P:1};
       ["A","F","S","AW","P"].forEach(k=>{if(typeof c.skills[k]!=="number")c.skills[k]=1;});
       if(typeof c.hp!=="number")c.hp=20;
+      stripRedundantTraits(c);
     });
   if(s&&s.enemy&&Array.isArray(s.enemy.vehicles))
     s.enemy.vehicles.forEach(v=>{
@@ -3821,17 +3821,34 @@ function buildEnemyChar(u){
   let n=Math.round(+u.count)||1;if(n===2)n=3;c.count=Math.max(1,Math.min(10,n));
   c.traits=(Array.isArray(u.traits)?u.traits:[]).map(x=>findCat("trait",x)).filter(Boolean).map(o=>o.id);
   c.abilities=(Array.isArray(u.abilities)?u.abilities:[]).map(x=>findCat("ability",x)).filter(Boolean).map(o=>o.id);
-  const gear=(cat,list)=>(Array.isArray(list)?list:[]).map(w=>{const o=findCat(cat,w&&w.name);return o?{id:o.id,qty:Math.max(1,Math.round(+((w&&w.qty)||1))||1)}:null;}).filter(Boolean);
+  const gear=(cat,list)=>(Array.isArray(list)?list:[]).map(w=>{const o=findCat(cat,w&&w.name);if(!o)return null;const e={id:o.id,qty:Math.max(1,Math.round(+((w&&w.qty)||1))||1)};if(w&&w.as)e.as=String(w.as).slice(0,32);return e;}).filter(Boolean);
   c.weapons=gear("weapon",u.weapons);c.armour=gear("armour",u.armour);c.items=gear("item",u.items);
   legaliseLoadout(c);
   c.fielded=true;
   return c;
 }
+/* Gigantic's own rules text says it "gains all effects of Big", so buying Big alongside it
+   pays twice for the same thing and puts a dead line on the card. Only strip what the
+   rulebook states outright — this is the one trait that explicitly contains another.
+   Runs on import and sync too, so a force generated before this existed self-corrects. */
+function stripRedundantTraits(c){
+  if(!c||!Array.isArray(c.traits))return c;
+  const big=findCat("trait","Big"), gig=findCat("trait","Gigantic");
+  if(big&&gig&&c.traits.indexOf(gig.id)>=0&&c.traits.indexOf(big.id)>=0)
+    c.traits=c.traits.filter(id=>id!==big.id);
+  return c;
+}
+/* The DM may label a piece of gear with what it actually is on the model — a spider's
+   Dagger shown as "Fangs", flak armour as "Chitin plates" — WITHOUT changing any rule.
+   The catalogue profile is still named in the description so it stays findable at the table. */
+function gearLabel(o,e,q){return ((e&&e.as)?String(e.as):o.name)+(q>1?" ×"+q:"");}
+function gearNote(cat,o,e){const d=entryDesc(cat,o);return d+((e&&e.as)?(d?" · ":"")+"profile: "+o.name:"");}
 /* The rulebook's hard equipment limits. The DM is told all of these in the prompt, but a
    unit that breaks one is unplayable at the table, so repair rather than trust: keep what
    the DM chose first (its priorities) and drop only the excess. */
 function legaliseLoadout(c){
   const has=n=>{const t=findCat("trait",n);return !!(t&&c.traits.includes(t.id));};
+  stripRedundantTraits(c);
   // Animal: no shooting, no abilities
   if(has("Animal")){
     c.abilities=[];
@@ -3844,7 +3861,7 @@ function legaliseLoadout(c){
     c.armour=c.armour.filter(e=>!cx(CAT.armour[e.id]));
   }
   // One suit of armour only, and never two of the same
-  if(c.armour.length>1)c.armour=[{id:c.armour[0].id,qty:1}];
+  if(c.armour.length>1)c.armour=[c.armour[0].as?{id:c.armour[0].id,qty:1,as:c.armour[0].as}:{id:c.armour[0].id,qty:1}];
   else if(c.armour.length)c.armour[0].qty=1;
   // Hands: 2 by default — one two-handed OR two one-handed. Extra limbs = 4/2, Armless = 1 one-handed.
   const cap=has("Extra limbs")?4:has("Armless")?1:2;
@@ -3859,7 +3876,7 @@ function legaliseLoadout(c){
     if(used+need*qty>cap)qty=Math.floor((cap-used)/need);
     if(qty<1)return;
     used+=need*qty; if(two)twoUsed++;
-    kept.push({id:e.id,qty});
+    kept.push(e.as?{id:e.id,qty,as:e.as}:{id:e.id,qty});
   });
   c.weapons=kept;
   // A Reload weapon with no ammo can never be fired. Supply the ammo its profile names.
@@ -3893,7 +3910,7 @@ function buildEnemyVehicle(u){
   v.type=findVehType(u.type); v.size=findVehSize(u.size);
   v.skills.A=Math.max(VRULES.aStart,Math.min(VRULES.skillMax,Math.round(+u.agility)||VRULES.aStart));
   v.skills.S=Math.max(VRULES.sStart,Math.min(VRULES.skillMax,Math.round(+u.shooting)||VRULES.sStart));
-  const gear=(cat,list)=>(Array.isArray(list)?list:[]).map(x=>{const o=findCat(cat,x&&x.name);return o?{id:o.id,qty:Math.max(1,Math.min(6,Math.round(+((x&&x.qty)||1))||1))}:null;}).filter(Boolean);
+  const gear=(cat,list)=>(Array.isArray(list)?list:[]).map(x=>{const o=findCat(cat,x&&x.name);if(!o)return null;const e={id:o.id,qty:Math.max(1,Math.min(6,Math.round(+((x&&x.qty)||1))||1))};if(x&&x.as)e.as=String(x.as).slice(0,32);return e;}).filter(Boolean);
   v.sections=gear("vsection",u.sections);
   v.weapons=gear("vweapon",u.weapons);
   v.traits=(Array.isArray(u.traits)?u.traits:[]).map(x=>findCat("vtrait",x)).filter(Boolean).map(o=>o.id);
@@ -3923,7 +3940,7 @@ function legaliseVehicle(v){
     if(hp){v.sections.push({id:hp.id,qty:add});mounts=add;}
   }
   let left=mounts,kept=[];
-  v.weapons.forEach(e=>{const take=Math.min(e.qty,left);if(take>0){kept.push({id:e.id,qty:take});left-=take;}});
+  v.weapons.forEach(e=>{const take=Math.min(e.qty,left);if(take>0){kept.push(e.as?{id:e.id,qty:take,as:e.as}:{id:e.id,qty:take});left-=take;}});
   v.weapons=kept;
   // Armour plating may be at most 50% of a small/medium vehicle, 25% of a large one
   const plate=sec("Armour plating");
@@ -3975,15 +3992,17 @@ EQUIPMENT IS LIMITED BY THE RULES — a unit that breaks these is unplayable at 
 - ARMOUR: exactly one type of armour, never two, never two of the same. Pick the one that fits the unit — an Energy shield is useless against slug-throwers, Light armour is useless against energy weapons, and a Psy-hood is warding, not protection.
 - AMMO: any weapon whose keywords say "Ammo = rough/basic/special" consumes one piece of that ammo per shot and cannot fire without it, so buy that ammo as items — several pieces, or the unit fires once and is finished. Weapons without an Ammo keyword never need any.
 - BARBARIC units may not touch anything with the Complex keyword.
+- DO NOT BUY THE SAME THING TWICE: "Gigantic" already states it gains all effects of "Big", so never take both — take Gigantic alone. Read each trait's text before pairing it with another.
+NAME THE GEAR FOR WHAT IT ACTUALLY IS. The catalogue has no entry for fangs, claws, a sting, a tail or a carapace, so a creature's natural weapons must borrow an existing profile — but a card reading "Dagger" for a spider is nonsense at the table. Whenever the catalogue name doesn't match the fiction, add an "as" field to that piece of gear giving the name the players should see: {"name":"Dagger","as":"Venomed fangs","qty":1}, {"name":"Light armour","as":"Chitin plates","qty":1}, {"name":"Great sword","as":"Scything claws","qty":1}, {"name":"Heavy machine gun","as":"Harpoon battery","qty":1}. The rules, damage, cost and keywords are COMPLETELY unchanged — "as" only renames it, and the real profile is still printed underneath. Use it for beasts, machines and improvised weapons; leave it out when the catalogue name is already right (a raider's shotgun is just a shotgun).
 Match the gear to the story you are telling about the unit: a sniper wants range and a rifle it can reroll with, an ambusher wants a short-range, high-damage weapon, a swarm wants cheap claws and numbers, a warlord wants presence and armour. Read each entry's effect text and pick things that combine — do not pick by cost alone.
 Use ONLY names spelled EXACTLY as in these catalogs:
 ${catalogForAI()}
 VEHICLES — you may also field vehicles, and their points come out of the same total. Add one ONLY when the scenario earns it: a road, a landing pad, a hangar, open ground, a convoy, a siege, a faction with the means to bring armour. Do not put a tank in a crawlspace, a sewer, a boarding action or a cave, and never add one just to spend points. At most two, and usually none or one — a single vehicle should feel like an event, not a given. A vehicle has no HP of its own: it is built from sections, each with its own hit-points, and it is destroyed section by section.
 Vehicle build rules: base 10 pts; Agility and Shooting both start at 2 and cost +10 per level to a max of 10 (a vehicle has no F, AW or P — its melee comes from its size); the type and each section, trait, ability and weapon cost their listed points. Hard limits: it may mount ONE weapon per hard point (a Turret hard point is a hard point that fires in any direction), so buy hard points for the guns you want; armour plating may be at most half of a small or medium vehicle and a quarter of a large one; a Dozer blade needs a medium or large vehicle; each Crew section lets it fire one more weapon in a shooting action; each Transport section carries 3 characters. Crewed vehicles pair well with a squad of characters riding in them — say so in the deployNote.
 Reply with ONLY a JSON object (no prose, no code fence) shaped exactly like {"units":[...],"vehicles":[...]}, with 3-8 entries in "units" and 0-2 in "vehicles" (an empty array when the scenario doesn't suit them). A unit is shaped exactly like:
-{"name":"Warboss Krael","role":"Leader","background":"Two vivid sentences: what this thing/person is, how it fits the scenario, and what makes it dangerous — atmospheric, not generic.","atStart":true,"deployNote":"sets up within 10cm of table side 3, behind the Rock Spire Cluster","reveal":"open","tease":"","omen":"","count":1,"skills":{"A":4,"F":6,"S":4,"AW":4,"P":2},"hp":26,"traits":["Fearsome","Brave"],"abilities":["Inspire"],"weapons":[{"name":"Power fist","qty":1}],"armour":[{"name":"Ballistic plate","qty":1}],"items":[{"name":"Med kit","qty":1}]}
+{"name":"Warboss Krael","role":"Leader","background":"Two vivid sentences: what this thing/person is, how it fits the scenario, and what makes it dangerous — atmospheric, not generic.","atStart":true,"deployNote":"sets up within 10cm of table side 3, behind the Rock Spire Cluster","reveal":"open","tease":"","omen":"","count":1,"skills":{"A":4,"F":6,"S":4,"AW":4,"P":2},"hp":26,"traits":["Fearsome","Brave"],"abilities":["Inspire"],"weapons":[{"name":"Power fist","qty":1,"as":""}],"armour":[{"name":"Ballistic plate","qty":1,"as":""}],"items":[{"name":"Med kit","qty":1}]}
 A vehicle is shaped exactly like:
-{"name":"The Rust Hymn","role":"Gun-truck","background":"Two vivid sentences tying this machine to the scenario — what it is, who drives it, why it is here.","type":"Ground","size":"Medium","agility":4,"shooting":5,"atStart":true,"deployNote":"rolls on from table side 3 along the causeway, three raiders riding it","reveal":"open","tease":"","omen":"","hint":"","sections":[{"name":"Hard point","qty":2},{"name":"Armour plating","qty":2},{"name":"Transport section","qty":1}],"traits":["Open-topped"],"abilities":["Turbo boost"],"weapons":[{"name":"Heavy machine gun","qty":1},{"name":"Heavy slug rifle","qty":1}]}
+{"name":"The Rust Hymn","role":"Gun-truck","background":"Two vivid sentences tying this machine to the scenario — what it is, who drives it, why it is here.","type":"Ground","size":"Medium","agility":4,"shooting":5,"atStart":true,"deployNote":"rolls on from table side 3 along the causeway, three raiders riding it","reveal":"open","tease":"","omen":"","hint":"","sections":[{"name":"Hard point","qty":2},{"name":"Armour plating","qty":2},{"name":"Transport section","qty":1}],"traits":["Open-topped"],"abilities":["Turbo boost"],"weapons":[{"name":"Heavy machine gun","qty":1,"as":""},{"name":"Heavy slug rifle","qty":1,"as":""}]}
 MOST OF THE FORCE MUST BE ON THE TABLE AT TURN 1. An empty battlefield on the first turn is almost always wrong, because the players would walk the objective before anything opposed them. Unless the scenario text explicitly demands a completely empty start, deploy the bulk of the enemy AND its leader at the start, and hold back only genuine reinforcements or one scripted late arrival. If the scenario says a unit is present from deployment or deploys at the start, that unit MUST be atStart:true no matter what later events mention it.
 DECIDE HOW MUCH WARNING EACH LATE ARRIVAL GETS — this is a storytelling judgement, so make it deliberately per unit with a "reveal" field. Use "open" when knowing about it makes the game better: a threat the players should plan around, a clock they can see ticking, something the briefing would obviously mention. Use "foreshadowed" when the tension of knowing something is coming — but not what — is worth more than either extreme; also give a short atmospheric "tease" line the host can read out (e.g. "Something vast shifts in the canopy overhead"), and the players will be told roughly which turn to brace for. Use "hidden" for a genuine ambush that should land as a shock — and give it an "omen": one atmospheric sensory line the players are told from the outset that betrays NOTHING about what it is, when it comes or where from, e.g. "You hear something moving through the trees; nothing shows itself", "A tremor runs up through the deck plates, and no one can say what caused it", "The birds went quiet an hour ago." Dread without information — the players should feel watched without being able to plan around it. Do NOT default everything to one setting: a scenario is best when it mixes them — perhaps a visible enemy push, one dread you can hear coming, and one thing nobody saw at all. Units that deploy at the start are always "open".
 DEPLOYMENT IS REQUIRED ON EVERY UNIT — the host must know exactly what to put on the table before turn 1. Set "atStart":true for units that start on the battlefield, and give "deployNote" a concrete placement (a table side, a deployment zone, or a named map feature). Set "atStart":false for anything that ARRIVES LATER — reinforcements, burrowing creatures, a boss that erupts from a lair — and make its "deployNote" say exactly when and from where, naming the turn and the timed event it belongs to (e.g. "does not deploy at start; erupts from the Broodmother's Warren on turn 5 (The Warren Wakes)"). If the scenario's events describe something arriving, the matching unit MUST be atStart:false and reference that event.
