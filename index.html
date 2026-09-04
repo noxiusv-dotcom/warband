@@ -570,6 +570,10 @@ textarea.input{resize:vertical;min-height:56px;line-height:1.45}
 .mapref-n{display:inline-grid;place-items:center;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:var(--amber-glow);border:1px solid color-mix(in srgb,var(--amber) 55%,var(--line));color:var(--amber);font-family:var(--mono);font-size:10px;font-weight:700}
 .role-chip{display:inline-block;margin-left:7px;padding:1px 7px;border-radius:9px;font-family:var(--disp);font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;border:1px solid var(--line);color:var(--ink-dim);background:var(--panel-2);white-space:nowrap}
 .role-chip.r-cover{color:var(--teal);border-color:color-mix(in srgb,var(--teal) 45%,var(--line))}
+.role-chip.g-even{color:var(--ink-mute);border-style:dashed}
+.role-chip.g-rough{color:var(--amber);border-color:color-mix(in srgb,var(--amber) 45%,var(--line));border-style:dashed}
+.role-chip.g-haz{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 55%,var(--line));border-style:dashed}
+.role-chip.g-imp{color:var(--ink-dim);border-color:var(--line);border-style:dashed;text-decoration:line-through}
 .role-chip.r-cache{color:var(--amber);border-color:color-mix(in srgb,var(--amber) 55%,var(--line));background:var(--amber-glow)}
 .role-chip.r-inter{color:var(--arcane);border-color:color-mix(in srgb,var(--arcane) 45%,var(--line))}
 .role-chip.r-obj{color:var(--amber);border-color:color-mix(in srgb,var(--amber) 45%,var(--line))}
@@ -2700,6 +2704,7 @@ function healScnChars(s){
       ["A","F","S","AW","P"].forEach(k=>{if(typeof c.skills[k]!=="number")c.skills[k]=1;});
       if(typeof c.hp!=="number")c.hp=20;
       stripRedundantTraits(c);
+      if(c.hint)c.hint=cleanHint(c.hint);
     });
   if(s&&s.enemy&&Array.isArray(s.enemy.vehicles))
     s.enemy.vehicles.forEach(v=>{
@@ -2711,6 +2716,7 @@ function healScnChars(s){
       if(typeof v.skills.S!=="number")v.skills.S=VRULES.sStart;
       if(typeof v.type!=="number")v.type=0;
       if(typeof v.size!=="number")v.size=1;
+      if(v.hint)v.hint=cleanHint(v.hint);
     });
   if(s&&s.battle&&Array.isArray(s.battle.combatants))
     s.battle.combatants.forEach(m=>{arr(m,"conditions");arr(m,"neg");});
@@ -3688,15 +3694,21 @@ This game lasts EXACTLY ${length} turns (already rolled) — place every timed e
 Include 2-5 TIMED EVENTS, each with a "round" (1 to ${length}) and a "kind": "deadline" for a time-pressure objective the PLAYERS must achieve BY that turn (shown to them in advance, e.g. "by turn 4 disarm the reactor" — use these sparingly, only when the narrative needs a clock), or "surprise" for a hidden reveal that only appears when that turn arrives (reinforcements, a hazard, a betrayal, an environmental shift). Prefer surprises. Write each event atmospherically.
 When a surprise event has a concrete mechanical effect the app can auto-apply to characters, add an "effect" object: {"apply":true,"type":"damage"|"heal"|"skill"|"condition","amount":"1D6" (a dice string, for damage/heal),"skill":"A"|"F"|"S"|"AW"|"P" (for a skill change),"delta":-1 (for skill),"condition":"short label like Blinded or On fire" (for condition/skill),"duration":"turn" (wears off next turn) or "game" (lasts the game),"scope":"chosen" (the host picks who is in range) or "all" (every combatant),"negatedBy":["trait/ability/armour/item names that cancel it"]}. Choose negatedBy from things that logically cancel the effect (e.g. Power armour negates Poisonous and Cumulative; Psy-hood negates Psychic/Arcane; Fearless negates fear/break effects; Iron skin, Death-proof, Painless, Unearthly, Bulwark can apply). For a purely narrative event set "effect":{"apply":false}.
 This is a PRINT-AND-PLAY game: players 3D-print their miniatures and build/print terrain. So also produce a preparation checklist of what must be built or printed BEFORE the game — terrain pieces, objective/token markers, any extra non-player characters or creatures the scenario needs, and any custom collectible items it introduces (things a character can pick up during play).
+GROUND TYPE ON EVERY MAP FEATURE. Separately from what a piece DOES, the rulebook sorts all terrain into four movement categories, and the players are told to agree them BEFORE the game — so decide them here, as the DM, and set "ground" on every feature:
+- "even" — moved over without impediment, no skill roll. Flat ground, steps, ladders, puddles.
+- "rough" — an Agility roll to move through; fail and the character moves at half speed. Rubble-strewn ruins, low walls, slow water, shifting sand.
+- "hazardous" — an Agility roll for EVERY action spent in it; pass and you move at half speed, fail and you cannot move at all and take 1D10 damage minus armour. Lava, raging water, grinding machinery, hostile fauna.
+- "impassable" — cannot be crossed at all; characters must go around. Energy fields, sheer walls of rock.
+Do NOT make everything even — a table of flat ground plays flat. Rough ground is the workhorse: it is what makes a ruin feel like a ruin and gives Agility, Sure-footed, Climber and the vehicle types (Walker, Hover, Flyer) something to matter against. Reserve hazardous for genuinely lethal ground and place little of it, and use impassable sparingly for hard edges. Ground and role are independent: a collapsed spire can be tall cover AND rough, a reactor pool can be an objective AND hazardous.
 CONNECT THE CHECKLIST TO THE MAP — this is important. Every map feature needs a "role" saying what it DOES in play, chosen from: "cover-low" (shoot over it), "cover-tall" (blocks sight, can hide behind), "blocking" (impassable/solid), "deco" (pure scenery, no game effect), "cache" (can be SEARCHED — this is where a collectible item is found), "interactive" (can be operated/hacked/opened/triggered), "objective", "hazard", "spawn" (where something arrives). And every checklist entry (terrain, markers, npcs, items) must set "mapLabel" to the EXACT label text of the map feature or zone it corresponds to, copied character-for-character (use a comma-separated list if one entry covers several identical pieces, e.g. "Wreck Spire, Wreck Spire"). The app turns those into the numbers shown on the map, so the host knows exactly which printed piece goes where and which one is searchable. If a collectible item is found by searching a terrain piece, give that feature role "cache" and point the item's "mapLabel" at it. Leave "mapLabel" as "" ONLY for things genuinely not on the map (e.g. a spare token kept off-table).
 SEARCHING IS RESOLVED BY THE APP: a feature with role "cache" gets a Search button in play. Any item whose mapLabel points at that cache stays hidden until someone searches it, and the app picks which one turns up (at random if several share one cache). So it is GOOD to hide 1-3 items in caches, and fine for two different items to share a cache — that creates a real gamble. An item that just lies in the open (like the main objective) should point at a non-cache feature instead, so it needs no searching.
 ITEMS ARE THE MOST IMPORTANT PLACE TO GET THIS RIGHT, AND THE EASIEST TO FORGET: every entry in "items" MUST carry BOTH a "mapLabel" (where on the table it is found — normally the cache it is hidden in) AND a "when". Do not leave an item's mapLabel empty; if it is not hidden in a cache, point it at whatever feature it lies on or beside. An item with no mapLabel is useless to the host because they cannot place it.
 EVERY item MUST have a "when" field: one short, concrete sentence saying WHEN OR WHERE it matters, naming the specific special rule, hazard, event or place it interacts with — e.g. "Wear it before entering the flooded lower level; cancels the Deep-pressure -1 Athletics penalty" rather than a vague "useful later". If an item counters something, that something must exist in specialRules, events or a hazard feature — never invent a rule the scenario doesn't have. Do the same for npcs where it helps ("when" = when/where it shows up).
 LASTING INJURIES — when a character is taken down the players roll on the rulebook's own 1D8 injury table, so do NOT invent mechanics. Instead write an "injuries" list of 5-7 SCENARIO-FLAVOURED wound descriptions this place could inflict — each just a "name" (e.g. "Venom-withered arm", "Pressure-burst eardrum"), a one-line "note" of prose, and a "cause" tag matching a threat in this scenario (an enemy name, a hazard, an event) so the right flavour is drawn for what actually happened. The app pairs your description with whatever the dice decide.
-SECRETS & SURPRISES — make the world feel alive: you MAY include plot twists and surprise reveals. Mark any NPC, item, or timed event that should be a SECRET (hidden from the host until it happens) with "secret": true. For a secret NPC or item, DO NOT spoil it in the checklist — instead give a non-spoiler "hint" telling the host only what to PREPARE (e.g. "a large monstrous miniature", "a mysterious relic token") while keeping the real name/note/round in the normal fields (the app hides them until the host reveals or the moment arrives). A collectible item whose effect should only be discovered on pickup should be marked "secret": true with a vague "hint". Not everything needs to be secret — obvious, up-front elements stay visible.
+SECRETS & SURPRISES — make the world feel alive: you MAY include plot twists and surprise reveals. Mark any NPC, item, or timed event that should be a SECRET (hidden from the host until it happens) with "secret": true. For a secret NPC or item, DO NOT spoil it in the checklist — instead give a non-spoiler "hint" telling the host only what to PREPARE (e.g. "a large monstrous miniature", "a mysterious relic token"). A hint says WHAT TO BUILD and nothing else — never put the turn, the trigger or any timing in it ("kept hidden until turn 8" is wrong), because in a co-op game the host is playing too and would be spoiling their own surprise while keeping the real name/note/round in the normal fields (the app hides them until the host reveals or the moment arrives). A collectible item whose effect should only be discovered on pickup should be marked "secret": true with a vague "hint". Not everything needs to be secret — obvious, up-front elements stay visible.
 Reply with ONLY a JSON object (no prose, no code fence) shaped EXACTLY like:
-{"title":"short evocative title","premise":"1-2 sentence hook","briefing":"vivid 4-6 sentence atmospheric second-person narration","scenery":"1-2 sentences describing the terrain to build","objectives":["a victory condition","..."],"specialRules":["an optional special rule","..."],"twist":"one mid-game complication (or empty string)","events":[{"round":4,"kind":"surprise","title":"short event name","text":"what happens this round, written atmospherically","effect":{"apply":true,"type":"damage","amount":"1D6","scope":"chosen","duration":"turn","negatedBy":["Power armour"]}}],"deployment":"how the warbands deploy, referencing table sides/centre","gameLength":"1D10+6 turns","terrain":[{"name":"terrain piece to build","note":"how many / what it looks like","mapLabel":"Wreck Spire","role":"cover-tall"}],"markers":[{"name":"objective/token to print","note":"what it marks","mapLabel":"Hadal Core","role":"objective"}],"npcs":[{"name":"extra character/creature","note":"what it is / when it appears","when":"when and where it shows up","mapLabel":"Vent Mouth","secret":false,"hint":""}],"items":[{"name":"collectible item","note":"what it does / what it changes about whoever picks it up","when":"the concrete moment it matters, naming the rule/hazard it answers","mapLabel":"Supply Locker","secret":false,"hint":""}],"injuries":[{"name":"Venom-withered arm","note":"The limb never regains its strength.","cause":"Scorpion Swarm"}],"map":{"note":"one-line caption of the battlefield","zones":[{"label":"short deployment label","side":"a","x":5,"y":5,"w":30,"h":18}],"features":[{"type":"terrain","role":"cover-tall","label":"Wreck Spire","x":50,"y":50}]}}
-Map coordinates are percentages of the 90×90 board: x from 0 (left) to 100 (right), y from 0 (top) to 100 (bottom). Provide 2-4 deployment zones (side is "a", "b" or "neutral") and 6-10 features (type is one of "terrain","cover","objective","hazard"; role is one of the roles listed above and is REQUIRED on every feature). Keep every map label under 22 characters and make each one distinctive enough to reference. Keep the checklist arrays short and concrete (omit any that don't apply), and give every checklist entry a "mapLabel" matching a map label exactly wherever it belongs on the table.`;
+{"title":"short evocative title","premise":"1-2 sentence hook","briefing":"vivid 4-6 sentence atmospheric second-person narration","scenery":"1-2 sentences describing the terrain to build","objectives":["a victory condition","..."],"specialRules":["an optional special rule","..."],"twist":"one mid-game complication (or empty string)","events":[{"round":4,"kind":"surprise","title":"short event name","text":"what happens this round, written atmospherically","effect":{"apply":true,"type":"damage","amount":"1D6","scope":"chosen","duration":"turn","negatedBy":["Power armour"]}}],"deployment":"how the warbands deploy, referencing table sides/centre","gameLength":"1D10+6 turns","terrain":[{"name":"terrain piece to build","note":"how many / what it looks like","mapLabel":"Wreck Spire","role":"cover-tall"}],"markers":[{"name":"objective/token to print","note":"what it marks","mapLabel":"Hadal Core","role":"objective"}],"npcs":[{"name":"extra character/creature","note":"what it is / when it appears","when":"when and where it shows up","mapLabel":"Vent Mouth","secret":false,"hint":""}],"items":[{"name":"collectible item","note":"what it does / what it changes about whoever picks it up","when":"the concrete moment it matters, naming the rule/hazard it answers","mapLabel":"Supply Locker","secret":false,"hint":""}],"injuries":[{"name":"Venom-withered arm","note":"The limb never regains its strength.","cause":"Scorpion Swarm"}],"map":{"note":"one-line caption of the battlefield","zones":[{"label":"short deployment label","side":"a","x":5,"y":5,"w":30,"h":18}],"features":[{"type":"terrain","role":"cover-tall","ground":"rough","label":"Wreck Spire","x":50,"y":50}]}}
+Map coordinates are percentages of the 90×90 board: x from 0 (left) to 100 (right), y from 0 (top) to 100 (bottom). Provide 2-4 deployment zones (side is "a", "b" or "neutral") and 6-10 features (type is one of "terrain","cover","objective","hazard"; role is one of the roles listed above and is REQUIRED on every feature; "ground" is one of "even","rough","hazardous","impassable" and is also REQUIRED on every feature). Keep every map label under 22 characters and make each one distinctive enough to reference. Keep the checklist arrays short and concrete (omit any that don't apply), and give every checklist entry a "mapLabel" matching a map label exactly wherever it belongs on the table.`;
   try{
     const raw=await s.json(prompt,{modelTier:"default",cache:false});
     const scn=coerceScenario(raw,{seed,players,points,mode,difficulty,length});
@@ -3717,7 +3729,7 @@ function coerceScenario(raw,opts){
   // if the AI omits a role, derive a sensible one from the feature type so the host still
   // sees what a piece is for (never guesses "cache" — that would invent a search point)
   const roleFromType={objective:"objective",hazard:"hazard",cover:"cover-tall",terrain:""};
-  const feats=(Array.isArray(m.features)?m.features:[]).map(f=>{const t=(f&&f.type||"terrain");const ty=["terrain","cover","objective","hazard"].includes(t)?t:"terrain";const r=String(f&&f.role||"").toLowerCase();return{type:ty,role:FEAT_ROLES[r]?r:roleFromType[ty],label:String(f&&f.label||"").slice(0,24),x:num(f&&f.x,50),y:num(f&&f.y,50)};});
+  const feats=(Array.isArray(m.features)?m.features:[]).map(f=>{const t=(f&&f.type||"terrain");const ty=["terrain","cover","objective","hazard"].includes(t)?t:"terrain";const r=String(f&&f.role||"").toLowerCase();const g=String(f&&f.ground||"").toLowerCase();return{type:ty,role:FEAT_ROLES[r]?r:roleFromType[ty],ground:GROUND[g]?g:"",label:String(f&&f.label||"").slice(0,24),x:num(f&&f.x,50),y:num(f&&f.y,50)};});
   // REPAIR PASS: a searchable thing must exist physically on the map. If the AI declared a
   // cache on a build-list entry (a crate/locker) but never put a matching feature on the map,
   // synthesise one so it always gets a number and a place to stand.
@@ -3815,6 +3827,7 @@ function buildEnemyChar(u){
   if(rv==="hidden"||rv==="foreshadowed"||rv==="open")c.reveal=rv;
   c.tease=String(u.tease||"").slice(0,120);
   c.omen=String(u.omen||"").slice(0,140);
+  if(u.hint)c.hint=cleanHint(u.hint);
   c.deployNote=(function(){var t=String(u.deployNote||"");if(t.length<=240)return t;var cut=t.slice(0,240),i=cut.lastIndexOf(" ");return (i>180?cut.slice(0,i):cut)+"…";})();
   const sk=u.skills||{};["A","F","S","AW","P"].forEach(k=>{let v=Math.round(+sk[k]);if(!isFinite(v))v=1;c.skills[k]=Math.max(1,Math.min(10,v));});
   let hp=Math.round(+u.hp);if(!isFinite(hp))hp=20;hp=Math.max(2,hp);if(hp%2)hp+=1;c.hp=hp;
@@ -3826,6 +3839,17 @@ function buildEnemyChar(u){
   legaliseLoadout(c);
   c.fielded=true;
   return c;
+}
+/* A sealed unit's "build:" hint is shown to the host alone so they can have the right
+   miniature ready. But in co-op THE HOST IS A PLAYER TOO, so a hint that also says when the
+   thing arrives spoils their own ambush. Keep what to build, drop when it happens — clause
+   by clause, so "a large monstrous spider miniature, kept hidden until turn 8" survives as
+   "a large monstrous spider miniature" instead of being thrown away whole. */
+function cleanHint(t){
+  const TIME=/\b(turn|round)\s*\d|\b(turn|round)\b|\buntil\b|\barriv|\bappear|\bspawn|\berupt|\bdescend|\blater\b|\bkept hidden\b|\bat the start\b|\bfrom the start\b|\bdeploy/i;
+  const parts=String(t||"").split(/\s*[;,]\s*|\s+[—–]\s+/).filter(p=>p.trim()&&!TIME.test(p));
+  const out=parts.join(", ").replace(/\s+/g," ").replace(/^[\s,;:—–-]+|[\s,;:—–-]+$/g,"").trim();
+  return out.slice(0,90);
 }
 /* Gigantic's own rules text says it "gains all effects of Big", so buying Big alongside it
    pays twice for the same thing and puts a dead line on the card. Only strip what the
@@ -3921,7 +3945,7 @@ function buildEnemyVehicle(u){
   if(rv==="hidden"||rv==="foreshadowed"||rv==="open")v.reveal=rv;
   v.tease=String(u.tease||"").slice(0,120);
   v.omen=String(u.omen||"").slice(0,140);
-  v.hint=String(u.hint||"").slice(0,90);
+  v.hint=cleanHint(u.hint);
   v.deployNote=(function(){var t=String(u.deployNote||"");if(t.length<=240)return t;var cut=t.slice(0,240),i=cut.lastIndexOf(" ");return (i>180?cut.slice(0,i):cut)+"…";})();
   legaliseVehicle(v);
   v.fielded=true;
@@ -4034,7 +4058,22 @@ function enemyReveal(c){
 }
 function enemyHidden(c){return !!(c&&!c.revealed&&enemyReveal(c)==="hidden");}
 function enemyTeased(c){return !!(c&&!c.revealed&&enemyReveal(c)==="foreshadowed");}
-function enemyArrivalTurn(c){const m=String((c&&c.deployNote)||"").match(/turn (\d+)/i);return m?+m[1]:0;}
+/* Only badge a turn we can actually stand behind. The old first-match-wins read was wrong
+   two ways: an arrival triggered by something happening ("erupts the turn the pod is
+   disturbed, and further waves after turn 11") is on no fixed turn at all, and a turn named
+   after "after"/"each"/"every" describes a LATER wave rather than the arrival. Better no
+   badge than a number that sends the host into the wrong turn. */
+function enemyArrivalTurn(c){
+  const note=String((c&&c.deployNote)||"");
+  if(/\b(when|once|if|as soon as|the moment|upon|the turn the|is disturbed|triggered)\b/i.test(note))return 0;
+  const re=/(\w+)?\s*\bturn (\d+)/gi;
+  let m;
+  while((m=re.exec(note))){
+    if(/^(after|beyond|past|each|every|from)$/i.test(m[1]||""))continue;
+    return +m[2];
+  }
+  return 0;
+}
 function enemyMiniCard(c){
   const n=memberCount(c);
   if(enemyHidden(c))
@@ -4148,6 +4187,27 @@ const FEAT_ROLES={
   "hazard":{label:"hazard",cls:"r-haz"},
   "spawn":{label:"spawn point",cls:"r-spawn"}
 };
+/* The rulebook sorts ALL terrain into four movement categories and says to agree them before
+   play. That is separate from what a piece DOES (a wreck can be tall cover AND rough to climb
+   through), so ground rides alongside the role rather than replacing it. */
+const GROUND={
+  even:{label:"even ground",cls:"g-even",rule:"Moved over without impediment — no skill roll."},
+  rough:{label:"rough ground",cls:"g-rough",rule:"Make an Agility roll to move through. Fail and the character moves at half speed, rounding down."},
+  hazardous:{label:"hazardous ground",cls:"g-haz",rule:"Agility roll for EVERY action spent in it. Pass and you move at half speed; fail and you may not move at all and take 1D10 damage, minus armour rolls."},
+  impassable:{label:"impassable",cls:"g-imp",rule:"Cannot be moved over or through at all — characters must go around it."}
+};
+/* Only two roles imply their ground beyond doubt; everything else is left UNKNOWN rather
+   than assumed flat, so the host decides at the table instead of the app inventing a rule. */
+const GROUND_FROM_ROLE={blocking:"impassable",hazard:"hazardous"};
+function featGround(f){
+  const g=String((f&&f.ground)||"").toLowerCase();
+  if(GROUND[g])return g;
+  return GROUND_FROM_ROLE[String((f&&f.role)||"").toLowerCase()]||"";
+}
+function groundChip(g){
+  const o=GROUND[String(g||"").toLowerCase()];
+  return o?`<span class="role-chip ${o.cls}" tabindex="0" data-tip="${esc(o.rule)}">${esc(o.label)}</span>`:"";
+}
 function roleChip(role){
   const r=FEAT_ROLES[String(role||"").toLowerCase()];
   return r?`<span class="role-chip ${r.cls}">${esc(r.label)}</span>`:"";
@@ -4158,7 +4218,7 @@ function mapSeq(map){
   const feats=Array.isArray(map.features)?map.features:[];
   const out=[];let n=0;
   zones.forEach(z=>{if(z&&z.label){n++;out.push({n,label:String(z.label),role:"",kind:"zone"});}});
-  feats.forEach(f=>{if(f&&f.label){n++;out.push({n,label:String(f.label),role:String(f.role||""),kind:"feature"});}});
+  feats.forEach(f=>{if(f&&f.label){n++;out.push({n,label:String(f.label),role:String(f.role||""),ground:featGround(f),kind:"feature"});}});
   return out;
 }
 function normLabel(v){return String(v||"").trim().toLowerCase().replace(/\s+/g," ").replace(/s$/,"");}
@@ -4197,10 +4257,17 @@ function prepRole(map,e){
   const hit=mapSeq(map).find(q=>nums.includes(q.n)&&q.role);
   return hit?hit.role:"";
 }
+// like prepRole: a build-list entry inherits the ground of the map feature it points at
+function prepGround(map,e){
+  const nums=mapNumsFor(map,e.mapLabel);
+  if(!nums.length)return "";
+  const hit=mapSeq(map).find(q=>nums.includes(q.n)&&q.ground);
+  return hit?hit.ground:"";
+}
 function mapLegendHTML(map){
   const seq=mapSeq(map);
   if(!seq.length)return "";
-  const rows=seq.map(e=>`<div class="maplg-row" data-mapnum="${e.n}"><span class="maplg-num">${e.n}</span><span class="maplg-label">${esc(e.label)}</span>${roleChip(e.role)}</div>`);
+  const rows=seq.map(e=>`<div class="maplg-row" data-mapnum="${e.n}"><span class="maplg-num">${e.n}</span><span class="maplg-label">${esc(e.label)}</span>${roleChip(e.role)}${groundChip(e.ground)}</div>`);
   return `<div class="scn-maplegend-nums">${rows.join("")}</div>`;
 }
 function wireMapNums(container){
@@ -4434,7 +4501,7 @@ function sealEnemySecrets(s){
     if(c.secret!==undefined)return;
     const nm=normLabel(c.name);
     const np=nm.length>3?secrets.find(n=>{const x=normLabel(n.name);return x===nm||x.includes(nm)||nm.includes(x);}):null;
-    if(np&&c.atStart===false){c.secret=true;c.revealed=false;c.hint=String(np.hint||"prepare a miniature for it").slice(0,90);}
+    if(np&&c.atStart===false){c.secret=true;c.revealed=false;c.hint=cleanHint(np.hint)||"prepare a miniature for it";}
     else c.secret=false;
     changed=true;
   });
@@ -4488,6 +4555,9 @@ function scenarioGaps(s){
     g.push("The enemy force has no deployment notes — regenerate it to be told which units start on the table and which arrive later.");
   if(ec.length&&!ec.some(c=>c.atStart!==false))
     g.push("Nothing opposes you on turn 1 — every enemy unit is set to arrive later. Unless that is deliberate, use the enemy list below to put the first wave on the table.");
+  const feats=((s.map||{}).features)||[];
+  if(feats.length&&!feats.some(f=>featGround(f)))
+    g.push("No terrain says what ground it is — the rulebook asks you to agree even / rough / hazardous / impassable before play. Re-generate the scenario for the DM to set them, or just call them at the table.");
   const noWhen=(s.items||[]).filter(it=>!it.when).length;
   if(noWhen)g.push(noWhen+" item"+(noWhen>1?"s don't":" doesn't")+" say when it matters — check the notes before you play.");
   return g;
@@ -4712,7 +4782,7 @@ function renderScenarioDetail(scnOverride){
     const rows=items.map((raw,i)=>{
       const x=prepEntry(raw);
       const nums=numBadges(mapNumsFor(s.map,x.mapLabel));
-      const chip=roleChip(prepRole(s.map,x));
+      const chip=roleChip(prepRole(s.map,x))+groundChip(prepGround(s.map,x));
       const trackChip=tracked?`<span class="role-chip r-track">tap in Collectibles when picked up</span>`:"";
       const whenLine=x.when&&!(x.secret&&!x.revealed)?`<div class="prep-when">⏱ ${esc(x.when)}</div>`:"";
       if(x.secret&&!x.revealed)
@@ -4856,7 +4926,7 @@ function scenarioText(s){
   if(s.twist)o+="TWIST: "+s.twist+"\n\n";
   if((s.events||[]).length)o+="TIMED EVENTS:\n"+s.events.map(e=>e.kind==="deadline"?"- By turn "+e.round+" (deadline): "+e.title+(e.text?" — "+e.text:""):"- Turn "+e.round+" (surprise): "+e.title+(e.text?" — "+e.text:"")).join("\n")+"\n\n";
   const seq=mapSeq(s.map);
-  if(seq.length)o+="MAP KEY:\n"+seq.map(e=>{const r=FEAT_ROLES[e.role];return "  "+e.n+". "+e.label+(r?" — "+r.label:"");}).join("\n")+"\n\n";
+  if(seq.length)o+="MAP KEY:\n"+seq.map(e=>{const r=FEAT_ROLES[e.role],g=GROUND[e.ground];return "  "+e.n+". "+e.label+(r?" — "+r.label:"")+(g?" ["+g.label+"]":"");}).join("\n")+"\n\n";
   const pl=list=>(list||[]).map(raw=>{
     const x=prepEntry(raw);
     const n=mapNumsFor(s.map,x.mapLabel), pre=n.length?"["+n.join(",")+"] ":"";
