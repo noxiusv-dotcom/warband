@@ -268,6 +268,10 @@ textarea.input{resize:vertical;min-height:56px;line-height:1.45}
 .linkbtn{color:var(--ink-mute);font-family:var(--disp);font-size:11px;text-transform:uppercase;letter-spacing:.06em;padding:4px 6px}
 .linkbtn:hover{color:var(--amber)}
 .linkbtn.del:hover{color:var(--danger)}
+/* a realm device hides everything that acts on a warband it does not have */
+.host-only{display:none}
+body.host-device .wb-only{display:none!important}
+body.host-device .host-only{display:inline}
 
 
 
@@ -1740,6 +1744,7 @@ function applyRole(){
   const campTab=document.querySelector('#topnav .topnav-btn[data-view="warband"]');
   if(campTab)campTab.hidden=host;
   const cb=$("#campBar"); if(cb)cb.hidden=host;
+  document.body.classList.toggle("host-device",host);
   syncQuestTab();
   if(host&&currentView!=="scenarios")switchView("scenarios");
   else{ render(); if(currentView==="scenarios")renderScenarioView(); }
@@ -1842,7 +1847,7 @@ function renderCampBar(){
       <span class="eyebrow">⛺ Your camp</span>
       <button class="cb-name" id="cbName">${esc(nm||"Name your camp")}</button>
     </div>
-    <div class="cb-role">${live?`<button class="btn sm ghost" id="cbRole">⛺ this is a camp — change</button>`:""}
+    <div class="cb-role">${live?`<button class="btn sm ghost" id="cbRole">🗺 Switch to hosting</button>`:""}
     </div>
     ${quest?`<div class="cb-quest"><span class="cb-onq">⚔ On a quest — ${esc(quest.title||"a scenario")}</span><button class="linkbtn" id="cbToScn">open the scenario</button></div>`:""}
     ${live?`<div class="cb-table">
@@ -2156,11 +2161,14 @@ function openLibrary(){
     </div>`;
   }).join("");
   body.innerHTML=`
-    <h3>Warbands</h3>
-    <p class="lead">Everything is saved automatically in this browser. Use export to back up or move a warband to another device.</p>
-    <div class="wb-switch">${rows}</div>
-    <button class="btn ghost" id="mNew" style="width:100%;justify-content:center;margin-bottom:16px">+ New warband</button>
-    <div class="eyebrow" style="margin-bottom:8px">⛺ Your camp</div>
+    <h3>${isHost()?"This device":"Warbands"}</h3>
+    <p class="lead">Everything is saved automatically in this browser. ${isHost()?"You are hosting the realm, so there are no warbands here.":"Use export to back up or move a warband to another device."}</p>
+    <div class="wb-only">
+      <div class="wb-switch">${rows}</div>
+      <button class="btn ghost" id="mNew" style="width:100%;justify-content:center;margin-bottom:16px">+ New warband</button>
+    </div>
+    <div class="eyebrow" style="margin-bottom:8px"><span class="wb-only">⛺ Camp name &amp; backup</span><span class="host-only">🗺 Hosting as</span></div>
+    <div class="wb-only">
     ${(()=>{const chars=activeWB().characters||[];
       const pend=chars.filter(c=>c.pendingInjury);
       const hurt=chars.filter(c=>typeof c.curHP==="number"&&c.curHP<c.hp*memberCount(c));
@@ -2194,24 +2202,27 @@ function openLibrary(){
         <div class="none-note" style="font-style:normal;margin-top:6px">Treatment costs ${CP_COSTS.heal} campaign points for the attempt, win or lose — roll 4+ on a D6 to be mended.</div>
       </div>`;
       return h;})()}
+    </div>
     <div class="camp-box">
       <div class="field" style="margin-bottom:8px"><label>Camp name</label>
         <input class="input" id="mCampName" value="${esc(campName())}" placeholder="e.g. Rhyno's Camp" maxlength="40" autocapitalize="words"></div>
-      <div class="none-note" style="font-style:normal;margin-bottom:9px">This is your own space — your warbands live here. Your realm (the name you share with your players) is where scenarios live and quests are hosted. Backing up copies your warbands to your table so you can restore them on any device.${fbAvailable()?"":" Live features are only available in the Realm."}</div>
-      ${fbAvailable()?`<div class="modal-actions" style="margin-top:0">
+      <div class="none-note" style="font-style:normal;margin-bottom:9px">${isHost()?"Players see this name beside your game code when they join.":`This is your own space — your warbands live here. Your realm (the name you share with your players) is where scenarios live and quests are hosted. Backing up copies your warbands into your realm so you can restore them on any device.${fbAvailable()?"":" Live features are only available in the Realm."}`}</div>
+      ${fbAvailable()?`<div class="modal-actions wb-only" style="margin-top:0">
         <button class="btn sm" id="mCampSave">☁ Stash camp in your realm</button>
         <button class="btn sm ghost" id="mCampLoad">⇩ Recover camp here</button>
       </div>
-      <div class="none-note" style="font-style:normal;margin-top:7px">${roomKey
+      <div class="none-note wb-only" style="font-style:normal;margin-top:7px">${roomKey
         ? "Stash on the device you just played on; recover on the one you are moving to. Recovering replaces warbands of the same name here."
         : "Both need your realm name — it is the address your camp is filed under. You will be asked for it once."}</div>`
-      :`<div class="none-note" style="font-style:normal;margin-top:7px">Cloud stash lives in the Realm app, where your realm is. From here, use <b>⛺ Move to camp</b> on the roster to copy a warband across.</div>`}
+      :`<div class="none-note wb-only" style="font-style:normal;margin-top:7px">Cloud stash lives in the Realm app, where your realm is. From here, use <b>⛺ Move to camp</b> on the roster to copy a warband across.</div>`}
     </div>
-    <div class="eyebrow" style="margin:16px 0 8px">Backup &amp; transfer</div>
-    <div class="modal-actions" style="margin-top:0">
-      <button class="btn sm" id="mExport">Export current</button>
-      <button class="btn sm" id="mImport">Import…</button>
-      <button class="btn sm ghost" id="mStashOpen">🎒 Spoils</button>
+    <div class="wb-only">
+      <div class="eyebrow" style="margin:16px 0 8px">Backup &amp; transfer</div>
+      <div class="modal-actions" style="margin-top:0">
+        <button class="btn sm" id="mExport">Export current</button>
+        <button class="btn sm" id="mImport">Import…</button>
+        <button class="btn sm ghost" id="mStashOpen">🎒 Spoils</button>
+      </div>
     </div>
     ${visibleScns().length?`<div class="modal-actions" style="margin-top:8px">
       <button class="btn sm danger ghost" id="mWipeScns">Delete all ${visibleScns().length} scenario${visibleScns().length===1?"":"s"}</button>
@@ -2236,7 +2247,7 @@ function openLibrary(){
       save();render();openLibrary();
     },{danger:true,yesLabel:"Delete"});
   });
-  $("#mNew").onclick=()=>{const w=newWarband("New Warband");store.warbands.push(w);store.activeId=w.id;save();render();closeModal();openDossierNewHint()};
+  const mN=$("#mNew"); if(mN)mN.onclick=()=>{const w=newWarband("New Warband");store.warbands.push(w);store.activeId=w.id;save();render();closeModal();openDossierNewHint()};
   const st=$("#mStash");if(st)st.onclick=openStash;
   const st2=$("#mStashOpen");if(st2)st2.onclick=openStash;
   const ra=$("#mResetAll");if(ra)ra.onclick=resetDevice;
@@ -2260,8 +2271,8 @@ function openLibrary(){
   const cn=$("#mCampName");if(cn)cn.oninput=e=>setCampName(e.target.value);
   const cs=$("#mCampSave");if(cs)cs.onclick=backupCamp;
   const cl=$("#mCampLoad");if(cl)cl.onclick=restoreCamp;
-  $("#mExport").onclick=exportCurrent;
-  $("#mImport").onclick=importDialog;
+  const mE=$("#mExport"); if(mE)mE.onclick=exportCurrent;
+  const mI=$("#mImport"); if(mI)mI.onclick=importDialog;
   $("#mClose").onclick=closeModal;
   showModal();
 }
@@ -4261,9 +4272,7 @@ function renderScenarioList(){
       <div class="lp-main"><b>🗺 Realm: <span class="cb-pass">${esc(savedPass())}</span></b>
         <button class="linkbtn" id="lpLeaveTable">change</button>
         <div class="none-note" style="font-style:normal;margin-top:3px">You are hosting. Import a scenario and run it for your players — warband building is hidden on this device.</div></div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn sm" id="lpImport">⇩ Import scenario</button>
-        <button class="btn sm ghost" id="lpRole">🗺 this is the realm — change</button></div>
+      <button class="btn sm ghost" id="lpRole">⛺ Switch to a camp</button>
     </div>`
     :`<div class="live-panel">
       <div class="lp-main"><div class="lp-tablebadge">${campName()?`⛺ ${esc(campName())} · `:""}◉ Realm: <b class="cb-pass">${esc(savedPass())}</b>${hostCode?` · hosting <b class="cb-pass">${esc(hostCode)}</b>`:""}</div></div>
