@@ -2462,10 +2462,21 @@ function castLine(c){
   if(!r.rent)return `<div class="gc-spellnote" style="margin-top:8px">✗ Cast failed — ${base}. Rent-asunder check rolled <b>${r.check}</b>, under (P) — the mind holds.</div>`;
   return `<div class="gc-spellnote" style="margin-top:8px;color:var(--danger)">☠ <b>Rent asunder</b> — ${base}, check rolled <b>${r.check}</b>. Takes <b>${r.dmg}</b> damage that armour cannot stop, and (P) drops by 1 for the rest of the game.</div>`;
 }
-function rollArcana(c,n){
+function pickSpells(n){
   const idx=Array.from({length:ARCANA.length},(_,i)=>i);
   for(let i=idx.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));const t=idx[i];idx[i]=idx[j];idx[j]=t;}
-  c.rolledSpells=idx.slice(0,n).sort((a,b)=>a-b);
+  return idx.slice(0,n).sort((a,b)=>a-b);
+}
+/* An arcana unit rolls its powers at the start of each game. The DM's casters get theirs at
+   muster so the force arrives ready to play; the Roll button stays on the card for the next
+   game, or whenever the host wants them re-rolled. */
+function rollSpellsAtMuster(c){
+  const has=n=>{const o=findCat("trait",n);return !!(o&&c.traits.includes(o.id));};
+  const n=has("Major arcana")?3:has("Minor arcana")?1:0;
+  if(n)c.rolledSpells=pickSpells(n);
+}
+function rollArcana(c,n){
+  c.rolledSpells=pickSpells(n);
   c.pDrop=0;c.lastCast=null;            // a new game: the mind starts whole again
   save();buildCard();
   toast("Rolled: "+c.rolledSpells.map(i=>ARCANA[i][0]).join(", "));
@@ -4588,6 +4599,7 @@ function buildEnemyChar(u){
   const gear=(cat,list)=>(Array.isArray(list)?list:[]).map(w=>{const o=findCat(cat,w&&w.name);if(!o)return null;const e={id:o.id,qty:Math.max(1,Math.round(+((w&&w.qty)||1))||1)};if(w&&w.as)e.as=String(w.as).slice(0,32);return e;}).filter(Boolean);
   c.weapons=gear("weapon",u.weapons);c.armour=gear("armour",u.armour);c.items=gear("item",u.items);
   legaliseLoadout(c);
+  rollSpellsAtMuster(c);
   c.fielded=true;
   return c;
 }
@@ -4624,10 +4636,13 @@ function gearNote(cat,o,e){const d=entryDesc(cat,o);return d+((e&&e.as)?(d?" · 
 function legaliseLoadout(c){
   const has=n=>{const t=findCat("trait",n);return !!(t&&c.traits.includes(t.id));};
   stripRedundantTraits(c);
-  // Animal: no shooting, no abilities
+  // Animal: no shooting, no abilities — and arcana is cast WITH the ability action, so a
+  // beast cannot be a caster either; drop the trait rather than leave it dead on the card.
   if(has("Animal")){
     c.abilities=[];
     c.weapons=c.weapons.filter(e=>{const o=CAT.weapon[e.id];return !o||o.type!=="Ranged";});
+    ["Minor arcana","Major arcana"].forEach(n=>{const o=findCat("trait",n);if(o)c.traits=c.traits.filter(id=>id!==o.id);});
+    c.rolledSpells=[];
   }
   // Barbaric: no Complex weapons or armour
   if(has("Barbaric")){
