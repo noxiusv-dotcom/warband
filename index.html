@@ -299,6 +299,21 @@ textarea.input{resize:vertical;min-height:56px;line-height:1.45}
 .rolecard .rc-n{font-family:var(--disp);font-weight:600;font-size:16px}
 .rolecard .rc-d{font-size:12.5px;color:var(--ink-dim);line-height:1.45}
 .cb-role{margin-left:auto}
+
+/* ---------- in-battle glow ----------
+   While your warband is deployed the whole screen is edged in red, so a glance at the phone
+   lying on the table tells you the quest is live without reading anything. It sits above the
+   app but never takes a click, and it beats faster when one of your own is down. */
+.questglow{position:fixed;inset:0;z-index:200;pointer-events:none;border-radius:2px;
+  box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--danger) 70%,transparent),
+             inset 0 0 26px -4px color-mix(in srgb,var(--danger) 55%,transparent);
+  animation:questPulse 3.4s ease-in-out infinite}
+.questglow.urgent{
+  box-shadow:inset 0 0 0 3px var(--danger),
+             inset 0 0 44px -2px color-mix(in srgb,var(--danger) 75%,transparent);
+  animation-duration:1.15s}
+@keyframes questPulse{0%,100%{opacity:.42}50%{opacity:.92}}
+@media (prefers-reduced-motion: reduce){.questglow{animation:none;opacity:.7}}
 /* ---------- camp bar (top of the camp view) ---------- */
 .campbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);
   border-radius:var(--r);padding:11px 14px;margin-bottom:16px}
@@ -838,6 +853,8 @@ textarea.input{resize:vertical;min-height:56px;line-height:1.45}
 
 <button class="cheatfab" id="cheatFab" hidden aria-label="Open the round cheat sheet" title="Round cheat sheet">☷</button>
 <div class="cheat" id="cheatDrawer" hidden aria-label="Round cheat sheet"></div>
+
+<div class="questglow" id="questGlow" hidden aria-hidden="true"></div>
 
 <div class="toast" id="toast"></div>
 
@@ -1763,6 +1780,17 @@ function openRoleChooser(){
 /* The camp's own header: who you are (camp name) and which table you play at (passphrase).
    Both used to live inside the Warbands dialog, which is why nobody found them. The
    passphrase only means anything where there is a live table, so it only shows in Realm. */
+
+/* On whenever a quest is live and something of yours is in it. Urgent once one of your own
+   has been taken down, so the screen changes on its own the moment it matters. */
+function syncQuestGlow(){
+  const el=$("#questGlow"); if(!el)return;
+  const s=activeQuestScn();
+  const mine=s?(s.battle.combatants||[]).filter(m=>m&&m.side==="player"&&(m.charId||m.vehId)):[];
+  const on=!!s&&mine.length>0;
+  el.hidden=!on;
+  el.classList.toggle("urgent",on&&mine.some(m=>(m.curHP|0)<=0));
+}
 function renderCampBar(){
   const el=$("#campBar"); if(!el)return;
   const nm=campName();
@@ -1774,7 +1802,7 @@ function renderCampBar(){
       <span class="eyebrow">⛺ Your camp</span>
       <button class="cb-name" id="cbName">${esc(nm||"Name your camp")}</button>
     </div>
-    <div class="cb-role">${live?`<button class="linkbtn" id="cbRole">this is a camp — change</button>`:""}
+    <div class="cb-role">${live?`<button class="btn sm ghost" id="cbRole">⛺ this is a camp — change</button>`:""}
     </div>
     ${quest?`<div class="cb-quest"><span class="cb-onq">⚔ On a quest — ${esc(quest.title||"a scenario")}</span><button class="linkbtn" id="cbToScn">open the scenario</button></div>`:""}
     ${live?`<div class="cb-table">
@@ -1785,10 +1813,11 @@ function renderCampBar(){
   </div>`;
   $("#cbName").onclick=openLibrary;
   const cr=$("#cbRole"); if(cr)cr.onclick=openRoleChooser;
+  syncQuestGlow();
   const cq=$("#cbToScn"); if(cq)cq.onclick=()=>{const q=activeQuestScn();if(q){scnCurrentId=q.id;scnScreen="detail";}switchView("scenarios");};
   const cp=$("#cbPass"); if(cp)cp.onclick=async()=>{ if(roomKey){await changePassphrase();return;} if(await ensureRoom()){render();renderScenarioView();} };
 }
-function render(){renderHeader();renderRoster();renderVehicleRoster();renderCampBar();syncAppButtons();save()}
+function render(){renderHeader();renderRoster();renderVehicleRoster();renderCampBar();syncAppButtons();syncQuestGlow();save()}
 
 function addCharacter(){
   const w=activeWB();const c=newChar();w.characters.push(c);render();openDossier(c.id);
@@ -1962,7 +1991,7 @@ function syncAppButtons(){
   if(share)share.hidden=fbAvailable();
   if(quest)quest.hidden=!fbAvailable();
 }
-function persist(){renderHeader();renderRoster();renderVehicleRoster();renderCampBar();save()}
+function persist(){renderHeader();renderRoster();renderVehicleRoster();renderCampBar();syncQuestGlow();save()}
 function liveCost(){const el=$("#dossier .dcost");if(el)el.innerHTML=charCost(curChar())+"<small>points</small>"}
 
 /* meta/description line for a catalog entry (shared by group rows + picker) */
@@ -3160,6 +3189,7 @@ function scnFinalLength(){return Math.max(4,Math.min(20,(scnLengthBase||rollD10p
 function scnsOf(w){return w.scenarios||[]}
 
 function renderScenarioView(){
+  syncQuestGlow();
   if(liveRole==="guest"&&liveScenario){scnReadOnly=true;renderScenarioDetail(liveScenario);scnReadOnly=false;return;}
   scnReadOnly=false;
   if(scnScreen==="detail")renderScenarioDetail(); else renderScenarioList();
@@ -4114,7 +4144,7 @@ function renderScenarioList(){
       </div>
     </button>`).join("");
   el.innerHTML=`
-    ${isHost()?`<div class="live-panel"><div class="lp-main"><b>🗺 You are hosting the realm</b> <span class="none-note" style="font-style:normal">Import a scenario and host it for your table. Warband building is hidden on this device.</span></div><button class="btn sm ghost" id="lpRole">this is the realm — change</button></div>`:""}
+    ${isHost()?`<div class="live-panel"><div class="lp-main"><b>🗺 You are hosting the realm</b> <span class="none-note" style="font-style:normal">Import a scenario and host it for your table. Warband building is hidden on this device.</span></div><button class="btn sm ghost" id="lpRole">🗺 this is the realm — change</button></div>`:""}
     ${fbAvailable()?(roomKey?`<div class="live-panel">
       <div class="lp-main"><b>Live game</b> <span class="none-note" style="font-style:normal">Host a scenario for your table, or join one your host is running. Everyone plays on their own device.</span><div class="lp-tablebadge">${campName()?`⛺ ${esc(campName())} · `:""}◉ at your table <button class="linkbtn" id="lpLeaveTable">change passphrase</button></div></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm ghost" id="lpTableScns">🗄 My table's scenarios</button><button class="btn sm ghost" id="lpImport">⇩ Import scenario</button><button class="btn sm" id="lpJoin">⚔ Embark on a quest</button></div>
