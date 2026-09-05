@@ -515,6 +515,8 @@ body.host-device .host-only{display:inline}
 .scn-card .scn-meta{font-family:var(--mono);font-size:11px;color:var(--ink-mute);margin-top:2px}
 .scn-card.add{align-items:center;justify-content:center;text-align:center;border-style:dashed;color:var(--ink-mute);min-height:210px;gap:9px;background:transparent}
 .scn-card.add:hover{color:var(--amber);border-color:var(--amber)}
+.scn-card.scn-elsewhere{opacity:.55;border-style:dashed}
+.scn-card.scn-elsewhere:hover{opacity:1}
 .scn-card.add .plus{width:36px;height:36px;border-radius:50%;border:1.5px solid currentColor;display:grid;place-items:center;font-size:23px;font-family:var(--body);line-height:0}
 .scn-card.add span{font-family:var(--disp);text-transform:uppercase;letter-spacing:.12em;font-size:12px;font-weight:600}
 /* scenario detail */
@@ -3330,7 +3332,7 @@ async function pullScns(){
   return changed;
 }
 /* ============================ SCENARIOS ============================ */
-let scnScreen="list", scnCurrentId=null, scnMode="coop", scnPlayers=2, scnDifficulty="normal", scnLengthBase=0, scnQuestType="";
+let scnScreen="list", scnCurrentId=null, scnMode="coop", scnPlayers=2, scnDifficulty="normal", scnLengthBase=0, scnQuestType="", scnShowAll=false;
 const DIFFICULTY={
  easy:  {label:"Easy",  enemyBonus:100, roundMod:2,  tone:"forgiving — the enemy is lighter and there is a little more time"},
  normal:{label:"Normal",enemyBonus:200, roundMod:0,  tone:"balanced — the standard co-op odds from the rules"},
@@ -4298,13 +4300,17 @@ function leaveGame(){returnToCamp();}
 
 function renderScenarioList(){
   const w=activeWB(), el=$("#scenarioView");
-  const cards=scnsOf(w).map(s=>`
-    <button class="scn-card" data-open="${s.id}">
+  const others=allScns().filter(s=>s.room&&s.room!==roomKey);
+  const shown=scnShowAll?allScns():visibleScns();
+  const cards=shown.map(s=>`
+    <button class="scn-card${s.room&&s.room!==roomKey?" scn-elsewhere":""}" data-open="${s.id}">
       <div class="scn-mini">${scenarioMapSVG(s.map,true)}</div>
       <div class="scn-cbody">
         <div class="scn-mode ${s.mode==="coop"?"coop":"pvp"}">${s.mode==="coop"?"Co-op":"PvP"} · ${s.players} players · ${s.points} pts</div>
         <div class="scn-title">${esc(s.title||"Untitled scenario")}</div>
         <div class="scn-sub">${esc(s.premise||"")}</div>
+        ${!s.room?`<div class="scn-meta">unfiled — joins the first realm you name</div>`
+          :s.room!==roomKey?`<div class="scn-meta" style="color:var(--warn)">another realm</div>`:""}
       </div>
     </button>`).join("");
   el.innerHTML=`
@@ -4322,7 +4328,10 @@ function renderScenarioList(){
       <div class="lp-main"><div class="lp-tablebadge">${campName()?`⛺ ${esc(campName())} · `:""}◉ Realm: <b class="cb-pass">${esc(savedPass())}</b>${hostCode?` · hosting <b class="cb-pass">${esc(hostCode)}</b>`:""}</div></div>
       <button class="linkbtn" id="lpLeaveTable">change realm</button>
     </div>`}
-    <div class="section-head"><span class="eyebrow">Scenarios &amp; Campaigns</span><span class="rule"></span><span class="none-note" style="font-style:normal">${esc(w.name)}</span></div>
+    <div class="section-head"><span class="eyebrow">Scenarios &amp; Campaigns</span><span class="rule"></span>
+      ${others.length?`<button class="btn sm ghost" id="scnAllToggle">${scnShowAll?"◉ All realms":"○ All realms"} <b class="mono">${others.length}</b></button>`:""}
+      ${scnShowAll&&others.length?`<button class="btn sm danger ghost" id="scnPurge">Delete ${others.length} from other realms</button>`:""}
+    </div>
     <div class="scn-grid">
       ${cards}
       ${fbAvailable()
@@ -4350,6 +4359,13 @@ function renderScenarioList(){
     store.activeId=wid;save();render();
     scnCurrentId=sid;scnScreen="detail";switchView("scenarios");renderScenarioView();
   });
+  const sat=$("#scnAllToggle");if(sat)sat.onclick=()=>{scnShowAll=!scnShowAll;renderScenarioView();};
+  const sp=$("#scnPurge");if(sp)sp.onclick=()=>{
+    const doomed=allScns().filter(s=>s.room&&s.room!==roomKey);
+    askConfirm("Delete "+doomed.length+" scenario"+(doomed.length>1?"s":"")+" belonging to other realms? They go from this device and from those realms. Scenarios in "+(savedPass()||"this realm")+" are untouched.",
+      ()=>{doomed.forEach(s=>dropScn(s.id));scnShowAll=false;renderScenarioView();toast("Deleted "+doomed.length+" scenario"+(doomed.length>1?"s":""));},
+      {danger:true,yesLabel:"Delete them"});
+  };
   const sn=$("#scnNew");if(sn)sn.onclick=openScenarioWizard;
   const si=$("#scnImport");if(si)si.onclick=openImportScenario;
   const lpr=$("#lpRole");if(lpr)lpr.onclick=openRoleChooser;
