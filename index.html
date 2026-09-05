@@ -323,6 +323,7 @@ textarea.input{resize:vertical;min-height:56px;line-height:1.45}
 .cb-name:hover{color:var(--amber);border-bottom-color:var(--amber)}
 .cb-table{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-left:auto}
 .cb-ok{font-family:var(--disp);font-weight:600;font-size:12.5px;color:var(--teal)}
+.cb-pass{font-family:var(--mono);letter-spacing:.06em;color:var(--amber)}
 /* ---------- round cheat sheet (phone-first, opens beside the tracker) ---------- */
 .cheatfab{position:fixed;right:14px;bottom:16px;z-index:74;width:52px;height:52px;border-radius:50%;
   border:1px solid var(--amber);background:var(--panel);color:var(--amber);font-size:22px;line-height:0;
@@ -1175,16 +1176,16 @@ function askPassphrase(){
   return new Promise(res=>{
     const body=$("#modalBody");
     body.innerHTML=`
-      <h3>Group passphrase</h3>
-      <p class="lead">Enter your group's shared passphrase to reach your table. Everyone who uses the same word sees the same live games — so share it only with your players. It's not stored in the app.</p>
-      <div class="field" style="margin:6px 0 12px"><label>Passphrase</label><input class="input" id="lgPass" type="password" value="${esc(savedPass())}" placeholder="e.g. rusty-cathedral" maxlength="60" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"></div>
-      <p class="none-note" style="font-style:normal;margin:-6px 0 10px">Not case-sensitive — everyone lands at the same table regardless of capitalization.</p>
-      <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:10px"><input type="checkbox" id="lgShow"> Show passphrase</label>
-      <div class="modal-actions"><button class="btn primary sm" id="lgPGo">Enter table</button><button class="btn ghost sm" id="lgPX" style="margin-left:auto">Cancel</button></div>`;
+      <h3>Your realm</h3>
+      <p class="lead">Name the realm you and your players share. Everyone who types the same name plays in the same realm — its scenarios, its quests — so share it only with them. It's not stored in the app.</p>
+      <div class="field" style="margin:6px 0 12px"><label>Realm name</label><input class="input" id="lgPass" type="password" value="${esc(savedPass())}" placeholder="e.g. rusty-cathedral" maxlength="60" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"></div>
+      <p class="none-note" style="font-style:normal;margin:-6px 0 10px">Not case-sensitive — everyone lands in the same realm regardless of capitalization.</p>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:10px"><input type="checkbox" id="lgShow"> Show the name</label>
+      <div class="modal-actions"><button class="btn primary sm" id="lgPGo">Enter realm</button><button class="btn ghost sm" id="lgPX" style="margin-left:auto">Cancel</button></div>`;
     const done=v=>{closeModal();res(v);};
     $("#lgShow").onchange=e=>{$("#lgPass").type=e.target.checked?"text":"password";};
     $("#lgPX").onclick=()=>done("");
-    $("#lgPGo").onclick=()=>{const v=$("#lgPass").value.trim();if(!v){toast("Enter the passphrase");return;}try{localStorage.setItem("p28_pass",v);}catch(e){}done(v);};
+    $("#lgPGo").onclick=()=>{const v=$("#lgPass").value.trim();if(!v){toast("Enter the realm name");return;}try{localStorage.setItem("p28_pass",v);}catch(e){}done(v);};
     showModal();setTimeout(()=>{const i=$("#lgPass");if(i)i.focus();},60);
   });
 }
@@ -1192,12 +1193,13 @@ async function changePassphrase(){
   const v=await askPassphrase();
   if(!v)return false;                       // cancelled — stay at the table we are at
   const key=await hashKey(v);
-  if(key===roomKey){toast("Same table — nothing changed");return false;}
+  if(key===roomKey){toast("Same realm — nothing changed");return false;}
   roomKey=key;
+  fileUnfiledInto(roomKey); pullScns();     // this table's scenarios, and adopt any loose ones
   clearLive();                              // the old room's game is unreachable from here
   liveRole="solo";liveScenario=null;liveCode="";guestPlayerRef=null;guestPid="";
   render();renderScenarioView();
-  toast("Moved to a different table");
+  toast("Moved to a different realm");
   return true;
 }
 async function ensureRoom(){
@@ -1205,6 +1207,7 @@ async function ensureRoom(){
   let pass=savedPass();
   if(!pass){ pass=await askPassphrase(); if(!pass)return false; }
   roomKey=await hashKey(pass);
+  fileUnfiledInto(roomKey); pullScns();
   return true;
 }
 function forgetRoom(){ roomKey=""; try{localStorage.removeItem("p28_pass");}catch(e){} }
@@ -1253,7 +1256,7 @@ function campId(){return normLabel(campName()).replace(/[^a-z0-9_-]+/g,"-").repl
 function wbForCloud(w){
   const c=JSON.parse(JSON.stringify(w));
   [].concat(c.characters||[],c.vehicles||[]).forEach(x=>{delete x.img;delete x.imgPos;});
-  (c.scenarios||[]).forEach(s=>enemyAll(s).forEach(e=>{delete e.img;delete e.imgPos;}));
+  allScns().forEach(s=>enemyAll(s).forEach(e=>{delete e.img;delete e.imgPos;}));
   return c;
 }
 function healWb(w){
@@ -1266,25 +1269,25 @@ function healWb(w){
     if(!c.skills||typeof c.skills!=="object")c.skills={A:1,F:1,S:1,AW:1,P:1};
     if(typeof c.hp!=="number")c.hp=20;
   });
-  w.scenarios.forEach(s=>fillScnArrayDefaults(s));
+  allScns().forEach(s=>fillScnArrayDefaults(s));
   return w;
 }
 async function backupCamp(){
   if(!fbAvailable()){toast("Cloud stash only works in the Realm app");return;}
   const id=campId(); if(!id){toast("Name your camp first");return;}
   if(!roomKey&&!await ensureRoom())return;
-  const db=await getDb(); if(!db){toast("Couldn't reach your table");return;}
+  const db=await getDb(); if(!db){toast("Couldn't reach your realm");return;}
   try{
     await db.doc("camps/"+id).set({name:campName(),savedAt:Date.now(),warbands:store.warbands.map(wbForCloud)});
-    toast("Camp backed up to your table");
+    toast("Camp backed up to your realm");
   }catch(e){ toast("Backup failed — try again"); }
 }
 async function restoreCamp(){
   if(!fbAvailable()){toast("Cloud stash only works in the Realm app");return;}
   const id=campId(); if(!id){toast("Name your camp first");return;}
   if(!roomKey&&!await ensureRoom())return;
-  const db=await getDb(); if(!db){toast("Couldn't reach your table");return;}
-  let snap; try{snap=await db.doc("camps/"+id).get();}catch(e){toast("Couldn't reach your table");return;}
+  const db=await getDb(); if(!db){toast("Couldn't reach your realm");return;}
+  let snap; try{snap=await db.doc("camps/"+id).get();}catch(e){toast("Couldn't reach your realm");return;}
   const v=snap.exists?snap.data():null;
   if(!v||!Array.isArray(v.warbands)||!v.warbands.length){toast("No backup found for “"+campName()+"”");return;}
   askConfirm("Restore "+v.warbands.length+" warband"+(v.warbands.length>1?"s":"")+" saved "+new Date(v.savedAt||0).toLocaleString()+"? Warbands with the same id are replaced. Portraits aren't included in backups.",()=>{
@@ -1323,7 +1326,7 @@ function sampleErr(code){
 function uid(){return Math.random().toString(36).slice(2,9)}
 function newChar(){return{id:uid(),name:"",role:"",bg:"",fielded:true,count:1,skills:{A:1,F:1,S:1,AW:1,P:1},hp:RULES.hpStart,traits:[],abilities:[],weapons:[],armour:[],items:[]}}
 function newVehicle(){return{id:uid(),name:"",role:"",bg:"",fielded:true,type:0,size:1,skills:{A:VRULES.aStart,S:VRULES.sStart},sections:[],traits:[],abilities:[],weapons:[]}}
-function newWarband(name){return{id:uid(),name:name||"Untitled Warband",budget:500,characters:[],vehicles:[],scenarios:[]}}
+function newWarband(name){return{id:uid(),name:name||"Untitled Warband",budget:500,characters:[],vehicles:[]}}
 function activeWB(){return store.warbands.find(w=>w.id===store.activeId)}
 
 /* ---- cost maths ---- */
@@ -1382,7 +1385,7 @@ function openStorageManager(){
     const imgs=[].concat(w.characters||[],w.vehicles||[]).filter(c=>c&&c.img).length;
     const kb=Math.round(JSON.stringify(w).length/1024);
     return `<div class="wb-item"><div class="wbi-main" style="cursor:default"><div class="wbi-name">${esc(w.name)}</div>
-      <div class="wbi-sub">${kb} KB · ${imgs} portrait${imgs===1?"":"s"} · ${(w.scenarios||[]).length} scenario${(w.scenarios||[]).length===1?"":"s"}</div></div>
+      <div class="wbi-sub">${kb} KB · ${imgs} portrait${imgs===1?"":"s"} · ${allScns().length} scenario${allScns().length===1?"":"s"}</div></div>
       ${imgs?`<button class="linkbtn del" data-striproom="${w.id}">Remove portraits</button>`:""}</div>`;
   }).join("");
   body.innerHTML=`
@@ -1401,16 +1404,33 @@ function openStorageManager(){
   $("#stClose").onclick=closeModal;
   showModal();
 }
+/* Scenarios used to live inside each warband, which hid them whenever you switched warband.
+   Move them up to the camp once, keeping every one, tagged unfiled so they attach to the first
+   table this device joins. */
+function migrateScenarios(){
+  if(!Array.isArray(store.scenarios))store.scenarios=[];
+  let moved=0;
+  (store.warbands||[]).forEach(w=>{
+    (w.scenarios||[]).forEach(s=>{
+      if(!s||!s.id||store.scenarios.some(x=>x&&x.id===s.id))return;
+      if(!s.room)s.room="";
+      store.scenarios.push(s); moved++;
+    });
+    w.scenarios=[];
+  });
+  if(moved)save();
+  return moved;
+}
 function load(){
-  try{const raw=localStorage.getItem(LS_KEY);if(raw){const p=JSON.parse(raw);if(p&&p.warbands&&p.warbands.length){store=p;store.warbands.forEach(w=>{if(!w.vehicles)w.vehicles=[];if(!w.scenarios)w.scenarios=[];});return}}}catch(e){}
+  try{const raw=localStorage.getItem(LS_KEY);if(raw){const p=JSON.parse(raw);if(p&&p.warbands&&p.warbands.length){store=p;migrateScenarios();store.warbands.forEach(w=>{if(!w.vehicles)w.vehicles=[];if(!w.scenarios)w.scenarios=[];});return}}}catch(e){}
   const w=newWarband("Void Reavers");w.characters.push(seededCharacter());
-  store={warbands:[w],activeId:w.id};save();
+  store={warbands:[w],activeId:w.id,scenarios:[]};save();
 }
 /* Wipes everything this device holds and starts from an EMPTY warband — not the demo one,
    which is what `load()` creates for a first-time visitor. */
 function resetDevice(){
-  const n=store.warbands.length, scn=store.warbands.reduce((s,w)=>s+((w.scenarios||[]).length),0);
-  askConfirm("Erase everything on this device? "+n+" warband"+(n===1?"":"s")+", "+scn+" scenario"+(scn===1?"":"s")+", your camp name, table passphrase and quest history all go. Anything stashed at your table is NOT touched — you can recover it afterwards.",()=>{
+  const n=store.warbands.length, scn=allScns().length;
+  askConfirm("Erase everything on this device? "+n+" warband"+(n===1?"":"s")+", "+scn+" scenario"+(scn===1?"":"s")+", your camp name, realm name and quest history all go. Anything stashed in your realm is NOT touched — you can recover it afterwards.",()=>{
     try{["p28_claimed","p28_camp","p28_player","p28_pass"].forEach(k=>localStorage.removeItem(k));
       Object.keys(localStorage).filter(k=>k.indexOf("p28_quest_")===0).forEach(k=>localStorage.removeItem(k));
     }catch(e){}
@@ -1471,7 +1491,7 @@ function renderHeader(){
 function activeQuestScn(){
   if(liveRole==="guest"&&liveScenario&&liveScenario.battle&&liveScenario.battle.started)return liveScenario;
   if(hostScenarioId){
-    const s=(activeWB().scenarios||[]).find(x=>x.id===hostScenarioId);
+    const s=findScn(hostScenarioId);
     if(s&&s.battle&&s.battle.started)return s;
   }
   return null;
@@ -1736,19 +1756,19 @@ function openRoleChooser(){
         </button>
         <button class="rolecard" id="roleRealm">
           <div class="rc-ico">🗺</div><div class="rc-n">The realm</div>
-          <div class="rc-d">You host the table. Import scenarios, run the DM's enemies, track everyone's roster. No warband building.</div>
+          <div class="rc-d">You host the realm. Import scenarios, run the DM's enemies, track everyone's roster. No warband building.</div>
         </button>
       </div>`;
     $("#roleRealm").onclick=()=>{ setAppRole("realm"); closeModal(); toast("🗺 Hosting the realm"); };
     $("#roleCamp").onclick=()=>{ setAppRole("camp"); step2(); };
   };
   const step2=async()=>{
-    body.innerHTML=`<h3>⛺ Your camp</h3><div class="ng-note spin">Looking for camps at your table…</div>`;
+    body.innerHTML=`<h3>⛺ Your camp</h3><div class="ng-note spin">Looking for camps in your realm…</div>`;
     if(!roomKey){
       body.innerHTML=`<h3>⛺ Your camp</h3>
-        <p class="lead">Your camps are kept at your table. Enter the group passphrase once and this device can pick up any camp stashed there — or just start a fresh one.</p>
+        <p class="lead">Your camps are kept in your realm. Name the realm once and this device can pick up any camp stashed there — or just start a fresh one.</p>
         <div class="modal-actions">
-          <button class="btn primary sm" id="rcPass">🔑 Set group passphrase</button>
+          <button class="btn primary sm" id="rcPass">🔑 Name your realm</button>
           <button class="btn ghost sm" id="rcSkip">Start a new camp instead</button>
         </div>`;
       $("#rcPass").onclick=async()=>{ if(await ensureRoom())step2(); };
@@ -1762,9 +1782,9 @@ function openRoleChooser(){
         <div class="wbi-sub">${c.n} warband${c.n===1?"":"s"}${c.savedAt?" · stashed "+new Date(c.savedAt).toLocaleDateString():""}</div>
       </button></div>`).join("");
     body.innerHTML=`<h3>⛺ Your camp</h3>
-      ${camps===null?`<p class="lead">Couldn't reach your table — you can still start a camp on this device.</p>`
-        :rows?`<p class="lead">Camps stashed at your table. Pick yours up here, or start a new one.</p><div class="wb-switch">${rows}</div>`
-             :`<p class="lead">No camps stashed at your table yet. Start one here — you can stash it later so your other devices can pick it up.</p>`}
+      ${camps===null?`<p class="lead">Couldn't reach your realm — you can still start a camp on this device.</p>`
+        :rows?`<p class="lead">Camps stashed in your realm. Pick yours up here, or start a new one.</p><div class="wb-switch">${rows}</div>`
+             :`<p class="lead">No camps stashed in your realm yet. Start one here — you can stash it later so your other devices can pick it up.</p>`}
       <div class="modal-actions">
         <button class="btn ${rows?"ghost":"primary"} sm" id="rcNew">+ Start a new camp</button>
       </div>`;
@@ -1806,9 +1826,9 @@ function renderCampBar(){
     </div>
     ${quest?`<div class="cb-quest"><span class="cb-onq">⚔ On a quest — ${esc(quest.title||"a scenario")}</span><button class="linkbtn" id="cbToScn">open the scenario</button></div>`:""}
     ${live?`<div class="cb-table">
-      ${joined?`<span class="cb-ok">◉ At your table</span><button class="linkbtn" id="cbPass">change passphrase</button>`
-              :`<button class="btn sm primary" id="cbPass">🔑 Set group passphrase</button>
-                <span class="none-note" style="font-style:normal">One-time — your table's shared password. After this, joining a game is just a 4-letter code.</span>`}
+      ${joined?`<span class="cb-ok" title="Everything is filed under this realm">◉ Realm: <b class="cb-pass">${esc(savedPass()||"set")}</b></span><button class="linkbtn" id="cbPass">change</button>`
+              :`<button class="btn sm primary" id="cbPass">🔑 Name your realm</button>
+                <span class="none-note" style="font-style:normal">One-time — the realm you share with your players. Different realms keep their own scenarios. After this, joining a game is just a 4-letter code.</span>`}
     </div>`:""}
   </div>`;
   $("#cbName").onclick=openLibrary;
@@ -2157,15 +2177,15 @@ function openLibrary(){
     <div class="camp-box">
       <div class="field" style="margin-bottom:8px"><label>Camp name</label>
         <input class="input" id="mCampName" value="${esc(campName())}" placeholder="e.g. Rhyno's Camp" maxlength="40" autocapitalize="words"></div>
-      <div class="none-note" style="font-style:normal;margin-bottom:9px">This is your own space — your warbands live here. Your table (the group passphrase) is the shared space where scenarios are hosted. Backing up copies your warbands to your table so you can restore them on any device.${fbAvailable()?"":" Live features are only available in the Realm."}</div>
+      <div class="none-note" style="font-style:normal;margin-bottom:9px">This is your own space — your warbands live here. Your realm (the name you share with your players) is where scenarios live and quests are hosted. Backing up copies your warbands to your table so you can restore them on any device.${fbAvailable()?"":" Live features are only available in the Realm."}</div>
       ${fbAvailable()?`<div class="modal-actions" style="margin-top:0">
-        <button class="btn sm" id="mCampSave">☁ Stash camp at the table</button>
+        <button class="btn sm" id="mCampSave">☁ Stash camp in your realm</button>
         <button class="btn sm ghost" id="mCampLoad">⇩ Recover camp here</button>
       </div>
       <div class="none-note" style="font-style:normal;margin-top:7px">${roomKey
         ? "Stash on the device you just played on; recover on the one you are moving to. Recovering replaces warbands of the same name here."
-        : "Both need your group passphrase — it is the address your camp is filed under. You will be asked for it once."}</div>`
-      :`<div class="none-note" style="font-style:normal;margin-top:7px">Cloud stash lives in the Realm app, where your table is. From here, use <b>⛺ Move to camp</b> on the roster to copy a warband across.</div>`}
+        : "Both need your realm name — it is the address your camp is filed under. You will be asked for it once."}</div>`
+      :`<div class="none-note" style="font-style:normal;margin-top:7px">Cloud stash lives in the Realm app, where your realm is. From here, use <b>⛺ Move to camp</b> on the roster to copy a warband across.</div>`}
     </div>
     <div class="eyebrow" style="margin:16px 0 8px">Backup &amp; transfer</div>
     <div class="modal-actions" style="margin-top:0">
@@ -2173,13 +2193,13 @@ function openLibrary(){
       <button class="btn sm" id="mImport">Import…</button>
       <button class="btn sm ghost" id="mStashOpen">🎒 Spoils</button>
     </div>
-    ${(activeWB().scenarios||[]).length?`<div class="modal-actions" style="margin-top:8px">
-      <button class="btn sm danger ghost" id="mWipeScns">Delete all ${(activeWB().scenarios||[]).length} scenario${(activeWB().scenarios||[]).length===1?"":"s"}</button>
+    ${visibleScns().length?`<div class="modal-actions" style="margin-top:8px">
+      <button class="btn sm danger ghost" id="mWipeScns">Delete all ${visibleScns().length} scenario${visibleScns().length===1?"":"s"}</button>
       <span class="none-note" style="font-style:normal;margin-left:auto">Characters and scars are kept.</span>
     </div>`:""}
     <div class="modal-actions" style="margin-top:8px">
       <button class="btn sm danger ghost" id="mResetAll">🧨 Reset this device</button>
-      <span class="none-note" style="font-style:normal;margin-left:auto">Erases everything here. Your table is untouched.</span>
+      <span class="none-note" style="font-style:normal;margin-left:auto">Erases everything here. Your realm is untouched.</span>
     </div>
     <div class="modal-actions"><button class="btn ghost sm" id="mClose" style="margin-left:auto">Close</button></div>`;
   body.querySelectorAll("[data-load]").forEach(b=>b.onclick=()=>{store.activeId=b.dataset.load;save();render();closeModal();toast("Loaded "+esc(activeWB().name))});
@@ -2201,9 +2221,9 @@ function openLibrary(){
   const st2=$("#mStashOpen");if(st2)st2.onclick=openStash;
   const ra=$("#mResetAll");if(ra)ra.onclick=resetDevice;
   const cw=$("#mWipeScns");if(cw)cw.onclick=()=>{
-    const n=(activeWB().scenarios||[]).length;
+    const n=visibleScns().length;
     askConfirm("Delete all "+n+" scenario"+(n===1?"":"s")+" in “"+activeWB().name+"”? Your characters, gear and scars are untouched.",()=>{
-      activeWB().scenarios=[];scnCurrentId=null;scnScreen="list";
+      visibleScns().forEach(s=>dropScn(s.id));scnCurrentId=null;scnScreen="list";
       if(save())toast("Scenarios cleared");render();openLibrary();
     },{danger:true,yesLabel:"Delete all"});
   };
@@ -3174,6 +3194,64 @@ function syncCheatFab(){
   if(!on)closeCheat();
 }
 
+
+/* ---- SCENARIOS BELONG TO A TABLE, NOT A WARBAND ----
+   A scenario is something a group plays, so it is filed under the passphrase room it was made
+   in: everything created at "Rusty" stays with Rusty, another table keeps its own, and any
+   device that knows the passphrase sees the lot. They are stored camp-level (store.scenarios)
+   with a `room` tag, mirrored up to rooms/<key>/scenarios so a brand-new device gets them all.
+   The Claude app has no table at all, so what the DM writes there is UNFILED until it is
+   imported into Realm, at which point it joins whichever table you are at. */
+let _scnPushT={};
+function allScns(){ if(!Array.isArray(store.scenarios))store.scenarios=[]; return store.scenarios; }
+function visibleScns(){ return allScns().filter(s=>s&&(!s.room||s.room===roomKey)); }
+function findScn(id){ return allScns().find(s=>s&&s.id===id)||null; }
+function addScn(s){ s.room=s.room||roomKey||""; allScns().unshift(s); save(); pushScn(s); return s; }
+function dropScn(id){
+  const s=findScn(id);
+  clearTimeout(_scnPushT[id]);            // a pending push would otherwise resurrect it
+  store.scenarios=allScns().filter(x=>x&&x.id!==id);
+  save(); if(s&&s.room)deleteScnOnline(s);
+}
+// file everything currently unfiled into the table we just joined
+function fileUnfiledInto(key){
+  if(!key)return 0;
+  let n=0;
+  allScns().forEach(s=>{if(s&&!s.room){s.room=key;n++;pushScn(s);}});
+  if(n)save();
+  return n;
+}
+function pushScn(s){
+  if(!s||!s.room||s.room!==roomKey)return;
+  clearTimeout(_scnPushT[s.id]);
+  _scnPushT[s.id]=setTimeout(async()=>{                 // coalesce rapid edits into one write
+    try{ const db=await getDb(); if(!db)return;
+      s.updatedAt=Date.now();
+      await db.doc("scenarios/"+s.id).set(Object.assign(scnForDb(s),{updatedAt:s.updatedAt}));
+    }catch(e){}
+  },600);
+}
+async function deleteScnOnline(s){
+  try{ const db=await getDb(); if(db)await db.doc("scenarios/"+s.id).delete(); }catch(e){}
+}
+/* Pull the table's scenarios down. Newer wins by updatedAt, so a device that has been offline
+   catches up without clobbering work done elsewhere. */
+async function pullScns(){
+  if(!roomKey)return 0;
+  let docs=[];
+  try{ const db=await getDb(); if(!db)return 0; docs=(await db.collection("scenarios").get()).docs; }catch(e){ return 0; }
+  let changed=0;
+  docs.forEach(d=>{
+    const raw=d.data(); if(!raw||!raw.id)return;
+    const inc=normalizeImportedScn(JSON.parse(JSON.stringify(raw)));
+    inc.id=raw.id; inc.room=roomKey; inc.updatedAt=raw.updatedAt||0;
+    const cur=findScn(inc.id);
+    if(!cur){ allScns().push(inc); changed++; return; }
+    if((inc.updatedAt||0)>(cur.updatedAt||0)){ Object.assign(cur,inc); changed++; }
+  });
+  if(changed){ save(); renderScenarioView(); }
+  return changed;
+}
 /* ============================ SCENARIOS ============================ */
 let scnScreen="list", scnCurrentId=null, scnMode="coop", scnPlayers=2, scnDifficulty="normal", scnLengthBase=0;
 const DIFFICULTY={
@@ -3186,7 +3264,7 @@ const DIFF_ORDER=["easy","normal","hard","deadly"];
 function diffOf(s){return DIFFICULTY[s&&s.difficulty]||DIFFICULTY.normal;}
 function rollD10p6(){return 6+(1+Math.floor(Math.random()*10));}   // 1D10+6 → 7-16
 function scnFinalLength(){return Math.max(4,Math.min(20,(scnLengthBase||rollD10p6())+DIFFICULTY[scnDifficulty].roundMod));}
-function scnsOf(w){return w.scenarios||[]}
+function scnsOf(){return visibleScns()}
 
 function renderScenarioView(){
   syncQuestGlow();
@@ -3212,7 +3290,7 @@ function askPlayerName(title,lead,onName,extra){
 
 async function openHostDialog(s){
   const db=await getDb();
-  if(!db){toast(fbAvailable()?"Enter your group passphrase to use live play.":"Live play isn't available in this version.");return;}
+  if(!db){toast(fbAvailable()?"Name your realm to use live play.":"Live play isn't available in this version.");return;}
   askPlayerName("Host this game","Publish this scenario to a live session. Share the code with your players — they join to watch it live on their own device while you run it.",nm=>hostScenario(s,nm));
 }
 async function hostScenario(s,name){
@@ -3238,9 +3316,9 @@ function scheduleHostSync(s){
 
 async function openJoinDialog(){
   const db=await getDb();
-  if(!db){toast(fbAvailable()?"Enter your group passphrase to use live play.":"Live play isn't available in this version.");return;}
-  askPlayerName("Embark on a quest","Enter the game code your host gave you — the 4-letter code shown on their screen (not your group passphrase). You'll see their scenario update live while you build and run your own warband.",nm=>{const c=($("#lgCode").value||"").toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,6);if(!c){toast("Enter the game code");return;}joinGame(c,nm);},
-    `<div class="field" style="margin-bottom:10px"><label>Game code</label><input class="input" id="lgCode" placeholder="e.g. AB3K" maxlength="6" style="max-width:160px;letter-spacing:.2em;text-transform:uppercase;font-family:var(--mono)"><div class="none-note" style="font-style:normal;margin-top:4px">This is different from your passphrase — find it on the host's screen: "📡 Hosting · code XXXX".</div></div>`);
+  if(!db){toast(fbAvailable()?"Name your realm to use live play.":"Live play isn't available in this version.");return;}
+  askPlayerName("Embark on a quest","Enter the game code your host gave you — the 4-letter code shown on their screen (not your realm name). You'll see their scenario update live while you build and run your own warband.",nm=>{const c=($("#lgCode").value||"").toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,6);if(!c){toast("Enter the game code");return;}joinGame(c,nm);},
+    `<div class="field" style="margin-bottom:10px"><label>Game code</label><input class="input" id="lgCode" placeholder="e.g. AB3K" maxlength="6" style="max-width:160px;letter-spacing:.2em;text-transform:uppercase;font-family:var(--mono)"><div class="none-note" style="font-style:normal;margin-top:4px">This is different from your realm name — find it on the host's screen: "📡 Hosting · code XXXX".</div></div>`);
 }
 /* Firebase drops empty arrays one level deeper too: an enemy unit with no traits/armour
    comes back missing those fields entirely and the points maths throws on it. Heal them. */
@@ -3290,7 +3368,7 @@ async function joinGame(code,name){
   const res=$("#lgResult");if(res)res.innerHTML=`<div class="ng-note spin">Joining ${esc(code)}…</div>`;
   const ref=db.doc("sessions/"+code);
   let snap;try{snap=await ref.get();}catch(e){if(res)res.innerHTML=`<div class="ng-note">Couldn't reach the game — check your connection and try again.</div>`;toast("Couldn't reach the game");return;}
-  if(!snap.exists){if(res)res.innerHTML=`<div class="ng-note">No live game with code ${esc(code)} at your table. Double-check the code on the host's screen, and that you both set the same group passphrase.</div>`;toast("No game found with that code");return;}
+  if(!snap.exists){if(res)res.innerHTML=`<div class="ng-note">No live game with code ${esc(code)} in your realm. Double-check the code on the host's screen, and that you are both in the same realm.</div>`;toast("No game found with that code");return;}
   clearLive();liveRole="guest";liveCode=code;liveScenario=fillScnArrayDefaults((snap.data()||{}).scenario||null);
   try{ _liveUnsub.push(ref.onSnapshot(sn=>{
     if(sn.exists){
@@ -4144,13 +4222,13 @@ function renderScenarioList(){
       </div>
     </button>`).join("");
   el.innerHTML=`
-    ${isHost()?`<div class="live-panel"><div class="lp-main"><b>🗺 You are hosting the realm</b> <span class="none-note" style="font-style:normal">Import a scenario and host it for your table. Warband building is hidden on this device.</span></div><button class="btn sm ghost" id="lpRole">🗺 this is the realm — change</button></div>`:""}
+    ${isHost()?`<div class="live-panel"><div class="lp-main"><b>🗺 Hosting the realm ${roomKey?`<span class="cb-pass">${esc(savedPass()||"unnamed")}</span>`:`<span style="color:var(--warn)">— no realm named yet</span>`}</b> <span class="none-note" style="font-style:normal">Import a scenario and host it for your realm. Warband building is hidden on this device.</span></div><button class="btn sm ghost" id="lpRole">🗺 this is the realm — change</button></div>`:""}
     ${fbAvailable()?(roomKey?`<div class="live-panel">
-      <div class="lp-main"><b>Live game</b> <span class="none-note" style="font-style:normal">Host a scenario for your table, or join one your host is running. Everyone plays on their own device.</span><div class="lp-tablebadge">${campName()?`⛺ ${esc(campName())} · `:""}◉ at your table <button class="linkbtn" id="lpLeaveTable">change passphrase</button></div></div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm ghost" id="lpTableScns">🗄 My table's scenarios</button><button class="btn sm ghost" id="lpImport">⇩ Import scenario</button><button class="btn sm" id="lpJoin">⚔ Embark on a quest</button></div>
+      <div class="lp-main"><b>Live game</b> <span class="none-note" style="font-style:normal">Host a scenario for your realm, or join one your host is running. Everyone plays on their own device.</span><div class="lp-tablebadge">${campName()?`⛺ ${esc(campName())} · `:""}◉ Realm: <b class="cb-pass">${esc(savedPass()||"unnamed")}</b> <button class="linkbtn" id="lpLeaveTable">change realm</button></div></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm ghost" id="lpTableScns">🗄 Realm scenarios</button><button class="btn sm ghost" id="lpImport">⇩ Import scenario</button><button class="btn sm" id="lpJoin">⚔ Embark on a quest</button></div>
     </div>`:`<div class="live-panel live-panel-gate">
-      <div class="lp-main"><b>Live game</b> <span class="none-note" style="font-style:normal">Host or join a live game with your table — set a shared passphrase first so everyone lands in the same game.</span></div>
-      <button class="btn primary" id="lpTable">🔑 Set group passphrase</button>
+      <div class="lp-main"><b>Live game</b> <span class="none-note" style="font-style:normal">Host or join a live game — name your realm first so everyone lands in the same one.</span></div>
+      <button class="btn primary" id="lpTable">🔑 Name your realm</button>
     </div>`):""}
     <div class="section-head"><span class="eyebrow">Scenarios &amp; Campaigns</span><span class="rule"></span><span class="none-note" style="font-style:normal">${esc(w.name)}</span></div>
     <div class="scn-grid">
@@ -4158,7 +4236,7 @@ function renderScenarioList(){
       <button class="scn-card add" id="scnNew"><div class="plus">+</div><span>New scenario</span></button>
     </div>
     ${(()=>{ // scenarios are stored per warband — never let them vanish just because you switched
-      const others=store.warbands.filter(x=>x.id!==w.id).flatMap(x=>(x.scenarios||[]).map(s=>({s,wb:x})));
+      const others=[].flatMap(x=>(x.scenarios||[]).map(s=>({s,wb:x})));
       if(!others.length)return "";
       return `<div class="section-head" style="margin-top:26px"><span class="eyebrow">In your other warbands</span><span class="rule"></span></div>
       <div class="scn-grid">${others.map(({s,wb})=>`
@@ -4183,28 +4261,28 @@ function renderScenarioList(){
   const lpi=$("#lpImport");if(lpi)lpi.onclick=openImportScenario;
   const lts=$("#lpTableScns");if(lts)lts.onclick=openTableScenarios;
   const lt=$("#lpTable");if(lt)lt.onclick=async()=>{if(await ensureRoom())renderScenarioView();};
-  const ll=$("#lpLeaveTable");if(ll)ll.onclick=()=>{forgetRoom();clearLive();liveRole="solo";liveScenario=null;renderScenarioView();toast("Left the table — set a passphrase to rejoin");};
+  const ll=$("#lpLeaveTable");if(ll)ll.onclick=()=>{forgetRoom();clearLive();liveRole="solo";liveScenario=null;renderScenarioView();toast("Left the realm — name it again to return");};
 }
 /* Your table doubles as durable scenario storage: anything ever hosted in this passphrase
    room can be pulled back down onto any device, so a wiped browser never loses a scenario. */
 async function openTableScenarios(){
   const body=$("#modalBody");
-  body.innerHTML=`<h3>Scenarios at your table</h3><div class="ng-note spin">Looking…</div>`;showModal();
+  body.innerHTML=`<h3>Scenarios in your realm</h3><div class="ng-note spin">Looking…</div>`;showModal();
   const db=await getDb();
-  if(!db){body.innerHTML=`<h3>Scenarios at your table</h3><p class="lead">Set your group passphrase first.</p><div class="modal-actions"><button class="btn ghost sm" id="tsX" style="margin-left:auto">Close</button></div>`;$("#tsX").onclick=closeModal;return;}
+  if(!db){body.innerHTML=`<h3>Scenarios in your realm</h3><p class="lead">Name your realm first.</p><div class="modal-actions"><button class="btn ghost sm" id="tsX" style="margin-left:auto">Close</button></div>`;$("#tsX").onclick=closeModal;return;}
   let docs=[];
   try{ docs=(await db.collection("sessions").get()).docs; }catch(e){}
-  const w=activeWB(), mine=(w.scenarios||[]).map(x=>normLabel(x.title));
+  const mine=allScns().map(x=>normLabel(x.title));
   const rows=docs.map(d=>{const v=d.data()||{},s=v.scenario||{};return {code:d.id,title:s.title||"Untitled",host:v.hostName||"",when:v.updatedAt||0,have:mine.includes(normLabel(s.title))};})
     .sort((a,b)=>b.when-a.when);
   body.innerHTML=`
-    <h3>Scenarios at your table</h3>
-    <p class="lead">Everything hosted at this table is kept here, so you can pull a scenario back onto any device — even after clearing a browser.</p>
+    <h3>Scenarios in your realm</h3>
+    <p class="lead">Every scenario in this realm is kept here, so you can pull one back onto any device — even after clearing a browser.</p>
     ${rows.length?`<div class="wb-switch">${rows.map(r=>`<div class="wb-item">
       <div class="wbi-main" style="cursor:default"><div class="wbi-name">${esc(r.title)}</div>
         <div class="wbi-sub">code ${esc(r.code)}${r.host?" · hosted by "+esc(r.host):""}${r.when?" · "+new Date(r.when).toLocaleString():""}</div></div>
       ${r.have?`<span class="none-note" style="font-style:normal">already here</span>`:`<button class="linkbtn" data-pull="${esc(r.code)}">Load</button>`}</div>`).join("")}</div>`
-      :`<div class="ng-note">Nothing has been hosted at this table yet.</div>`}
+      :`<div class="ng-note">Nothing has been hosted in this realm yet.</div>`}
     <div class="modal-actions"><button class="btn ghost sm" id="tsX" style="margin-left:auto">Close</button></div>`;
   $("#tsX").onclick=closeModal;
   body.querySelectorAll("[data-pull]").forEach(b=>b.onclick=async()=>{
@@ -4214,7 +4292,7 @@ async function openTableScenarios(){
       const raw=(snap.data()||{}).scenario;
       if(!raw){toast("That game is no longer there");return;}
       const s=normalizeImportedScn(raw);
-      const wb=activeWB();(wb.scenarios=wb.scenarios||[]).unshift(s);
+      addScn(s);
       if(!save()){toast("⚠ Loaded but NOT saved — free up space");}
       closeModal();scnCurrentId=s.id;scnScreen="detail";renderScenarioView();toast("Loaded “"+(s.title||"scenario")+"”");
     }catch(e){toast("Couldn't load that one");}
@@ -4234,7 +4312,7 @@ function openImportScenario(){
     let s;try{s=JSON.parse(raw);}catch(e){err.innerHTML=`<div class="ng-note">That doesn't look like a valid scenario code.</div>`;return;}
     if(!s||typeof s!=="object"||(!s.title&&!s.premise&&!s.objectives)){err.innerHTML=`<div class="ng-note">That code isn't a scenario.</div>`;return;}
     s=normalizeImportedScn(s);
-    const w=activeWB();(w.scenarios=w.scenarios||[]).unshift(s);
+    addScn(s);
     const ok=save();
     closeModal();scnCurrentId=s.id;scnScreen="detail";renderScenarioView();
     toast(ok?"Scenario imported":"⚠ Imported but NOT saved — storage is full");
@@ -4264,7 +4342,7 @@ function exportScenarioCode(s){
   const code=JSON.stringify(scnForDb(s));
   body.innerHTML=`
     <h3>Move this scenario to the World App</h3>
-    <p class="lead">Copy this code, open the World App, and paste it into Scenarios → ⇩ Import scenario to host it live for your table.</p>
+    <p class="lead">Copy this code, open the World App, and paste it into Scenarios → ⇩ Import scenario to host it live in your realm.</p>
     <textarea class="jsonbox" id="exScn" readonly>${esc(code)}</textarea>
     <div class="modal-actions"><button class="btn primary sm" id="exScnCopy">Copy code</button><button class="btn ghost sm" id="exScnX" style="margin-left:auto">Close</button></div>`;
   $("#exScnX").onclick=closeModal;
@@ -4385,7 +4463,7 @@ Map coordinates are percentages of the 90×90 board: x from 0 (left) to 100 (rig
   try{
     const raw=await s.json(prompt,{modelTier:"default",cache:false});
     const scn=coerceScenario(raw,{seed,players,points,mode,difficulty,length});
-    const w=activeWB();if(!w.scenarios)w.scenarios=[];w.scenarios.unshift(scn);save();
+    addScn(scn);
     closeModal();scnCurrentId=scn.id;scnScreen="detail";renderScenarioView();
     toast("Scenario generated");
   }catch(e){
@@ -5013,7 +5091,7 @@ function buildBattle(s){
   s.battle={started:true,combatants};save();
 }
 function mergePlayersIntoHostedBattle(){
-  const s=(activeWB().scenarios||[]).find(x=>x.id===hostScenarioId);
+  const s=findScn(hostScenarioId);
   if(!s||!s.battle||!s.battle.started)return;
   let added=false;
   (livePlayers||[]).forEach(p=>(p.combatants||[]).forEach(m=>{if(m&&m.id&&!s.battle.combatants.some(x=>x.id===m.id)){s.battle.combatants.push(JSON.parse(JSON.stringify(m)));added=true;}}));
@@ -5440,7 +5518,7 @@ function revertPickup(c,p){
 }
 function removePickup(c,p){
   const go=()=>{c.pickups=(c.pickups||[]).filter(x=>x!==p);
-    const w=activeWB();const scn=(w.scenarios||[]).find(s=>s.id===p.scnId);if(scn){const it=(scn.items||[]).find(i=>i.id===p.itemId);if(it&&it.heldBy===c.id)it.heldBy=null;}
+    const scn=findScn(p.scnId);if(scn){const it=(scn.items||[]).find(i=>i.id===p.itemId);if(it&&it.heldBy===c.id)it.heldBy=null;}
     save();buildDossier();persist();if(cardCharId===c.id)buildCard();};
   if(p.applied)askConfirm("Discard the pick-up “"+p.name+"”? Its change to "+(c.name||"the character")+" stays — revert first if you want to undo it.",go,{danger:true,yesLabel:"Discard"});
   else go();
@@ -5587,7 +5665,7 @@ function renderScenarioDetail(scnOverride){
     const hosting=liveRole==="host"&&s.id===hostScenarioId;
     askConfirm("Delete “"+(s.title||"this scenario")+"”?"+(hosting?" This will also end the live game for anyone who joined.":""),async()=>{
       if(hosting)await stopHosting();
-      w.scenarios=scnsOf(w).filter(x=>x.id!==s.id);save();scnScreen="list";renderScenarioView();toast("Scenario deleted");
+      dropScn(s.id);scnScreen="list";renderScenarioView();toast("Scenario deleted");
     },{danger:true,yesLabel:"Delete"});
   };
   const sh=$("#scnShare");if(sh)sh.onclick=()=>exportScenarioCode(s);
@@ -5736,6 +5814,7 @@ applyRole();
   if(fbAvailable()&&savedPass()&&!roomKey){
     roomKey=await hashKey(savedPass());
     render(); if(currentView==="scenarios")renderScenarioView();
+    pullScns();
   }
 }catch(e){} })();
 if(fbAvailable()&&!appRole())setTimeout(openRoleChooser,400);
