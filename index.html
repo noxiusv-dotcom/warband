@@ -1153,6 +1153,18 @@ function askPassphrase(){
     showModal();setTimeout(()=>{const i=$("#lgPass");if(i)i.focus();},60);
   });
 }
+async function changePassphrase(){
+  const v=await askPassphrase();
+  if(!v)return false;                       // cancelled — stay at the table we are at
+  const key=await hashKey(v);
+  if(key===roomKey){toast("Same table — nothing changed");return false;}
+  roomKey=key;
+  clearLive();                              // the old room's game is unreachable from here
+  liveRole="solo";liveScenario=null;liveCode="";guestPlayerRef=null;guestPid="";
+  render();renderScenarioView();
+  toast("Moved to a different table");
+  return true;
+}
 async function ensureRoom(){
   if(roomKey)return true;
   let pass=savedPass();
@@ -1611,7 +1623,7 @@ function renderCampBar(){
   </div>`;
   $("#cbName").onclick=openLibrary;
   const cr=$("#cbRole"); if(cr)cr.onclick=openRoleChooser;
-  const cp=$("#cbPass"); if(cp)cp.onclick=async()=>{if(await ensureRoom()){render();renderScenarioView();}};
+  const cp=$("#cbPass"); if(cp)cp.onclick=async()=>{ if(roomKey){await changePassphrase();return;} if(await ensureRoom()){render();renderScenarioView();} };
 }
 function render(){renderHeader();renderRoster();renderVehicleRoster();renderCampBar();syncAppButtons();save()}
 
