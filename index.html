@@ -2433,14 +2433,49 @@ const SOLO_AI_ALWAYS=[
   "Never leaves combat, and never holds an action.",
   "Hits an obstacle while moving? Roll 1D4 — on 1-2 it carries straight on, using Agility to tackle the obstacle; on 3 it turns and moves back the way it came; on 4 you decide how it spends the rest of its move."
 ];
-function cardSoloAI(){
+
+/* Rolled powers, read as the enemy's own tactics. The ladder already says "shoot OR use an
+   ability", but which ability, at whom, and whether it counts as reaching across the table
+   is exactly what the host has to decide mid-turn — so spell it out per power. */
+const ARCANA_AI=[
+ {n:"Blind",ranged:true,  ai:"Cast when two or more of the warband are within 15cm of it — stopping several models acting beats any single attack."},
+ {n:"Smite",ranged:true,  ai:"Its ranged attack. Use it on the nearest player character in line of sight, exactly as a shooting action."},
+ {n:"Terrify",ranged:true,ai:"Use on whoever is closest to it, to drive them off before they can charge."},
+ {n:"Rend the earth",ranged:true,ai:"Cast on a character standing where the warband must cross — the ground stays hazardous for the rest of the game."},
+ {n:"Mind control",ranged:true,ai:"Use on a player character standing next to their own allies, and spend the free action attacking them."},
+ {n:"Wither",ranged:true, ai:"Use on the most dangerous visible fighter — the highest (F) it can see."},
+ {n:"Flame",ranged:true,  ai:"Its ranged attack. Burn the nearest visible character; they must spend an action putting it out or keep taking damage."},
+ {n:"Summon",ranged:true, ai:"Copy the toughest model it can see and set the duplicate behind the warband's line."},
+ {n:"Shield",ranged:false,ai:"Cast on its own side — the enemy leader, or whichever of its allies is most wounded. Never on a player."},
+ {n:"Teleport",ranged:false,ai:"Move itself: onto high ground, out of a closing charge, or across to an objective. It still may not leave combat this way."},
+ {n:"Dishearten",ranged:true,ai:"Use on the fastest enemy of its own — the highest (A) it can see — so that character acts last next turn."},
+ {n:"Immobilize",ranged:true,ai:"Pin whoever is closing on it, or whoever carries an objective. Then keep its distance while they cannot move."}
+];
+function castingNote(c){
+  const rolled=Array.isArray(c&&c.rolledSpells)?c.rolledSpells:[];
+  if(!rolled.length)return "";
+  const hasGun=(c.weapons||[]).some(e=>{const o=CAT.weapon[e.id];return o&&o.type==="Ranged";});
+  const reaches=rolled.some(i=>(ARCANA_AI[i]||{}).ranged);
+  const lead=(!hasGun&&reaches)
+    ? `<div class="gc-spellnote" style="color:var(--warn);margin-bottom:8px">Carries no gun, but its powers reach across the table — on its activation this counts as having a shooting action, so step 2 applies before it ever closes to fight.</div>`
+    : `<div class="gc-spellnote" style="margin-bottom:8px">Spend these on its activation wherever the ladder allows an ability.</div>`;
+  return `<div class="gc-sec">
+    <div class="sh arc">⚝ Its powers this game — how to use them</div>
+    ${lead}
+    ${rolled.map(i=>{const a=ARCANA_AI[i]||{},s=ARCANA[i]||["",""];
+      return `<div class="gc-entry"><div class="en"><span>${esc(s[0])}</span>${a.ranged?`<span class="ev">reaches</span>`:`<span class="ev">self / allies</span>`}</div>
+        <div class="ed">${esc(a.ai||"")}</div>
+        <div class="ed" style="color:var(--ink-mute)">${esc(s[1])}</div></div>`;}).join("")}
+  </div>`;
+}
+function cardSoloAI(c){
   return `<div class="gc-sec">
     <div class="sh" style="color:var(--danger)">◉ On its activation — in priority order</div>
     <div class="gc-spellnote" style="margin-bottom:8px">Take the first line that applies.</div>
     ${SOLO_AI.map((r,i)=>`<div class="gc-entry"><div class="en"><span>${i+1}. ${esc(r[0])}</span></div><div class="ed">${esc(r[1])}</div></div>`).join("")}
     <div class="gc-spellnote" style="margin-top:10px"><b>Always:</b></div>
     ${SOLO_AI_ALWAYS.map(x=>`<div class="ed" style="margin:3px 0 0">• ${esc(x)}</div>`).join("")}
-  </div>`;
+  </div>`+(c?castingNote(c):"");
 }
 function spellNote(isMajor,isMinor,hasPsyka){
   const lines=[];
@@ -2560,7 +2595,7 @@ function buildCard(){
           ${cardSection("Armour",arm)}
           ${cardSection("Items",items)}
           ${cardSection("Campaign changes",(c.pickups||[]).filter(p=>p.applied&&p.effect).map(p=>({name:p.name,desc:p.effect.summary})))}
-          ${cardIsEnemy?cardSoloAI():cardAgenda(c)}
+          ${cardIsEnemy?cardSoloAI(c):cardAgenda(c)}
           ${(anyGear+anyPow)===0&&!(c.pickups||[]).some(p=>p.applied)?`<div class="gc-sec"><div class="gc-empty">No traits, abilities or equipment yet — hit Edit to kit this character out.</div></div>`:""}
         </div>
       </div>
@@ -3295,7 +3330,7 @@ async function pullScns(){
   return changed;
 }
 /* ============================ SCENARIOS ============================ */
-let scnScreen="list", scnCurrentId=null, scnMode="coop", scnPlayers=2, scnDifficulty="normal", scnLengthBase=0;
+let scnScreen="list", scnCurrentId=null, scnMode="coop", scnPlayers=2, scnDifficulty="normal", scnLengthBase=0, scnQuestType="";
 const DIFFICULTY={
  easy:  {label:"Easy",  enemyBonus:100, roundMod:2,  tone:"forgiving — the enemy is lighter and there is a little more time"},
  normal:{label:"Normal",enemyBonus:200, roundMod:0,  tone:"balanced — the standard co-op odds from the rules"},
@@ -4195,7 +4230,16 @@ function claimQuest(snap,then){
   const w=activeWB();
   let wounded=0,downed=0,found=0;
   const fell=[];
-  (snap.combatants||[]).forEach(m=>{
+  const byChar={};
+  (snap.combatants||[]).forEach(m=>{ if(!m.charId)return;
+    const e=byChar[m.charId]||(byChar[m.charId]={cur:0,down:true,finds:[]});
+    e.cur+=Math.max(0,m.curHP|0); if((m.curHP|0)>0)e.down=false; (m.finds||[]).forEach(f=>e.finds.push(f));
+  });
+  Object.keys(byChar).forEach(id=>{const m=byChar[id];
+    const first=(snap.combatants||[]).find(x=>x.charId===id);
+    if(first){first.curHP=m.cur; first.finds=m.finds;}
+  });
+  (snap.combatants||[]).filter((m,i,arr)=>!m.charId||arr.findIndex(x=>x.charId===m.charId)===i).forEach(m=>{
     const c=w.characters.find(x=>x.id===m.charId); if(!c)return;
     if(m.curHP<=0){
       fell.push({charId:c.id,name:c.name});
@@ -4376,7 +4420,14 @@ function normalizeImportedScn(raw){
   s.players=+s.players||3; s.points=+s.points||300;
   ["objectives","specialRules","terrain","markers","searched"].forEach(k=>{if(!Array.isArray(s[k]))s[k]=[];});
   ["npcs","items","events"].forEach(k=>{if(!Array.isArray(s[k]))s[k]=[];});
-  s.items=s.items.map((x,i)=>({name:String(x&&x.name||""),note:String(x&&x.note||""),secret:!!(x&&x.secret),hint:String(x&&x.hint||""),revealed:!!(x&&x.revealed),id:(x&&x.id)||("it"+i),heldBy:(x&&x.heldBy)||null}));
+  // Rebuild from a whitelist, but keep EVERYTHING the item carries about where it lives and
+  // when it matters. Dropping mapLabel silently emptied the cache the DM had hidden it in, so
+  // an imported scenario asked the host to place items that were already placed; dropping
+  // `when` produced the "doesn't say when it matters" warning on every import.
+  s.items=s.items.map((x,i)=>({name:String(x&&x.name||""),note:String(x&&x.note||""),
+    when:String(x&&x.when||""),mapLabel:String(x&&x.mapLabel||""),role:String(x&&x.role||""),
+    secret:!!(x&&x.secret),hint:String(x&&x.hint||""),revealed:!!(x&&x.revealed),
+    found:!!(x&&x.found),id:(x&&x.id)||("it"+i),heldBy:(x&&x.heldBy)||null}));
   s.title=String(s.title||"Imported scenario").slice(0,80);
   s.premise=String(s.premise||"");
   if(!s.map||typeof s.map!=="object")s.map={note:"",zones:[],features:[]};
@@ -4400,13 +4451,50 @@ function exportScenarioCode(s){
   showModal();setTimeout(()=>{const t=$("#exScn");if(t)t.select();},60);
 }
 
+
+/* ---- QUEST TYPES ----
+   Naming the SHAPE of the game up front gives the DM something to build toward, instead of
+   inventing a premise and a win condition from nothing every time. Each brief says what the
+   objectives, the map and the ending should look like, so the scenario comes out playable
+   rather than merely atmospheric. "" lets the DM choose. */
+const QUEST_TYPES=[
+ ["Combat & attrition",[
+  ["grinder","Defeat all enemies","The whole point is the fight. Victory is destroying the opposing force or breaking it. Keep objectives minimal, make the terrain do the work, and give both sides reasons to close rather than camp."],
+  ["assassin","Assassination","One named, high-value target must die — a warlord, a psyker, a foreman. Name it, make it dangerous and give it bodyguards. Killing it wins; losing your own leader should cost the players something."],
+  ["lastStand","Hold the line","Asymmetric: the players are outnumbered and must SURVIVE a set number of turns, not win a fight. Enemies arrive in waves at named turns, from named edges. Victory is measured in turns endured."]]],
+ ["Area control",[
+  ["hill","King of the hill","One high-value zone at the centre. Whoever holds it when the game ends wins. Put hard cover around it and hazards on the approaches so holding it hurts."],
+  ["domination","Capture and hold","3-5 objective markers spread across the board, scored at the end of every turn. Spread them so no single position covers two, and make at least one sit in bad ground."],
+  ["breakthrough","Breakthrough","The players must fight ACROSS the board and exit the far edge; each model that escapes scores. The enemy deploys between them and the exit and does not need to kill, only delay."]]],
+ ["Retrieval & exploration",[
+  ["fetch","Fetch the prize","One specific object must be picked up and physically carried off the board. Say where it starts, who can carry it, and what carrying it costs — slower, cannot shoot, draws attention."],
+  ["scavenge","Scavenge the unknown","Several mystery markers; only searching reveals which holds the real prize. Use cache features and hide the true objective among decoys, so the search itself is the game."],
+  ["escort","Escort","Something slow and vulnerable must reach a destination — a civilian, a wounded courier, a crawling vehicle. Give it a path, a speed, and no ability to defend itself. The enemy wins by stopping it."]]],
+ ["Stealth & sabotage",[
+  ["heist","Infiltration / heist","Getting in unseen matters more than fighting. Sentries with patrol notes, consoles to reach, and an alarm state that makes everything worse once raised."],
+  ["sabotage","Sabotage","Named terrain pieces must be destroyed or rigged — a fuel stack, a generator, a ritual site. Say how long each takes and what the defender does about it."]]],
+ ["Environmental & narrative",[
+  ["gauntlet","The gauntlet","The battlefield itself is killing everyone. A collapse, a flood, a fire that spreads a set distance per turn, and exits to reach. Timed events should tighten the noose every few turns."],
+  ["hunt","Monster hunt","One enormous creature is the scenario. Build the enemy force around it — it should be most of the points, with lesser things to distract. Give it a lair, a hunting pattern, and something the players can use against it."],
+  ["ritual","Interrupt the ritual","Something is being summoned or broadcast on a countdown. The players must reach and stop it before a stated turn, while the enemy only has to hold them off."]]]
+];
+function questTypeBrief(key){
+  for(const [,list] of QUEST_TYPES){const hit=list.find(q=>q[0]===key);if(hit)return hit;}
+  return null;
+}
 function openScenarioWizard(){
   const w=activeWB();
   scnLengthBase=rollD10p6();
   const body=$("#modalBody");
   body.innerHTML=`
     <h3>New scenario</h3>
-    <p class="lead">Answer a few questions and the DM writes you a full Planet 28 scenario — battlefield map, objectives, deployment and special rules — grounded in the rulebook.</p>
+    <p class="lead">Answer a few questions and the DM writes you a full Planet 28 scenario — battlefield map, objectives, deployment and special rules — grounded in the rulebook. In co-op it musters the enemy force to match, in the same go.</p>
+    <div class="field" style="margin-bottom:12px"><label>Kind of quest</label>
+      <select class="input" id="scQType">
+        <option value="">Surprise me — the DM decides</option>
+        ${QUEST_TYPES.map(([grp,list])=>`<optgroup label="${esc(grp)}">${list.map(q=>`<option value="${q[0]}"${scnQuestType===q[0]?" selected":""}>${esc(q[1])}</option>`).join("")}</optgroup>`).join("")}
+      </select>
+      <div class="none-note" style="font-style:normal;margin-top:5px" id="scQNote"></div></div>
     <div class="field" style="margin-bottom:12px"><label>Your idea (optional)</label>
       <textarea class="input" id="scSeed" style="min-height:64px" placeholder="Leave blank and the DM invents one — or seed it, e.g. “raid a derelict ship for a data-core before it self-destructs”."></textarea></div>
     <div style="display:flex;gap:18px;flex-wrap:wrap;margin-bottom:12px">
@@ -4442,6 +4530,10 @@ function openScenarioWizard(){
       <button class="btn primary sm" id="scGo">✦ Ask the DM</button>
       <button class="btn ghost sm" id="scClose" style="margin-left:auto">Close</button>
     </div>`;
+  const qn=$("#scQNote"), qs=$("#scQType");
+  const updQ=()=>{const q=questTypeBrief(scnQuestType);qn.textContent=q?q[2]:"The DM picks a shape that suits whatever it invents.";};
+  qs.onchange=()=>{scnQuestType=qs.value;updQ();};
+  updQ();
   const upd=()=>{
     const d=DIFFICULTY[scnDifficulty];
     $("#scLenVal").textContent=scnFinalLength()+" turns";
@@ -4482,7 +4574,10 @@ async function generateScenario(){
   let points=parseInt(($("#scPoints").value||"").replace(/\D/g,""),10);if(!points||points<0)points=activeWB().budget||500;
   const players=scnPlayers, mode=scnMode, difficulty=scnDifficulty, length=scnFinalLength(), diff=DIFFICULTY[difficulty];
   go.textContent="Designing…";res.innerHTML=`<div class="ng-note spin">Designing the battlefield… this can take a few seconds.</div>`;
-  const prompt=`You are the DUNGEON MASTER for the grimdark science-fiction tabletop skirmish game Planet 28, writing tonight's scenario for a table of players. Obey the game's real rules:
+  const qt=questTypeBrief(scnQuestType);
+  const prompt=`You are the DUNGEON MASTER for the grimdark science-fiction tabletop skirmish game Planet 28, writing tonight's scenario for a table of players.
+${qt?`THE KIND OF QUEST IS DECIDED: build a "${qt[1]}" scenario. ${qt[2]} Everything — the premise, the objectives, the map, the timed events and the enemy force — must serve that shape. Do not quietly turn it into a straight fight.`:"The kind of quest is yours to choose — pick a shape that gives the table something to do besides trade shots, and commit to it."}
+Obey the game's real rules:
 - The playing area is 90×90 cm; at least 60% should be covered by scenery (multiple levels and plenty of cover).
 - Game length is 1D10+6 turns.
 - Deployment: number the 4 table sides 1-4; each warband deploys within 10cm of a side, or within 10cm of the centre.
@@ -4508,14 +4603,23 @@ EVERY item MUST have a "when" field: one short, concrete sentence saying WHEN OR
 LASTING INJURIES — when a character is taken down the players roll on the rulebook's own 1D8 injury table, so do NOT invent mechanics. Instead write an "injuries" list of 5-7 SCENARIO-FLAVOURED wound descriptions this place could inflict — each just a "name" (e.g. "Venom-withered arm", "Pressure-burst eardrum"), a one-line "note" of prose, and a "cause" tag matching a threat in this scenario (an enemy name, a hazard, an event) so the right flavour is drawn for what actually happened. The app pairs your description with whatever the dice decide.
 SECRETS & SURPRISES — make the world feel alive: you MAY include plot twists and surprise reveals. Mark any NPC, item, or timed event that should be a SECRET (hidden from the host until it happens) with "secret": true. For a secret NPC or item, DO NOT spoil it in the checklist — instead give a non-spoiler "hint" telling the host only what to PREPARE (e.g. "a large monstrous miniature", "a mysterious relic token"). A hint says WHAT TO BUILD and nothing else — never put the turn, the trigger or any timing in it ("kept hidden until turn 8" is wrong), because in a co-op game the host is playing too and would be spoiling their own surprise while keeping the real name/note/round in the normal fields (the app hides them until the host reveals or the moment arrives). A collectible item whose effect should only be discovered on pickup should be marked "secret": true with a vague "hint". Not everything needs to be secret — obvious, up-front elements stay visible.
 Reply with ONLY a JSON object (no prose, no code fence) shaped EXACTLY like:
-{"title":"short evocative title","premise":"1-2 sentence hook","briefing":"vivid 4-6 sentence atmospheric second-person narration","scenery":"1-2 sentences describing the terrain to build","objectives":["a victory condition","..."],"specialRules":["an optional special rule","..."],"twist":"one mid-game complication (or empty string)","events":[{"round":4,"kind":"surprise","title":"short event name","text":"what happens this round, written atmospherically","effect":{"apply":true,"type":"damage","amount":"1D6","scope":"chosen","duration":"turn","negatedBy":["Power armour"]}}],"deployment":"how the warbands deploy, referencing table sides/centre","gameLength":"1D10+6 turns","terrain":[{"name":"terrain piece to build","note":"how many / what it looks like","mapLabel":"Wreck Spire","role":"cover-tall"}],"markers":[{"name":"objective/token to print","note":"what it marks","mapLabel":"Hadal Core","role":"objective"}],"npcs":[{"name":"extra character/creature","note":"what it is / when it appears","when":"when and where it shows up","mapLabel":"Vent Mouth","secret":false,"hint":""}],"items":[{"name":"collectible item","note":"what it does / what it changes about whoever picks it up","when":"the concrete moment it matters, naming the rule/hazard it answers","mapLabel":"Supply Locker","secret":false,"hint":""}],"injuries":[{"name":"Venom-withered arm","note":"The limb never regains its strength.","cause":"Scorpion Swarm"}],"map":{"note":"one-line caption of the battlefield","zones":[{"label":"short deployment label","side":"a","x":5,"y":5,"w":30,"h":18}],"features":[{"type":"terrain","role":"cover-tall","ground":"rough","label":"Wreck Spire","x":50,"y":50}]}}
-Map coordinates are percentages of the 90×90 board: x from 0 (left) to 100 (right), y from 0 (top) to 100 (bottom). Provide 2-4 deployment zones (side is "a", "b" or "neutral") and 6-10 features (type is one of "terrain","cover","objective","hazard"; role is one of the roles listed above and is REQUIRED on every feature; "ground" is one of "even","rough","hazardous","impassable" and is also REQUIRED on every feature). Keep every map label under 22 characters and make each one distinctive enough to reference. Keep the checklist arrays short and concrete (omit any that don't apply), and give every checklist entry a "mapLabel" matching a map label exactly wherever it belongs on the table.`;
+{"title":"short evocative title","premise":"1-2 sentence hook","briefing":"vivid 4-6 sentence atmospheric second-person narration","scenery":"1-2 sentences describing the terrain to build","objectives":["a victory condition","..."],"specialRules":["an optional special rule","..."],"twist":"one mid-game complication (or empty string)","events":[{"round":4,"kind":"surprise","title":"short event name","text":"what happens this round, written atmospherically","effect":{"apply":true,"type":"damage","amount":"1D6","scope":"chosen","duration":"turn","negatedBy":["Power armour"]}}],"deployment":"how the warbands deploy, referencing table sides/centre","gameLength":"1D10+6 turns","terrain":[{"name":"terrain piece to build","note":"how many / what it looks like","mapLabel":"Wreck Spire","role":"cover-tall"}],"markers":[{"name":"objective/token to print","note":"what it marks","mapLabel":"Hadal Core","role":"objective"}],"npcs":[{"name":"extra character/creature","note":"what it is / when it appears","when":"when and where it shows up","mapLabel":"Vent Mouth","secret":false,"hint":""}],"items":[{"name":"collectible item","note":"what it does / what it changes about whoever picks it up","when":"the concrete moment it matters, naming the rule/hazard it answers","mapLabel":"Supply Locker","secret":false,"hint":""}],"injuries":[{"name":"Venom-withered arm","note":"The limb never regains its strength.","cause":"Scorpion Swarm"}],"map":{"note":"one-line caption of the battlefield","zones":[{"label":"short deployment label","side":"a","x":5,"y":5,"w":30,"h":18}],"features":[{"type":"terrain","role":"cover-tall","ground":"rough","label":"Wreck Spire","x":50,"y":50,"r":8}]}}
+Map coordinates are percentages of the 90×90 board: x from 0 (left) to 100 (right), y from 0 (top) to 100 (bottom). Provide 2-4 deployment zones (side is "a", "b" or "neutral") and 6-10 features (type is one of "terrain","cover","objective","hazard"; role is one of the roles listed above and is REQUIRED on every feature; "ground" is one of "even","rough","hazardous","impassable" and is also REQUIRED on every feature; add "r" — how far the ground of that type spreads, 4-28 in the same percentage units — on any rough, hazardous or impassable feature, so the map can shade the area rather than a point). Keep every map label under 22 characters and make each one distinctive enough to reference. Keep the checklist arrays short and concrete (omit any that don't apply), and give every checklist entry a "mapLabel" matching a map label exactly wherever it belongs on the table.`;
   try{
     const raw=await s.json(prompt,{modelTier:"default",cache:false});
     const scn=coerceScenario(raw,{seed,players,points,mode,difficulty,length});
     addScn(scn);
-    closeModal();scnCurrentId=scn.id;scnScreen="detail";renderScenarioView();
-    toast("Scenario generated");
+    scnCurrentId=scn.id;scnScreen="detail";
+    if(scn.mode==="coop"){
+      res.innerHTML=`<div class="ng-note spin">Scenario written. Mustering the enemy force…</div>`;
+      await generateEnemyWarband(scn,res);          // leaves its own error in res if it fails
+      if(!(scn.enemy&&(scn.enemy.characters||[]).length)){
+        closeModal();renderScenarioView();
+        toast("Scenario written — muster the enemy from its page");return;
+      }
+    }
+    closeModal();renderScenarioView();
+    toast(scn.mode==="coop"?"Scenario and enemy ready":"Scenario generated");
   }catch(e){
     res.innerHTML=`<div class="ng-note">${sampleErr(e&&e.code)}</div>`;go.textContent="✦ Ask the DM";
   }finally{go.disabled=false;}
@@ -4530,7 +4634,7 @@ function coerceScenario(raw,opts){
   // if the AI omits a role, derive a sensible one from the feature type so the host still
   // sees what a piece is for (never guesses "cache" — that would invent a search point)
   const roleFromType={objective:"objective",hazard:"hazard",cover:"cover-tall",terrain:""};
-  const feats=(Array.isArray(m.features)?m.features:[]).map(f=>{const t=(f&&f.type||"terrain");const ty=["terrain","cover","objective","hazard"].includes(t)?t:"terrain";const r=String(f&&f.role||"").toLowerCase();const g=String(f&&f.ground||"").toLowerCase();return{type:ty,role:FEAT_ROLES[r]?r:roleFromType[ty],ground:GROUND[g]?g:"",label:String(f&&f.label||"").slice(0,24),x:num(f&&f.x,50),y:num(f&&f.y,50)};});
+  const feats=(Array.isArray(m.features)?m.features:[]).map(f=>{const t=(f&&f.type||"terrain");const ty=["terrain","cover","objective","hazard"].includes(t)?t:"terrain";const r=String(f&&f.role||"").toLowerCase();const g=String(f&&f.ground||"").toLowerCase();const rr=Math.round(+(f&&f.r)||0);return{type:ty,role:FEAT_ROLES[r]?r:roleFromType[ty],ground:GROUND[g]?g:"",label:String(f&&f.label||"").slice(0,24),x:num(f&&f.x,50),y:num(f&&f.y,50),r:(rr>=4&&rr<=28)?rr:0};});
   // REPAIR PASS: a searchable thing must exist physically on the map. If the AI declared a
   // cache on a build-list entry (a crate/locker) but never put a matching feature on the map,
   // synthesise one so it always gets a number and a place to stand.
@@ -4969,13 +5073,21 @@ function scenarioMapSVG(map,mini){
   zones.forEach(zo=>{const[st,fi]=zc(zo.side);const x=cl(zo.x),y=cl(zo.y),w=Math.min(100-x,Math.max(4,+zo.w||20)),h=Math.min(100-y,Math.max(4,+zo.h||18));
     z+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="2" fill="${fi}" stroke="${st}" stroke-width="0.5" stroke-dasharray="2 1.5"/>`;
     if(!mini&&zo.label){num++;z+=badge(x+w/2,y+h/2,st,num,zo.label);}});
+  let a="";
+  const GA={rough:["#e9b949",".13"],hazardous:["#ec5b60",".16"],impassable:["#9aa3b2",".14"]};
+  feats.forEach(ft=>{
+    const gr=(typeof featGround==="function")?featGround(ft):"";
+    const c=GA[gr]; if(!c)return;
+    const x=cl(ft.x),y=cl(ft.y),r=Math.max(4,Math.min(28,+ft.r||9));
+    a+=`<circle cx="${x}" cy="${y}" r="${r}" fill="${c[0]}" fill-opacity="${c[1]}" stroke="${c[0]}" stroke-width="0.5" stroke-dasharray="${gr==="impassable"?"1 1.2":"2 1.5"}"/>`;
+  });
   let f="";
   feats.forEach(ft=>{const x=cl(ft.x),y=cl(ft.y),t=ft.type||"terrain";
     if(t==="objective")f+=`<circle class="obj" cx="${x}" cy="${y}" r="2.7"/>`;
     else if(t==="hazard")f+=`<path class="haz" d="M ${x} ${y-3.2} L ${x+3} ${y+2.5} L ${x-3} ${y+2.5} Z"/>`;
     else f+=`<rect class="terr" x="${x-3.5}" y="${y-3.5}" width="7" height="7" rx="1.5"/>`;
     if(!mini&&ft.label){num++;f+=badge(x,y-6,"#2c313d",num,ft.label);}});
-  return `<svg class="scn-map" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">${g}${z}${f}</svg>`;
+  return `<svg class="scn-map" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">${g}${a}${z}${f}</svg>`;
 }
 /* ---- map ↔ build-list cross-referencing ----
    Every labelled zone/feature gets a number (zones first, then features — the SAME order
@@ -5072,8 +5184,10 @@ function prepGround(map,e){
 function mapLegendHTML(map){
   const seq=mapSeq(map);
   if(!seq.length)return "";
+  const grounds=[...new Set(seq.map(e=>e.ground).filter(g=>g&&g!=="even"))];
+  const gkey=grounds.length?`<div class="scn-maplegend">${grounds.map(g=>`<span><i style="background:${g==="hazardous"?"rgba(236,91,96,.35)":g==="rough"?"rgba(233,185,73,.35)":"rgba(154,163,178,.35)"};border:1px dashed ${g==="hazardous"?"#ec5b60":g==="rough"?"#e9b949":"#9aa3b2"}"></i>${esc(GROUND[g].label)}</span>`).join("")}</div>`:"";
   const rows=seq.map(e=>`<div class="maplg-row" data-mapnum="${e.n}"><span class="maplg-num">${e.n}</span><span class="maplg-label">${esc(e.label)}</span>${roleChip(e.role)}${groundChip(e.ground)}</div>`);
-  return `<div class="scn-maplegend-nums">${rows.join("")}</div>`;
+  return gkey+`<div class="scn-maplegend-nums">${rows.join("")}</div>`;
 }
 function wireMapNums(container){
   if(!container)return;
@@ -5126,11 +5240,15 @@ function myCombatants(owner,idPrefix){
   });
   w.characters.filter(isFielded).forEach(c=>{
     const n=memberCount(c), max=c.hp*n;
-    // a character carries its lingering wounds into the next quest
-    const cur=(typeof c.curHP==="number"&&c.curHP>0&&c.curHP<max)?c.curHP*1:max;
-    out.push({id:(idPrefix||"p_")+c.id,side:"player",owner:owner||"",campId:cid,charId:c.id,
-      name:(c.name||"Unnamed")+(n>1?" ×"+n:""),maxHP:max,curHP:cur,conditions:[],neg:negListOf(c),
-      scars:injuryNotes(c),finds:[]});
+    // a character carries its lingering wounds into the next quest; a squad spreads them
+    // across its members, so each model gets its own row to be wounded and killed on
+    let left=(typeof c.curHP==="number"&&c.curHP>0&&c.curHP<max)?c.curHP*1:max;
+    for(let k=0;k<n;k++){
+      const share=Math.max(0,Math.min(c.hp,left)); left-=share;
+      out.push({id:(idPrefix||"p_")+c.id+(n>1?"_"+k:""),side:"player",owner:owner||"",campId:cid,charId:c.id,member:k,
+        name:(c.name||"Unnamed")+(n>1?" "+(k+1)+"/"+n:""),maxHP:c.hp,curHP:share,conditions:[],neg:negListOf(c),
+        scars:injuryNotes(c),finds:[]});
+    }
   });
   return out;
 }
@@ -5138,7 +5256,11 @@ function buildBattle(s){
   const me=campName()||playerName()||"You", combatants=myCombatants(me,"p_");
   (livePlayers||[]).forEach(p=>(p.combatants||[]).forEach(m=>{if(m&&m.id&&!combatants.some(x=>x.id===m.id))combatants.push(JSON.parse(JSON.stringify(m)));}));
   if(s.mode==="coop"){
-    enemyChars(s).forEach(c=>{const n=memberCount(c);combatants.push({id:"e_"+c.id,side:"enemy",owner:"Enemy",name:(c.name||"Enemy")+(n>1?" ×"+n:""),maxHP:c.hp*n,curHP:c.hp*n,conditions:[],neg:negListOf(c)});});
+    enemyChars(s).forEach(c=>{
+      const n=memberCount(c), neg=negListOf(c);
+      for(let k=0;k<n;k++)combatants.push({id:"e_"+c.id+(n>1?"_"+k:""),side:"enemy",owner:"Enemy",
+        name:(c.name||"Enemy")+(n>1?" "+(k+1)+"/"+n:""),maxHP:c.hp,curHP:c.hp,conditions:[],neg:neg.slice()});
+    });
     // a vehicle's hull is the sum of its sections; it is destroyed section by section
     enemyVehs(s).forEach(v=>{const hp=vehicleHP(v);combatants.push({id:"e_"+v.id,side:"enemy",owner:"Enemy",name:"▰ "+(v.name||"Enemy vehicle"),maxHP:hp,curHP:hp,conditions:[],neg:[]});});
   }
