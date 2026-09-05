@@ -3285,7 +3285,7 @@ let _scnPushT={};
 function allScns(){ if(!Array.isArray(store.scenarios))store.scenarios=[]; return store.scenarios; }
 function visibleScns(){ return allScns().filter(s=>s&&(!s.room||s.room===roomKey)); }
 function findScn(id){ return allScns().find(s=>s&&s.id===id)||null; }
-function addScn(s){ s.room=s.room||roomKey||""; allScns().unshift(s); save(); pushScn(s); return s; }
+function addScn(s){ s.room=s.room||roomKey||""; if(s.room===roomKey)s.realmName=savedPass()||""; allScns().unshift(s); save(); pushScn(s); return s; }
 function dropScn(id){
   const s=findScn(id);
   clearTimeout(_scnPushT[id]);            // a pending push would otherwise resurrect it
@@ -3296,7 +3296,7 @@ function dropScn(id){
 function fileUnfiledInto(key){
   if(!key)return 0;
   let n=0;
-  allScns().forEach(s=>{if(s&&!s.room){s.room=key;n++;pushScn(s);}});
+  allScns().forEach(s=>{if(s&&!s.room){s.room=key;s.realmName=savedPass()||"";n++;pushScn(s);}});
   if(n)save();
   return n;
 }
@@ -4310,7 +4310,7 @@ function renderScenarioList(){
         <div class="scn-title">${esc(s.title||"Untitled scenario")}</div>
         <div class="scn-sub">${esc(s.premise||"")}</div>
         ${!s.room?`<div class="scn-meta">unfiled — joins the first realm you name</div>`
-          :s.room!==roomKey?`<div class="scn-meta" style="color:var(--warn)">another realm</div>`:""}
+          :s.room!==roomKey?`<div class="scn-meta" style="color:var(--warn)">realm: ${esc(s.realmName||"unknown — made before realms were named")}</div>`:""}
       </div>
     </button>`).join("");
   el.innerHTML=`
@@ -4329,8 +4329,9 @@ function renderScenarioList(){
       <button class="linkbtn" id="lpLeaveTable">change realm</button>
     </div>`}
     <div class="section-head"><span class="eyebrow">Scenarios &amp; Campaigns</span><span class="rule"></span>
-      ${others.length?`<button class="btn sm ghost" id="scnAllToggle">${scnShowAll?"◉ All realms":"○ All realms"} <b class="mono">${others.length}</b></button>`:""}
-      ${scnShowAll&&others.length?`<button class="btn sm danger ghost" id="scnPurge">Delete ${others.length} from other realms</button>`:""}
+      ${allScns().length?`<button class="btn sm ghost" id="scnAllToggle">${scnShowAll?"◉ All realms":"○ All realms"}${others.length?` <b class="mono">${others.length}</b>`:""}</button>`:""}
+      ${scnShowAll?(others.length?`<button class="btn sm danger ghost" id="scnPurge">Delete ${others.length} from other realms</button>`
+        :`<span class="none-note" style="font-style:normal">Everything on this device belongs to ${esc(savedPass()||"this realm")} — nothing stranded elsewhere.</span>`):""}
     </div>
     <div class="scn-grid">
       ${cards}
