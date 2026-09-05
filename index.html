@@ -65,6 +65,10 @@
   color-scheme:light;
 }
 *{box-sizing:border-box}
+/* Our own [hidden] reset. The artifact wrapper ships one, the Realm wrapper does not, so
+   without this a class like .btn{display:inline-flex} silently defeats the hidden attribute
+   and "hidden" buttons stay on screen in one build but not the other. */
+[hidden]{display:none!important}
 body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;-webkit-text-size-adjust:100%;}
 h1,h2,h3,h4{font-family:var(--disp);margin:0;font-weight:600;letter-spacing:.01em;text-wrap:balance}
 button{font-family:var(--disp);cursor:pointer;border:none;background:none;color:inherit}
@@ -265,6 +269,27 @@ textarea.input{resize:vertical;min-height:56px;line-height:1.45}
 .linkbtn:hover{color:var(--amber)}
 .linkbtn.del:hover{color:var(--danger)}
 
+
+
+/* ---------- role chooser ---------- */
+.rolegrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:4px 0 6px}
+@media(max-width:520px){.rolegrid{grid-template-columns:1fr}}
+.rolecard{text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+  padding:14px;display:flex;flex-direction:column;gap:6px;transition:.15s}
+.rolecard:hover{border-color:var(--amber);transform:translateY(-2px);box-shadow:var(--shadow)}
+.rolecard .rc-ico{font-size:24px;line-height:1}
+.rolecard .rc-n{font-family:var(--disp);font-weight:600;font-size:16px}
+.rolecard .rc-d{font-size:12.5px;color:var(--ink-dim);line-height:1.45}
+.cb-role{margin-left:auto}
+/* ---------- camp bar (top of the camp view) ---------- */
+.campbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);
+  border-radius:var(--r);padding:11px 14px;margin-bottom:16px}
+.cb-id{display:flex;flex-direction:column;gap:2px;min-width:0}
+.cb-name{font-family:var(--disp);font-weight:600;font-size:16px;color:var(--ink);text-align:left;
+  border-bottom:1px dashed var(--line);padding-bottom:1px}
+.cb-name:hover{color:var(--amber);border-bottom-color:var(--amber)}
+.cb-table{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-left:auto}
+.cb-ok{font-family:var(--disp);font-weight:600;font-size:12.5px;color:var(--teal)}
 /* ---------- round cheat sheet (phone-first, opens beside the tracker) ---------- */
 .cheatfab{position:fixed;right:14px;bottom:16px;z-index:74;width:52px;height:52px;border-radius:50%;
   border:1px solid var(--amber);background:var(--panel);color:var(--amber);font-size:22px;line-height:0;
@@ -700,7 +725,7 @@ textarea.input{resize:vertical;min-height:56px;line-height:1.45}
 
     <div class="topnav" id="topnav">
       <button class="topnav-btn active" data-view="warband">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16M6 20V8l6-4 6 4v12M9 20v-6h6v6"/></svg>Warband</button>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16M6 20V8l6-4 6 4v12M9 20v-6h6v6"/></svg>Camp</button>
       <button class="topnav-btn" data-view="scenarios">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14"/></svg>Scenarios</button>
     </div>
@@ -731,11 +756,13 @@ textarea.input{resize:vertical;min-height:56px;line-height:1.45}
 
 <main>
   <div id="warbandView">
+    <div id="campBar"></div>
     <div class="section-head">
       <span class="eyebrow">The Roster</span>
       <span class="rule"></span>
       <button class="btn sm ghost" id="btnPrint" title="Open a clean summary you can print or screenshot">Summary</button>
-      <button class="btn sm ghost" id="btnShareWB" title="Copy a code to bring this warband into your camp on the World App">⛺ Move to camp</button>
+      <button class="btn sm ghost" id="btnShareWB" hidden title="Copy a code to bring this warband into your camp on the World App">⛺ Move to camp</button>
+      <button class="btn sm" id="btnQuest" hidden title="Join the scenario your host is running">⚔ Embark on a quest</button>
     </div>
     <div class="roster" id="roster"></div>
 
@@ -1196,16 +1223,20 @@ function healWb(w){
   return w;
 }
 async function backupCamp(){
+  if(!fbAvailable()){toast("Cloud stash only works in the Realm app");return;}
   const id=campId(); if(!id){toast("Name your camp first");return;}
-  const db=await getDb(); if(!db){toast("Set your group passphrase first");return;}
+  if(!roomKey&&!await ensureRoom())return;
+  const db=await getDb(); if(!db){toast("Couldn't reach your table");return;}
   try{
     await db.doc("camps/"+id).set({name:campName(),savedAt:Date.now(),warbands:store.warbands.map(wbForCloud)});
     toast("Camp backed up to your table");
   }catch(e){ toast("Backup failed — try again"); }
 }
 async function restoreCamp(){
+  if(!fbAvailable()){toast("Cloud stash only works in the Realm app");return;}
   const id=campId(); if(!id){toast("Name your camp first");return;}
-  const db=await getDb(); if(!db){toast("Set your group passphrase first");return;}
+  if(!roomKey&&!await ensureRoom())return;
+  const db=await getDb(); if(!db){toast("Couldn't reach your table");return;}
   let snap; try{snap=await db.doc("camps/"+id).get();}catch(e){toast("Couldn't reach your table");return;}
   const v=snap.exists?snap.data():null;
   if(!v||!Array.isArray(v.warbands)||!v.warbands.length){toast("No backup found for “"+campName()+"”");return;}
@@ -1475,7 +1506,114 @@ function renderVehicleRoster(){
   el.appendChild(add);
 }
 
-function render(){renderHeader();renderRoster();renderVehicleRoster();save()}
+
+
+/* ---- WHAT IS THIS DEVICE? ----
+   Realm is one link but two jobs: a player's CAMP (a warband, taken on quests) or THE REALM
+   itself (the host's table, running scenarios and the DM's enemies). Asking once on first run
+   means neither person has to look past half an app they never use. The choice is remembered
+   and can be changed any time from the camp header. In the Claude app there is no hosting at
+   all, so the question is never asked. */
+function appRole(){ try{return localStorage.getItem("p28_role")||"";}catch(e){return "";} }
+function setAppRole(r){ try{localStorage.setItem("p28_role",r);}catch(e){} applyRole(); }
+function isHost(){ return fbAvailable() && appRole()==="realm"; }
+function applyRole(){
+  const host=isHost();
+  const campTab=document.querySelector('#topnav .topnav-btn[data-view="warband"]');
+  if(campTab)campTab.hidden=host;
+  const cb=$("#campBar"); if(cb)cb.hidden=host;
+  if(host&&currentView!=="scenarios")switchView("scenarios");
+  else{ render(); if(currentView==="scenarios")renderScenarioView(); }
+}
+/* Only camps that have been stashed at the table are listed — a camp living solely on
+   someone's phone is invisible here, which is worth saying out loud rather than showing
+   an empty list that looks broken. */
+async function listCamps(){
+  const db=await getDb(); if(!db)return null;
+  try{ const s=await db.collection("camps").get();
+    return s.docs.map(d=>{const v=d.data()||{};return {id:d.id,name:v.name||d.id,savedAt:v.savedAt||0,n:(v.warbands||[]).length};})
+      .sort((a,b)=>b.savedAt-a.savedAt);
+  }catch(e){ return null; }
+}
+function openRoleChooser(){
+  const body=$("#modalBody");
+  const step1=()=>{
+    body.innerHTML=`<h3>What is this device?</h3>
+      <p class="lead">You can change this later from your camp header.</p>
+      <div class="rolegrid">
+        <button class="rolecard" id="roleCamp">
+          <div class="rc-ico">⛺</div><div class="rc-n">A camp</div>
+          <div class="rc-d">You bring a warband. Build it, take it on quests, heal and spend campaign points here.</div>
+        </button>
+        <button class="rolecard" id="roleRealm">
+          <div class="rc-ico">🗺</div><div class="rc-n">The realm</div>
+          <div class="rc-d">You host the table. Import scenarios, run the DM's enemies, track everyone's roster. No warband building.</div>
+        </button>
+      </div>`;
+    $("#roleRealm").onclick=()=>{ setAppRole("realm"); closeModal(); toast("🗺 Hosting the realm"); };
+    $("#roleCamp").onclick=()=>{ setAppRole("camp"); step2(); };
+  };
+  const step2=async()=>{
+    body.innerHTML=`<h3>⛺ Your camp</h3><div class="ng-note spin">Looking for camps at your table…</div>`;
+    if(!roomKey){
+      body.innerHTML=`<h3>⛺ Your camp</h3>
+        <p class="lead">Your camps are kept at your table. Enter the group passphrase once and this device can pick up any camp stashed there — or just start a fresh one.</p>
+        <div class="modal-actions">
+          <button class="btn primary sm" id="rcPass">🔑 Set group passphrase</button>
+          <button class="btn ghost sm" id="rcSkip">Start a new camp instead</button>
+        </div>`;
+      $("#rcPass").onclick=async()=>{ if(await ensureRoom())step2(); };
+      $("#rcSkip").onclick=()=>{ closeModal(); openLibrary(); };
+      return;
+    }
+    const camps=await listCamps();
+    const rows=(camps||[]).map(c=>`<div class="wb-item">
+      <button class="wbi-main" data-camp="${esc(c.id)}">
+        <div class="wbi-name">⛺ ${esc(c.name)}</div>
+        <div class="wbi-sub">${c.n} warband${c.n===1?"":"s"}${c.savedAt?" · stashed "+new Date(c.savedAt).toLocaleDateString():""}</div>
+      </button></div>`).join("");
+    body.innerHTML=`<h3>⛺ Your camp</h3>
+      ${camps===null?`<p class="lead">Couldn't reach your table — you can still start a camp on this device.</p>`
+        :rows?`<p class="lead">Camps stashed at your table. Pick yours up here, or start a new one.</p><div class="wb-switch">${rows}</div>`
+             :`<p class="lead">No camps stashed at your table yet. Start one here — you can stash it later so your other devices can pick it up.</p>`}
+      <div class="modal-actions">
+        <button class="btn ${rows?"ghost":"primary"} sm" id="rcNew">+ Start a new camp</button>
+      </div>`;
+    body.querySelectorAll("[data-camp]").forEach(b=>b.onclick=()=>{
+      setCampName((camps.find(c=>c.id===b.dataset.camp)||{}).name||b.dataset.camp);
+      closeModal(); restoreCamp();
+    });
+    $("#rcNew").onclick=()=>{ closeModal(); openLibrary(); };
+  };
+  step1(); showModal();
+}
+
+/* The camp's own header: who you are (camp name) and which table you play at (passphrase).
+   Both used to live inside the Warbands dialog, which is why nobody found them. The
+   passphrase only means anything where there is a live table, so it only shows in Realm. */
+function renderCampBar(){
+  const el=$("#campBar"); if(!el)return;
+  const nm=campName();
+  const live=fbAvailable();
+  const joined=!!roomKey;
+  el.innerHTML=`<div class="campbar">
+    <div class="cb-id">
+      <span class="eyebrow">⛺ Your camp</span>
+      <button class="cb-name" id="cbName">${esc(nm||"Name your camp")}</button>
+    </div>
+    <div class="cb-role">${live?`<button class="linkbtn" id="cbRole">this is a camp — change</button>`:""}
+    </div>
+    ${live?`<div class="cb-table">
+      ${joined?`<span class="cb-ok">◉ At your table</span><button class="linkbtn" id="cbPass">change passphrase</button>`
+              :`<button class="btn sm primary" id="cbPass">🔑 Set group passphrase</button>
+                <span class="none-note" style="font-style:normal">One-time — your table's shared password. After this, joining a game is just a 4-letter code.</span>`}
+    </div>`:""}
+  </div>`;
+  $("#cbName").onclick=openLibrary;
+  const cr=$("#cbRole"); if(cr)cr.onclick=openRoleChooser;
+  const cp=$("#cbPass"); if(cp)cp.onclick=async()=>{if(await ensureRoom()){render();renderScenarioView();}};
+}
+function render(){renderHeader();renderRoster();renderVehicleRoster();renderCampBar();syncAppButtons();save()}
 
 function addCharacter(){
   const w=activeWB();const c=newChar();w.characters.push(c);render();openDossier(c.id);
@@ -1642,7 +1780,14 @@ function buildDossier(){
     },{danger:true,yesLabel:"Discharge"});
   };
 }
-function persist(){renderHeader();renderRoster();renderVehicleRoster();save()}
+/* Realm has a live table (Firebase); the Claude app has the DM instead. Each shows only the
+   action that works where you are: move a warband OUT to your camp, or take it ON a quest. */
+function syncAppButtons(){
+  const share=$("#btnShareWB"), quest=$("#btnQuest");
+  if(share)share.hidden=fbAvailable();
+  if(quest)quest.hidden=!fbAvailable();
+}
+function persist(){renderHeader();renderRoster();renderVehicleRoster();renderCampBar();save()}
 function liveCost(){const el=$("#dossier .dcost");if(el)el.innerHTML=charCost(curChar())+"<small>points</small>"}
 
 /* meta/description line for a catalog entry (shared by group rows + picker) */
@@ -1809,10 +1954,14 @@ function openLibrary(){
       <div class="field" style="margin-bottom:8px"><label>Camp name</label>
         <input class="input" id="mCampName" value="${esc(campName())}" placeholder="e.g. Rhyno's Camp" maxlength="40" autocapitalize="words"></div>
       <div class="none-note" style="font-style:normal;margin-bottom:9px">This is your own space — your warbands live here. Your table (the group passphrase) is the shared space where scenarios are hosted. Backing up copies your warbands to your table so you can restore them on any device.${fbAvailable()?"":" Live features are only available in the Realm."}</div>
-      <div class="modal-actions" style="margin-top:0">
+      ${fbAvailable()?`<div class="modal-actions" style="margin-top:0">
         <button class="btn sm" id="mCampSave">☁ Stash camp at the table</button>
         <button class="btn sm ghost" id="mCampLoad">⇩ Recover camp here</button>
       </div>
+      <div class="none-note" style="font-style:normal;margin-top:7px">${roomKey
+        ? "Stash on the device you just played on; recover on the one you are moving to. Recovering replaces warbands of the same name here."
+        : "Both need your group passphrase — it is the address your camp is filed under. You will be asked for it once."}</div>`
+      :`<div class="none-note" style="font-style:normal;margin-top:7px">Cloud stash lives in the Realm app, where your table is. From here, use <b>⛺ Move to camp</b> on the roster to copy a warband across.</div>`}
     </div>
     <div class="eyebrow" style="margin:16px 0 8px">Backup &amp; transfer</div>
     <div class="modal-actions" style="margin-top:0">
@@ -3786,6 +3935,7 @@ function renderScenarioList(){
       </div>
     </button>`).join("");
   el.innerHTML=`
+    ${isHost()?`<div class="live-panel"><div class="lp-main"><b>🗺 You are hosting the realm</b> <span class="none-note" style="font-style:normal">Import a scenario and host it for your table. Warband building is hidden on this device.</span></div><button class="btn sm ghost" id="lpRole">this is the realm — change</button></div>`:""}
     ${fbAvailable()?(roomKey?`<div class="live-panel">
       <div class="lp-main"><b>Live game</b> <span class="none-note" style="font-style:normal">Host a scenario for your table, or join one your host is running. Everyone plays on their own device.</span><div class="lp-tablebadge">${campName()?`⛺ ${esc(campName())} · `:""}◉ at your table <button class="linkbtn" id="lpLeaveTable">change passphrase</button></div></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm ghost" id="lpTableScns">🗄 My table's scenarios</button><button class="btn sm ghost" id="lpImport">⇩ Import scenario</button><button class="btn sm" id="lpJoin">⚔ Embark on a quest</button></div>
@@ -3820,6 +3970,7 @@ function renderScenarioList(){
   });
   $("#scnNew").onclick=openScenarioWizard;
   const lpj=$("#lpJoin");if(lpj)lpj.onclick=openJoinDialog;
+  const lpr=$("#lpRole");if(lpr)lpr.onclick=openRoleChooser;
   const lpi=$("#lpImport");if(lpi)lpi.onclick=openImportScenario;
   const lts=$("#lpTableScns");if(lts)lts.onclick=openTableScenarios;
   const lt=$("#lpTable");if(lt)lt.onclick=async()=>{if(await ensureRoom())renderScenarioView();};
@@ -5301,6 +5452,7 @@ $("#btnLibrary").onclick=openLibrary;
 $("#btnRef").onclick=openReference;
 $("#btnPrint").onclick=openSummary;
 $("#btnShareWB").onclick=()=>exportCurrent(false);
+$("#btnQuest").onclick=async()=>{if(!(await ensureRoom()))return;openJoinDialog();};
 
 $("#wbName").addEventListener("input",e=>{activeWB().name=e.target.value;save()});
 $("#wbGen").onclick=openWarbandNameGen;
@@ -5365,6 +5517,8 @@ document.addEventListener("keydown",e=>{
 
 /* boot */
 load();render();syncCheatFab();
+applyRole();
+if(fbAvailable()&&!appRole())setTimeout(openRoleChooser,400);
 </script>
 
 <style>
