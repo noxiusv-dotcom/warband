@@ -5530,6 +5530,17 @@ document.addEventListener("keydown",e=>{
 /* boot */
 load();render();syncCheatFab();
 applyRole();
+/* A saved passphrase means this device already belongs to a table, but roomKey is only ever
+   set lazily by ensureRoom(), so on a fresh load the camp header wrongly offered "Set group
+   passphrase" — and clicking it silently reused the saved word without ever prompting, which
+   is why the passphrase looked unchangeable. Restore the room on load so the header tells the
+   truth and "change passphrase" is reachable on the first click. */
+(async()=>{ try{
+  if(fbAvailable()&&savedPass()&&!roomKey){
+    roomKey=await hashKey(savedPass());
+    render(); if(currentView==="scenarios")renderScenarioView();
+  }
+}catch(e){} })();
 if(fbAvailable()&&!appRole())setTimeout(openRoleChooser,400);
 </script>
 
