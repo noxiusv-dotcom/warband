@@ -271,6 +271,24 @@ textarea.input{resize:vertical;min-height:56px;line-height:1.45}
 
 
 
+
+.chip.hp.live{border-color:color-mix(in srgb,var(--teal) 60%,var(--line));background:color-mix(in srgb,var(--teal) 12%,transparent)}
+.chip.hp.hurt{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 50%,var(--line))}
+.chip.hp.down{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 55%,var(--line));background:var(--danger-bg)}
+
+
+.adj-hp{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.adj-list{display:flex;flex-wrap:wrap;gap:6px}
+.adj-add{display:flex;gap:8px;margin-top:9px;flex-wrap:wrap}
+.adj-add .input{flex:1;min-width:140px}
+.chip-x{margin-left:5px;color:var(--ink-mute);font-size:13px;line-height:1;padding:0 2px}
+.chip-x:hover{color:var(--danger)}
+.chip.cond-chip{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 50%,var(--line));background:color-mix(in srgb,var(--warn) 10%,transparent)}
+.chip.scar[data-tip]{cursor:help}
+.chip small{opacity:.75;font-weight:400}
+.chip.onquest{color:var(--amber);border-color:color-mix(in srgb,var(--amber) 50%,var(--line));background:var(--amber-glow)}
+.cb-quest{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.cb-onq{font-family:var(--disp);font-weight:600;font-size:12.5px;color:var(--amber)}
 /* ---------- role chooser ---------- */
 .rolegrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:4px 0 6px}
 @media(max-width:520px){.rolegrid{grid-template-columns:1fr}}
@@ -1427,6 +1445,147 @@ function renderHeader(){
   $("#mWarn").innerHTML=warns.length?`<span class="warnflag">${warns.join(" · ")}</span>`:"";
 }
 
+
+/* ---- LIVE QUEST STATE, SEEN FROM CAMP ----
+   While a quest is running your characters' real hit-points live in the battle roster, not on
+   the character record. Camp used to show only c.curHP (wounds from the LAST quest), so you had
+   to flip to the Scenarios tab to see what was happening now. These read the live roster so the
+   camp cards can show current health beside the stats you need for deploying. */
+function activeQuestScn(){
+  if(liveRole==="guest"&&liveScenario&&liveScenario.battle&&liveScenario.battle.started)return liveScenario;
+  if(hostScenarioId){
+    const s=(activeWB().scenarios||[]).find(x=>x.id===hostScenarioId);
+    if(s&&s.battle&&s.battle.started)return s;
+  }
+  return null;
+}
+function onQuest(){return !!activeQuestScn();}
+// the live combatant for one of my characters/vehicles, matched the way the roster stores it
+function questUnitFor(id,isVeh){
+  const s=activeQuestScn(); if(!s)return null;
+  const cid=campId();
+  return (s.battle.combatants||[]).find(m=>m&&m.side==="player"&&(isVeh?m.vehId===id:m.charId===id)
+    &&(!m.campId||!cid||m.campId===cid))||null;
+}
+/* One HP chip, live when a quest is running and otherwise the lingering wounds it always showed. */
+function hpChipFor(o,max,isVeh){
+  const live=questUnitFor(o.id,isVeh);
+  if(live){
+    const cur=Math.max(0,live.curHP|0), half=cur<=live.maxHP*0.5;
+    return `<span class="chip hp live ${cur<=0?"down":half?"hurt":""}">${cur<=0?"DOWN":cur+"/"+live.maxHP+" HP"}</span>`;
+  }
+  const cur=(typeof o.curHP==="number"&&o.curHP<max)?o.curHP:null;
+  return cur===null?`<span class="chip hp">${max} HP</span>`
+    :`<span class="chip hp ${cur<=0?"down":"hurt"}">${cur<=0?"DOWN":cur+"/"+max+" HP"}</span>`;
+}
+
+/* Everything currently limiting a character, named rather than counted, because at the table
+   you are deciding how to fight WITH the limitation ("only one one-handed weapon", "-1 Psyche
+   on break tests") and a chip saying "2 scars" cannot answer that.
+   Two sources, both self-clearing: c.injuries holds only injuries still in effect (tickInjuries
+   drops them once served, and treating one removes it), and a live combatant's conditions are
+   whatever the battle roster is currently tracking — lift one there and it disappears here. */
+function cardMarks(o,isVeh){
+  const bits=[];
+  (o.injuries||[]).forEach(inj=>{
+    if(!inj||!inj.name)return;
+    const tip=[inj.ruleName&&inj.ruleName!==inj.name?inj.ruleName:"",inj.effectNote||inj.note||""].filter(Boolean).join(" — ");
+    bits.push(`<span class="chip scar" ${tip?`tabindex="0" data-tip="${esc(tip)}"`:""}>⚠ ${esc(inj.name)}${inj.permanent?"":inj.games?` <small>${Math.max(0,inj.games-(inj.served||0))} left</small>`:""}</span>`);
+  });
+  const live=questUnitFor(o.id,!!isVeh);
+  (live&&live.conditions||[]).forEach(cd=>{
+    if(!cd||!cd.label)return;
+    bits.push(`<span class="chip cond-chip">◈ ${esc(cd.label)}${cd.expireTurn?` <small>→T${cd.expireTurn}</small>`:""}</span>`);
+  });
+  return bits.join("");
+}
+
+/* ---- FIXING WHAT THE TABLE GOT WRONG ----
+   Damage gets logged twice, a condition lands on the wrong model, an injury is rolled for the
+   wrong character. All of it must be correctable in place, or the app stops matching the table
+   and people go back to paper. Edits apply to the LIVE combatant while a quest is running and
+   to the stored character otherwise, so the same panel works before, during and after a game. */
+let adjustFor=null;
+function adjustTargets(o,isVeh){
+  const live=questUnitFor(o.id,!!isVeh);
+  return {live, max: live?live.maxHP:(isVeh?vehicleHP(o):o.hp*memberCount(o))};
+}
+function openAdjust(o,isVeh){
+  adjustFor={o,isVeh};
+  const draw=()=>{
+    const {live,max}=adjustTargets(o,isVeh);
+    const guestLive=!!live&&liveRole==="guest";   // the host owns the live roster
+    const cur=live?Math.max(0,live.curHP|0):(typeof o.curHP==="number"?o.curHP:max);
+    const conds=(live&&live.conditions)||[];
+    const scars=o.injuries||[];
+    $("#modalBody").innerHTML=`
+      <h3>Adjust ${esc(o.name||"this one")}</h3>
+      <p class="lead">${live?(guestLive?"Your host runs the battle roster — ask them to correct this one. You can still tidy up scars here."
+                                  :"This one is on a quest — changes go straight to the live roster.")
+                           :"Not on a quest, so this sets what they come back with."}</p>
+      ${guestLive?"":`<div class="eyebrow" style="margin-bottom:8px">Hit-points</div>
+      <div class="adj-hp">
+        <button class="rbtn" data-adj="-5">−5</button>
+        <button class="rbtn" data-adj="-1">−1</button>
+        <input class="input mono" id="adjHP" inputmode="numeric" value="${cur}" style="width:84px;text-align:center">
+        <span class="none-note" style="font-style:normal">of ${max}</span>
+        <button class="rbtn" data-adj="1">+1</button>
+        <button class="rbtn" data-adj="5">+5</button>
+        <button class="linkbtn" id="adjFull">full</button>
+      </div>`}
+      ${live&&!guestLive?`<div class="eyebrow" style="margin:16px 0 8px">Conditions</div>
+      <div class="adj-list">${conds.length?conds.map((cd,i)=>`<span class="chip cond-chip">◈ ${esc(cd.label)}${cd.expireTurn?` <small>→T${cd.expireTurn}</small>`:""}
+        <button class="chip-x" data-rmcond="${i}" aria-label="Remove">×</button></span>`).join("")
+        :`<span class="none-note">None right now.</span>`}</div>
+      <div class="adj-add">
+        <input class="input" id="adjCond" placeholder="e.g. Blinded, Poisoned, Pinned" maxlength="28">
+        <input class="input mono" id="adjTurn" placeholder="until T" inputmode="numeric" style="width:88px">
+        <button class="btn sm" id="adjAddCond">Add</button>
+      </div>`:""}
+      ${scars.length?`<div class="eyebrow" style="margin:16px 0 8px">Scars</div>
+      <div class="adj-list">${scars.map((s,i)=>`<span class="chip scar">⚠ ${esc(s.name)}
+        <button class="chip-x" data-rmscar="${i}" aria-label="Remove">×</button></span>`).join("")}</div>
+      <div class="none-note" style="font-style:normal;margin-top:6px">Removing a scar here is for mistakes — it does not undo the skill or hit-point change it made.</div>`:""}
+      <div class="modal-actions"><button class="btn primary sm" id="adjDone" style="margin-left:auto">Done</button></div>`;
+    const setHP=v=>{
+      const {live,max}=adjustTargets(o,isVeh);
+      const n=Math.max(0,Math.min(max,Math.round(v)||0));
+      if(live)live.curHP=n; else o.curHP=n;
+      save();refreshAll();draw();
+    };
+    $("#modalBody").querySelectorAll("[data-adj]").forEach(b=>b.onclick=()=>{
+      const {live,max}=adjustTargets(o,isVeh);
+      const now=live?(live.curHP|0):(typeof o.curHP==="number"?o.curHP:max);
+      setHP(now + (+b.dataset.adj));
+    });
+    const af=$("#adjFull"); if(af)af.onclick=()=>setHP(adjustTargets(o,isVeh).max);
+    const hp=$("#adjHP"); if(hp)hp.onchange=()=>setHP(+hp.value);
+    const ac=$("#adjAddCond");
+    if(ac)ac.onclick=()=>{
+      const lbl=($("#adjCond").value||"").trim(); if(!lbl){toast("Name the condition");return;}
+      const turn=parseInt($("#adjTurn").value,10);
+      const {live}=adjustTargets(o,isVeh); if(!live)return;
+      live.conditions=live.conditions||[];
+      live.conditions.push(isFinite(turn)&&turn>0?{label:lbl.slice(0,28),expireTurn:turn}:{label:lbl.slice(0,28)});
+      save();refreshAll();draw();
+    };
+    $("#modalBody").querySelectorAll("[data-rmcond]").forEach(b=>b.onclick=()=>{
+      const {live}=adjustTargets(o,isVeh); if(!live)return;
+      live.conditions.splice(+b.dataset.rmcond,1);
+      save();refreshAll();draw();
+    });
+    $("#modalBody").querySelectorAll("[data-rmscar]").forEach(b=>b.onclick=()=>{
+      askConfirm("Remove this scar? Use this only when it was recorded by mistake.",()=>{
+        o.injuries.splice(+b.dataset.rmscar,1);save();refreshAll();draw();
+      },{danger:true,yesLabel:"Remove"});
+    });
+    $("#adjDone").onclick=()=>{adjustFor=null;closeModal();refreshAll();};
+  };
+  const refreshAll=()=>{renderRoster();renderVehicleRoster();renderCampBar();
+    if(currentView==="scenarios")renderScenarioView();
+    if(cardCharId||cardVehId)rebuildOpenCard();};
+  draw();showModal();
+}
 function renderRoster(){
   const w=activeWB(),el=$("#roster");el.innerHTML="";
   w.characters.forEach(c=>{
@@ -1453,13 +1612,12 @@ function renderRoster(){
       <div class="card-foot">
         <div class="chips">
           ${n>1?`<span class="chip squad">⛊ Squad ×${n}</span>`:""}
-          ${(()=>{const max=c.hp*n,cur=(typeof c.curHP==="number"&&c.curHP<max)?c.curHP:null;
-            return cur===null?`<span class="chip hp">${c.hp} HP</span>`
-              :`<span class="chip hp ${cur<=0?"down":"hurt"}">${cur<=0?"DOWN":cur+"/"+max+" HP"}</span>`;})()}
+          ${hpChipFor(c,c.hp*n,false)}
+          ${questUnitFor(c.id,false)?`<span class="chip onquest">⚔ deployed</span>`:""}
           <span class="chip">${RULES.speed}cm</span>
           ${cpTotalOf(c)>0?`<span class="chip rank">${esc(rankOf(cpTotalOf(c)))}</span>`:""}
           ${cpOf(c)>0?`<span class="chip xp">⭐ ${cpOf(c)} cp</span>`:""}
-          ${(c.injuries||[]).length?`<span class="chip scar">⚠ ${(c.injuries||[]).length} scar${(c.injuries||[]).length>1?"s":""}</span>`:""}
+          ${cardMarks(c,false)}
           ${nGear?`<span class="chip">${nGear} gear</span>`:""}
         </div>
         <button class="fieldtog ${fielded?"on":""}" data-tog title="Bring in / out of the battle">${fielded?"◉ Fielded":"○ Benched"}</button>
@@ -1495,7 +1653,7 @@ function renderVehicleRoster(){
       <div class="statgrid" style="grid-template-columns:repeat(4,1fr)">
         <div class="stat"><b>${v.skills.A}</b><span>A</span></div>
         <div class="stat"><b>${v.skills.S}</b><span>S</span></div>
-        <div class="stat"><b>${vehicleHP(v)}</b><span>HP</span></div>
+        <div class="stat"><b>${(questUnitFor(v.id,true)||{}).curHP ?? vehicleHP(v)}</b><span>HP</span></div>
         <div class="stat"><b>${ty[2]}</b><span>SPD</span></div>
       </div>
       ${(v.damage||v.laidUp||v.wrecked||(typeof v.curHP==="number"&&v.curHP<vehicleHP(v)))?`<div class="none-note" style="font-style:normal;color:${v.wrecked?"var(--danger)":"var(--warn)"}">${v.wrecked?"☠ ":v.laidUp?"⚙ ":"⚠ "}${esc(v.damage||("Hull damage — "+v.curHP+"/"+vehicleHP(v)+" hit-points"))}</div>`:""}
@@ -1504,6 +1662,8 @@ function renderVehicleRoster(){
           <span class="chip">${ty[0]}</span>
           <span class="chip">${2+nSec} sect.</span>
           ${nW?`<span class="chip">${nW} wpn${nW>1?"s":""}</span>`:""}
+          ${questUnitFor(v.id,true)?`<span class="chip onquest">⚔ deployed</span>`:""}
+          ${cardMarks(v,true)}
           ${v.laidUp?`<span class="chip" style="color:var(--warn)">in the workshop</span>`:""}
           ${v.wrecked?`<span class="chip" style="color:var(--danger)">wrecked</span>`:""}
         </div>
@@ -1607,6 +1767,7 @@ function renderCampBar(){
   const el=$("#campBar"); if(!el)return;
   const nm=campName();
   const live=fbAvailable();
+  const quest=activeQuestScn();
   const joined=!!roomKey;
   el.innerHTML=`<div class="campbar">
     <div class="cb-id">
@@ -1615,6 +1776,7 @@ function renderCampBar(){
     </div>
     <div class="cb-role">${live?`<button class="linkbtn" id="cbRole">this is a camp — change</button>`:""}
     </div>
+    ${quest?`<div class="cb-quest"><span class="cb-onq">⚔ On a quest — ${esc(quest.title||"a scenario")}</span><button class="linkbtn" id="cbToScn">open the scenario</button></div>`:""}
     ${live?`<div class="cb-table">
       ${joined?`<span class="cb-ok">◉ At your table</span><button class="linkbtn" id="cbPass">change passphrase</button>`
               :`<button class="btn sm primary" id="cbPass">🔑 Set group passphrase</button>
@@ -1623,6 +1785,7 @@ function renderCampBar(){
   </div>`;
   $("#cbName").onclick=openLibrary;
   const cr=$("#cbRole"); if(cr)cr.onclick=openRoleChooser;
+  const cq=$("#cbToScn"); if(cq)cq.onclick=()=>{const q=activeQuestScn();if(q){scnCurrentId=q.id;scnScreen="detail";}switchView("scenarios");};
   const cp=$("#cbPass"); if(cp)cp.onclick=async()=>{ if(roomKey){await changePassphrase();return;} if(await ensureRoom()){render();renderScenarioView();} };
 }
 function render(){renderHeader();renderRoster();renderVehicleRoster();renderCampBar();syncAppButtons();save()}
@@ -2314,11 +2477,13 @@ function buildCard(){
     <div class="gc-actions">
       ${cardIsEnemy?"":`<button class="btn ${isFielded(c)?"gc-fielded":""}" id="gcField">${isFielded(c)?"◉ Fielded":"○ Benched"}</button>`}
       <button class="btn" id="gcArt">✦ Art prompt</button>
+      ${cardIsEnemy?"":`<button class="btn" id="gcAdjust">✎ Adjust</button>`}
       ${cardIsEnemy?"":`<button class="btn primary" id="gcEdit">Edit</button>`}
       <button class="btn ${cardIsEnemy?"primary":"ghost"}" id="gcClose">Close</button>
     </div>`;
   $("#gcClose").onclick=closeCard;
   const gEdit=$("#gcEdit");if(gEdit)gEdit.onclick=()=>{const id=cardCharId;closeCard();openDossier(id);};
+  const gAdj=$("#gcAdjust");if(gAdj)gAdj.onclick=()=>openAdjust(c,false);
   $("#gcArt").onclick=()=>openPrompt(cardChar(),false);
   const gFld=$("#gcField");if(gFld)gFld.onclick=()=>toggleFielded(c);
   const sr=$("#spRoll");if(sr)sr.onclick=()=>rollArcana(c,isMajor?3:1);
@@ -2761,11 +2926,13 @@ function buildVehicleCard(){
     <div class="gc-actions">
       ${cardIsEnemy?"":`<button class="btn ${isFielded(v)?"gc-fielded":""}" id="gcvField">${isFielded(v)?"◉ Fielded":"○ Benched"}</button>`}
       <button class="btn" id="gcvArt">✦ Art prompt</button>
+      ${cardIsEnemy?"":`<button class="btn" id="gcvAdjust">✎ Adjust</button>`}
       ${cardIsEnemy?"":`<button class="btn primary" id="gcvEdit">Edit</button>`}
       <button class="btn ${cardIsEnemy?"primary":"ghost"}" id="gcvClose">Close</button>
     </div>`;
   $("#gcvClose").onclick=closeCard;
   const vEd=$("#gcvEdit");if(vEd)vEd.onclick=()=>{const id=cardVehId;closeCard();openVehicleDossier(id);};
+  const vAdj=$("#gcvAdjust");if(vAdj)vAdj.onclick=()=>openAdjust(v,true);
   const vFd=$("#gcvField");if(vFd)vFd.onclick=()=>toggleFielded(v);
   $("#gcvArt").onclick=()=>openPrompt(vehCard(),true);
   wirePortrait(v);
@@ -3099,7 +3266,7 @@ async function joinGame(code,name){
     if(sn.exists){
       liveScenario=fillScnArrayDefaults((sn.data()||{}).scenario)||liveScenario;
       rememberQuestState(liveScenario);      // keep our own copy so spoils survive the host leaving
-      if(liveRole==="guest")renderScenarioView();
+      if(liveRole==="guest"){renderScenarioView();renderRoster();renderVehicleRoster();renderCampBar();}
     }else{toast("The host packed up — bring your warband home");returnToCamp();}
   },()=>{})); }catch(e){}
   const pid=(name.replace(/[^A-Za-z0-9_-]/g,"")||"guest").slice(0,20)+"_"+Math.random().toString(36).slice(2,6);
@@ -5364,7 +5531,7 @@ function renderScenarioDetail(scnOverride){
   const bh=$("#btlHome");if(bh)bh.onclick=()=>{const snap=pendingQuest(s);if(!snap){toast("Nothing to bring home");return;}
     askConfirm("Bring your warband home from “"+(snap.title||"the quest")+"”? Wounds and finds come back with them, and this quest won't be claimed again.",
       ()=>claimQuest(snap,()=>renderScenarioView()),{danger:false,yesLabel:"Return to camp"});};
-  el.querySelectorAll("[data-hp]").forEach(b=>b.onclick=()=>{const[id,d]=b.dataset.hp.split("|");const m=(s.battle.combatants||[]).find(x=>x.id===id);if(m){m.curHP=Math.max(0,Math.min(m.maxHP,m.curHP+ +d));save();renderScenarioView();}});
+  el.querySelectorAll("[data-hp]").forEach(b=>b.onclick=()=>{const[id,d]=b.dataset.hp.split("|");const m=(s.battle.combatants||[]).find(x=>x.id===id);if(m){m.curHP=Math.max(0,Math.min(m.maxHP,m.curHP+ +d));save();renderScenarioView();renderRoster();renderVehicleRoster();}});
   el.querySelectorAll("[data-cond]").forEach(b=>b.onclick=()=>{const[id,ci]=b.dataset.cond.split("|");const m=(s.battle.combatants||[]).find(x=>x.id===id);if(m){m.conditions.splice(+ci,1);save();renderScenarioView();}});
   // pickups
   el.querySelectorAll("[data-pick]").forEach(b=>b.onclick=()=>{pickupOpenId=b.dataset.pick;renderScenarioView();});
