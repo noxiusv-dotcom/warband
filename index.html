@@ -761,7 +761,7 @@ textarea.input{resize:vertical;min-height:56px;line-height:1.45}
       <button class="topnav-btn active" data-view="warband">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16M6 20V8l6-4 6 4v12M9 20v-6h6v6"/></svg>Camp</button>
       <button class="topnav-btn" data-view="scenarios">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14"/></svg>Scenarios</button>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14"/></svg><span id="scnTabLabel">Scenarios</span></button>
     </div>
 
     <div class="manifest" id="manifest">
@@ -1726,13 +1726,27 @@ function renderVehicleRoster(){
 function appRole(){ try{return localStorage.getItem("p28_role")||"";}catch(e){return "";} }
 function setAppRole(r){ try{localStorage.setItem("p28_role",r);}catch(e){} applyRole(); }
 function isHost(){ return fbAvailable() && appRole()==="realm"; }
+function onAQuest(){
+  return !!(activeQuestScn()||(liveRole==="guest"&&liveScenario)||liveRole==="host");
+}
 function applyRole(){
   const host=isHost();
   const campTab=document.querySelector('#topnav .topnav-btn[data-view="warband"]');
   if(campTab)campTab.hidden=host;
   const cb=$("#campBar"); if(cb)cb.hidden=host;
+  syncQuestTab();
   if(host&&currentView!=="scenarios")switchView("scenarios");
   else{ render(); if(currentView==="scenarios")renderScenarioView(); }
+}
+function syncQuestTab(){
+  const tab=document.querySelector('#topnav .topnav-btn[data-view="scenarios"]');
+  const lbl=$("#scnTabLabel");
+  if(!tab)return;
+  const host=isHost();
+  const show=host||!fbAvailable()||onAQuest();     // the Claude app still writes scenarios here
+  tab.hidden=!show;
+  if(lbl)lbl.textContent=(fbAvailable()&&!host)?"Quest":"Scenarios";
+  if(!show&&currentView==="scenarios")switchView("warband");
 }
 /* Only camps that have been stashed at the table are listed — a camp living solely on
    someone's phone is invisible here, which is worth saying out loud rather than showing
@@ -1833,7 +1847,7 @@ function renderCampBar(){
   </div>`;
   $("#cbName").onclick=openLibrary;
   const cr=$("#cbRole"); if(cr)cr.onclick=openRoleChooser;
-  syncQuestGlow();
+  syncQuestGlow(); syncQuestTab();
   const cq=$("#cbToScn"); if(cq)cq.onclick=()=>{const q=activeQuestScn();if(q){scnCurrentId=q.id;scnScreen="detail";}switchView("scenarios");};
   const cp=$("#cbPass"); if(cp)cp.onclick=async()=>{ if(roomKey){await changePassphrase();return;} if(await ensureRoom()){render();renderScenarioView();} };
 }
@@ -3278,7 +3292,7 @@ function scnFinalLength(){return Math.max(4,Math.min(20,(scnLengthBase||rollD10p
 function scnsOf(){return visibleScns()}
 
 function renderScenarioView(){
-  syncQuestGlow();
+  syncQuestGlow(); syncQuestTab();
   if(liveRole==="guest"&&liveScenario){scnReadOnly=true;renderScenarioDetail(liveScenario);scnReadOnly=false;return;}
   scnReadOnly=false;
   if(scnScreen==="detail")renderScenarioDetail(); else renderScenarioList();
@@ -3391,7 +3405,7 @@ async function joinGame(code,name){
   const pid=(name.replace(/[^A-Za-z0-9_-]/g,"")||"guest").slice(0,20)+"_"+Math.random().toString(36).slice(2,6);
   guestPid=pid; guestPlayerRef=ref.collection("players").doc(pid);
   try{ await guestPlayerRef.set({name,warbandName:activeWB().name,combatants:myCombatants(name,"g"+pid+"_"),joinedAt:Date.now()}); }catch(e){}
-  closeModal();switchView("scenarios");renderScenarioView();toast("Joined game "+code);
+  closeModal();syncQuestTab();switchView("scenarios");renderScenarioView();toast("Joined game "+code);
 }
 async function resendWarband(){
   if(!guestPlayerRef){toast("You're not in a game.");return;}
@@ -4213,7 +4227,7 @@ function claimQuest(snap,then){
 }
 function returnToCamp(){
   const snap=pendingQuest(liveScenario);
-  const finish=()=>{clearLive();liveRole="solo";liveScenario=null;liveCode="";guestPlayerRef=null;guestPid="";renderScenarioView();};
+  const finish=()=>{clearLive();liveRole="solo";liveScenario=null;liveCode="";guestPlayerRef=null;guestPid="";syncQuestTab();switchView("warband");renderScenarioView();};
   if(!snap){finish();toast("Back at camp");return;}
   const names=(snap.combatants||[]).map(m=>m.name).slice(0,4).join(", ");
   askConfirm("Bring your warband home from “"+(snap.title||"the quest")+"”? Wounds and anything they picked up ("+names+") come back with them.",
@@ -4244,7 +4258,10 @@ function renderScenarioList(){
     <div class="section-head"><span class="eyebrow">Scenarios &amp; Campaigns</span><span class="rule"></span><span class="none-note" style="font-style:normal">${esc(w.name)}</span></div>
     <div class="scn-grid">
       ${cards}
-      <button class="scn-card add" id="scnNew"><div class="plus">+</div><span>New scenario</span></button>
+      ${fbAvailable()
+        ? `<button class="scn-card add" id="scnImport"><div class="plus">⇩</div><span>Import a scenario</span>
+             <span class="none-note" style="font-style:normal;max-width:22ch;text-align:center">Paste the code the DM wrote for you in the Claude app</span></button>`
+        : `<button class="scn-card add" id="scnNew"><div class="plus">+</div><span>New scenario</span></button>`}
     </div>
     ${(()=>{ // scenarios are stored per warband — never let them vanish just because you switched
       const others=[].flatMap(x=>(x.scenarios||[]).map(s=>({s,wb:x})));
@@ -4266,7 +4283,8 @@ function renderScenarioList(){
     store.activeId=wid;save();render();
     scnCurrentId=sid;scnScreen="detail";switchView("scenarios");renderScenarioView();
   });
-  $("#scnNew").onclick=openScenarioWizard;
+  const sn=$("#scnNew");if(sn)sn.onclick=openScenarioWizard;
+  const si=$("#scnImport");if(si)si.onclick=openImportScenario;
   const lpj=$("#lpJoin");if(lpj)lpj.onclick=openJoinDialog;
   const lpr=$("#lpRole");if(lpr)lpr.onclick=openRoleChooser;
   const lpi=$("#lpImport");if(lpi)lpi.onclick=openImportScenario;
