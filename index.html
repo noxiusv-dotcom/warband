@@ -315,8 +315,13 @@ textarea.input{resize:vertical;min-height:56px;line-height:1.45}
 @keyframes questPulse{0%,100%{opacity:.42}50%{opacity:.92}}
 @media (prefers-reduced-motion: reduce){.questglow{animation:none;opacity:.7}}
 /* ---------- camp bar (top of the camp view) ---------- */
-.campbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);
-  border-radius:var(--r);padding:11px 14px;margin-bottom:16px}
+.campbar{position:relative;display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  background:var(--sunk);border:2px solid color-mix(in srgb,var(--amber) 40%,var(--line));
+  border-radius:var(--r);padding:14px 15px 12px;margin:14px 0 4px;
+  box-shadow:inset 0 0 24px -12px color-mix(in srgb,var(--amber) 45%,transparent)}
+.campbar::before{content:"WHERE YOU ARE";position:absolute;top:-8px;left:12px;padding:0 7px;
+  background:var(--ground);font-family:var(--disp);font-size:9px;font-weight:600;
+  letter-spacing:.18em;color:color-mix(in srgb,var(--amber) 75%,var(--ink-mute))}
 .cb-id{display:flex;flex-direction:column;gap:2px;min-width:0}
 .cb-name{font-family:var(--disp);font-weight:600;font-size:16px;color:var(--ink);text-align:left;
   border-bottom:1px dashed var(--line);padding-bottom:1px}
@@ -764,6 +769,8 @@ textarea.input{resize:vertical;min-height:56px;line-height:1.45}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14"/></svg><span id="scnTabLabel">Scenarios</span></button>
     </div>
 
+    <div id="campBar"></div>
+
     <div class="manifest" id="manifest">
       <div class="wb-name-wrap">
         <div class="eyebrow" style="margin-bottom:4px">Warband designation</div>
@@ -790,7 +797,6 @@ textarea.input{resize:vertical;min-height:56px;line-height:1.45}
 
 <main>
   <div id="warbandView">
-    <div id="campBar"></div>
     <div class="section-head">
       <span class="eyebrow">The Roster</span>
       <span class="rule"></span>
@@ -4247,14 +4253,22 @@ function renderScenarioList(){
       </div>
     </button>`).join("");
   el.innerHTML=`
-    ${isHost()?`<div class="live-panel"><div class="lp-main"><b>🗺 Hosting the realm ${roomKey?`<span class="cb-pass">${esc(savedPass()||"unnamed")}</span>`:`<span style="color:var(--warn)">— no realm named yet</span>`}</b> <span class="none-note" style="font-style:normal">Import a scenario and host it for your realm. Warband building is hidden on this device.</span></div><button class="btn sm ghost" id="lpRole">🗺 this is the realm — change</button></div>`:""}
-    ${fbAvailable()?(roomKey?`<div class="live-panel">
-      <div class="lp-main"><b>Live game</b> <span class="none-note" style="font-style:normal">Host a scenario for your realm, or join one your host is running. Everyone plays on their own device.</span><div class="lp-tablebadge">${campName()?`⛺ ${esc(campName())} · `:""}◉ Realm: <b class="cb-pass">${esc(savedPass()||"unnamed")}</b> <button class="linkbtn" id="lpLeaveTable">change realm</button></div></div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm ghost" id="lpTableScns">🗄 Realm scenarios</button><button class="btn sm ghost" id="lpImport">⇩ Import scenario</button><button class="btn sm" id="lpJoin">⚔ Embark on a quest</button></div>
-    </div>`:`<div class="live-panel live-panel-gate">
-      <div class="lp-main"><b>Live game</b> <span class="none-note" style="font-style:normal">Host or join a live game — name your realm first so everyone lands in the same one.</span></div>
+    ${!fbAvailable()?"":!roomKey?`<div class="live-panel live-panel-gate">
+      <div class="lp-main"><b>Live game</b> <span class="none-note" style="font-style:normal">${isHost()?"Name your realm so your players can reach the games you host.":"Name your realm first so everyone lands in the same one."}</span></div>
       <button class="btn primary" id="lpTable">🔑 Name your realm</button>
-    </div>`):""}
+    </div>`
+    :isHost()?`<div class="live-panel">
+      <div class="lp-main"><b>🗺 Realm: <span class="cb-pass">${esc(savedPass())}</span></b>
+        <button class="linkbtn" id="lpLeaveTable">change</button>
+        <div class="none-note" style="font-style:normal;margin-top:3px">You are hosting. Import a scenario and run it for your players — warband building is hidden on this device.</div></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn sm" id="lpImport">⇩ Import scenario</button>
+        <button class="btn sm ghost" id="lpRole">🗺 this is the realm — change</button></div>
+    </div>`
+    :`<div class="live-panel">
+      <div class="lp-main"><div class="lp-tablebadge">${campName()?`⛺ ${esc(campName())} · `:""}◉ Realm: <b class="cb-pass">${esc(savedPass())}</b>${hostCode?` · hosting <b class="cb-pass">${esc(hostCode)}</b>`:""}</div></div>
+      <button class="linkbtn" id="lpLeaveTable">change realm</button>
+    </div>`}
     <div class="section-head"><span class="eyebrow">Scenarios &amp; Campaigns</span><span class="rule"></span><span class="none-note" style="font-style:normal">${esc(w.name)}</span></div>
     <div class="scn-grid">
       ${cards}
@@ -4285,10 +4299,8 @@ function renderScenarioList(){
   });
   const sn=$("#scnNew");if(sn)sn.onclick=openScenarioWizard;
   const si=$("#scnImport");if(si)si.onclick=openImportScenario;
-  const lpj=$("#lpJoin");if(lpj)lpj.onclick=openJoinDialog;
   const lpr=$("#lpRole");if(lpr)lpr.onclick=openRoleChooser;
   const lpi=$("#lpImport");if(lpi)lpi.onclick=openImportScenario;
-  const lts=$("#lpTableScns");if(lts)lts.onclick=openTableScenarios;
   const lt=$("#lpTable");if(lt)lt.onclick=async()=>{if(await ensureRoom())renderScenarioView();};
   const ll=$("#lpLeaveTable");if(ll)ll.onclick=()=>{forgetRoom();clearLive();liveRole="solo";liveScenario=null;renderScenarioView();toast("Left the realm — name it again to return");};
 }
