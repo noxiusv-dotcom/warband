@@ -77,7 +77,10 @@ input,textarea,select{font-family:var(--body);color:inherit}
 .eyebrow{font-family:var(--disp);text-transform:uppercase;letter-spacing:.16em;font-size:11px;font-weight:600;color:var(--ink-mute)}
 
 /* ---------- command header ---------- */
-.top{position:sticky;top:0;z-index:40;background:linear-gradient(180deg,var(--panel),color-mix(in srgb,var(--panel) 86%, transparent));backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+/* The header carries the brand, the tabs, the "where you are" frame and the whole warband
+   manifest. Pinned, that is three quarters of a phone screen and only the roster could move.
+   Let the page scroll as one instead — the tabs are a short flick away. */
+.top{position:relative;z-index:40;background:linear-gradient(180deg,var(--panel),color-mix(in srgb,var(--panel) 86%, transparent));backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
 .top-inner{max-width:1120px;margin:0 auto;padding:12px clamp(12px,3vw,26px)}
 .brandrow{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 .mark{width:38px;height:38px;flex:none;border:1.5px solid var(--amber);border-radius:9px;display:grid;place-items:center;background:var(--amber-glow);position:relative}
@@ -290,6 +293,7 @@ body.host-device .host-only{display:inline}
 .chip.cond-chip{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 50%,var(--line));background:color-mix(in srgb,var(--warn) 10%,transparent)}
 .chip.scar[data-tip]{cursor:help}
 .chip small{opacity:.75;font-weight:400}
+.chip.brk{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 55%,var(--line));background:var(--danger-bg);margin-left:8px;cursor:help}
 .chip.onquest{color:var(--amber);border-color:color-mix(in srgb,var(--amber) 50%,var(--line));background:var(--amber-glow)}
 .cb-quest{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .cb-onq{font-family:var(--disp);font-weight:600;font-size:12.5px;color:var(--amber)}
@@ -392,6 +396,13 @@ body.host-device .host-only{display:inline}
   .gc-portrait{border-right:none;border-bottom:1px solid var(--line);min-height:0;height:240px}
 }
 .card-thumb{width:44px;height:44px;border-radius:8px;object-fit:cover;border:1px solid var(--line);flex:none}
+/* ---------- portraits hidden ----------
+   The app can build an art prompt but cannot make the picture, so the empty panel was mostly
+   dead space. Hidden with CSS rather than torn out: every image already pasted in is still
+   stored on its character, and deleting these three rules brings the whole feature back. */
+.gc-portrait{display:none!important}
+.gc-layout{grid-template-columns:1fr!important}
+.card-thumb{display:none!important}
 .cardwrap.show .gamecard{transform:none}
 .gamecard::before{content:"";position:absolute;inset:5px;pointer-events:none;border-radius:12px;border:1px solid color-mix(in srgb,var(--amber) 22%, transparent);z-index:2}
 .gc-top{display:flex;gap:14px;align-items:flex-start;padding:18px 18px 15px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,var(--amber-glow),transparent)}
@@ -789,6 +800,7 @@ body.host-device .host-only{display:inline}
         <div class="gauge-nums">
           <div><span class="gauge-spent" id="gSpent">0</span><span class="of" id="gOf"> / 500 pts</span></div>
           <div class="remain ok" id="gRemain"></div>
+          <button class="linkbtn" id="gBank" hidden title="Rulebook: leftover build points become credits, one for one"></button>
         </div>
         <div class="bar"><i id="gBar" style="width:0%"></i></div>
         <div class="meta-line">
@@ -1481,6 +1493,7 @@ function renderHeader(){
   $("#gOf").textContent=" / "+w.budget+" pts fielded";
   const bar=$("#gBar");bar.style.width=pct+"%";
   bar.className=over?"over":(pct>85?"warn":"");
+  const bank=$("#gBank"); if(bank){const left=w.budget-wbSpent(w); bank.hidden=!(left>0); bank.textContent="Bank "+left+" → credits";}
   const gr=$("#gRemain");
   gr.className="remain "+(over?"over":"ok");
   gr.innerHTML=over?`Over by <b>${Math.abs(rem)}</b>`:`<b>${rem}</b> left`;
@@ -2107,6 +2120,33 @@ function openPicker(cat,obj,rebuild){
   setTimeout(()=>$("#pkSearch").focus(),60);
 }
 function closePicker(){$("#picker").classList.remove("show");pickerCtx=null;syncScroll();}
+
+/* A weapon with "Ammo = rough/basic/special" spends a piece per shot and cannot fire without
+   any. Buying the gun and forgetting the bullets is the classic mistake, so the app asks
+   straight away — and tells you how many are already in the pack. */
+const AMMO_FOR={rough:"Ammo — rough",basic:"Ammo — basic",special:"Ammo — special"};
+function ammoTypeOf(o){const m=String(o&&o.rules||"").match(/Ammo\s*=\s*(rough|basic|special)/i);return m?m[1].toLowerCase():"";}
+function offerAmmoFor(weapon,obj,rebuild){
+  const kind=ammoTypeOf(weapon); if(!kind)return;
+  const it=findCat("item",AMMO_FOR[kind]); if(!it||!Array.isArray(obj.items))return;
+  const have=(obj.items.find(e=>e.id===it.id)||{}).qty||0;
+  const body=$("#modalBody");
+  const add=n=>{
+    const ex=obj.items.find(e=>e.id===it.id);
+    if(ex)ex.qty+=n; else obj.items.push({id:it.id,qty:n});
+    closeModal(); if(rebuild)rebuild(); persist();
+    toast(n+" × "+it.name+" added");
+  };
+  body.innerHTML=`<h3>${esc(weapon.name)} needs ammo</h3>
+    <p class="lead">It spends one piece of <b>${esc(it.name.toLowerCase())}</b> every time it fires, and cannot shoot with an empty pack. ${have?`This one already carries <b>${have}</b>.`:"This one carries none."}</p>
+    <div class="chips-row">
+      ${[3,5,10].map(n=>`<button class="stylechip" data-ammo="${n}">+${n} <span class="none-note" style="font-style:normal">${n*it.cost} cr</span></button>`).join("")}
+    </div>
+    <div class="modal-actions"><button class="btn ghost sm" id="amSkip" style="margin-left:auto">Not now</button></div>`;
+  body.querySelectorAll("[data-ammo]").forEach(b=>b.onclick=()=>add(+b.dataset.ammo));
+  $("#amSkip").onclick=closeModal;
+  showModal();
+}
 function renderPickerList(q){
   const {cat,obj,field,rebuild}=pickerCtx;const list=$("#pkList");list.innerHTML="";
   q=q.trim().toLowerCase();
@@ -2137,6 +2177,7 @@ function renderPickerList(q){
         const ex=arr.find(e=>e.id===o.id);
         if(ex)ex.qty++;else arr.push({id:o.id,qty:1});
         toast(o.name+" added");
+        if(cat==="weapon")offerAmmoFor(o,obj,rebuild);
       }else{
         if(pickedIds.has(o.id)){arr.splice(arr.indexOf(o.id),1);toast(o.name+" removed");}
         else{arr.push(o.id);toast(o.name+" added");}
@@ -5301,8 +5342,9 @@ function battleHTML(s){
   const rows=s.battle.combatants.filter(m=>sealed.indexOf(m.id)<0).map(m=>{
     const down=m.curHP<=0, low=m.curHP<=m.maxHP*0.25;
     const conds=(m.conditions||[]).map((cd,ci)=>`<span class="cond">${esc(cd.label)}${cd.expireTurn?` <small>→T${cd.expireTurn}</small>`:""}${scnReadOnly?"":` <button data-cond="${m.id}|${ci}" aria-label="remove">×</button>`}</span>`).join("");
+    const half=!down&&m.curHP<=m.maxHP*0.5, safe=m.curHP===1;
     return `<div class="btl-row ${m.side} ${down?"down":""}">
-      <div class="btl-main"><span class="btl-side"></span><span class="btl-name">${esc(m.name)}</span>${m.owner&&m.side==="player"?`<span class="btl-owner">${esc(m.owner)}</span>`:""}${conds?`<div class="btl-conds">${conds}</div>`:""}</div>
+      <div class="btl-main"><span class="btl-side"></span><span class="btl-name">${esc(m.name)}</span>${half?`<span class="chip brk" tabindex="0" data-tip="${esc(safe?"Down to a single hit-point — this one never tests again.":"Under half hit-points: roll under Psyche or run for the nearest board edge. Test again on every hit, at −1 Psyche for each test already taken this turn. All skills are −1 while under half.")}">${safe?"⚑ no more tests":"⚠ break test"}</span>`:""}${m.owner&&m.side==="player"?`<span class="btl-owner">${esc(m.owner)}</span>`:""}${conds?`<div class="btl-conds">${conds}</div>`:""}</div>
       <div class="btl-hp">${scnReadOnly?"":`<button class="hpb" data-hp="${m.id}|-1" aria-label="damage">−</button>`}<span class="hpv ${down?"down":low?"low":""}">${down?"DOWN":m.curHP+"/"+m.maxHP}</span>${scnReadOnly?"":`<button class="hpb" data-hp="${m.id}|1" aria-label="heal">+</button>`}</div>
     </div>`;
   }).join("");
@@ -5938,6 +5980,13 @@ $("#wbName").addEventListener("input",e=>{activeWB().name=e.target.value;save()}
 $("#wbGen").onclick=openWarbandNameGen;
 document.querySelectorAll("#topnav .topnav-btn").forEach(b=>b.onclick=()=>switchView(b.dataset.view));
 $("#cheatFab").onclick=toggleCheat;
+$("#gBank").onclick=()=>{
+  const w=activeWB(), left=w.budget-wbSpent(w);
+  if(left<=0){toast("Nothing left to bank");return;}
+  askConfirm("Exchange "+left+" leftover build points for "+left+" credits? The rulebook allows this once the warband is finished — after that, equipment costs credits rather than points.",
+    ()=>{w.credits=creditsOf(w)+left; w.budget=wbSpent(w); save(); render(); toast("+"+left+" credits");},
+    {danger:false,yesLabel:"Bank them"});
+};
 $("#wbBudget").addEventListener("input",e=>{
   let v=parseInt(e.target.value.replace(/\D/g,""),10);if(isNaN(v))v=0;activeWB().budget=v;renderHeader();save();
 });
