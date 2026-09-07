@@ -561,6 +561,7 @@ body.host-device .host-only{display:inline}
 .scn-prep .bh{color:var(--amber)}
 .scn-prep .bh::after{background:color-mix(in srgb,var(--amber) 35%,transparent)}
 .prep-sec{margin-top:11px}
+.prep-size{font-family:var(--mono);font-size:11.5px;color:var(--amber);border:1px solid color-mix(in srgb,var(--amber) 35%,var(--line));border-radius:5px;padding:0 5px;white-space:nowrap}
 .prep-h{font-family:var(--disp);font-weight:600;font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--ink-dim);margin-bottom:5px}
 .secret-li::before{content:"🔒"!important;color:var(--ink-mute)!important}
 .redacted{color:var(--ink-mute);font-style:italic}
@@ -3224,6 +3225,29 @@ function switchView(v){
    Straight off the rulebook, for the phone in your hand while the tracker is open. Grouped by
    the question you actually have mid-turn ("what can I do", "how do I shoot", "they charged
    me"), not by page order, and each procedure is written as the sequence you follow. */
+/* ---- STANDARD PROP LIBRARY ----
+   A scenario is only buildable if the pieces match what is on your shelf. These are ten
+   shapes to cut, print or scavenge once and use forever; the DM must choose from them by
+   code and then name each one to suit the story ("P4 — Wreck Spire"). Sizes are anchored to
+   the two thresholds the rules actually care about: under 5cm you step and shoot over it,
+   5cm or more must be CLIMBED, and anything taller than a standing model (about 4cm plus
+   base) can hide one completely. */
+const PROPS=[
+ {code:"P1",name:"Low block",   size:"5×5cm, 3cm tall",    use:"Gives cover; shot over and stepped over. No climbing."},
+ {code:"P2",name:"Long low wall",size:"20×2cm, 3cm tall",  use:"Gives cover along a line; shot over. Good for splitting open ground."},
+ {code:"P3",name:"Crate stack", size:"6×6cm, 6cm tall",    use:"Hides a standing model. Must be climbed."},
+ {code:"P4",name:"Tall block",  size:"8×8cm, 12cm tall",   use:"Blocks line of sight outright. Climbed in stages."},
+ {code:"P5",name:"Spire",       size:"6×6cm, 20cm tall",   use:"Blocks line of sight and dominates a quarter of the board."},
+ {code:"P6",name:"Platform",    size:"12×12cm, 6cm tall",  use:"Flat top to stand on — a model up here shoots down at +1."},
+ {code:"P7",name:"Ramp",        size:"10×5cm, rising to 6cm",use:"Reaches a platform without climbing rolls."},
+ {code:"P8",name:"Barrel cluster",size:"6cm across, 5cm tall",use:"Small hard cover; hides a crouching model, climbable."},
+ {code:"P9",name:"Ground area", size:"12cm circle, flat",  use:"Marks ground: rough, hazardous or impassable. Never blocks sight."},
+ {code:"P10",name:"Token",      size:"3cm disc, flat",     use:"An objective, a cache or a spawn point."}
+];
+function propByCode(c){c=String(c||"").trim().toUpperCase();return PROPS.find(p=>p.code===c)||null;}
+function propsForAI(){
+  return PROPS.map(p=>`${p.code} — ${p.name}: ${p.size}. ${p.use}`).join("\n");
+}
 const CHEAT=[
  {ico:"◉",title:"Your two actions",items:[
   {n:"How a turn runs",d:"Every character gets 2 actions. Activate by Agility, highest first, both sides interleaved — not all of one player's characters together. Tied (A)? The higher (AW) chooses where to go. Tied on both? Both roll 1D10; lowest decides who acts first."},
@@ -3275,6 +3299,10 @@ const CHEAT=[
   {n:"Falling",d:"Fail a climb roll and you fall. Take 1 damage for every cm above 5, with no armour roll, and land directly below where you fell."},
   {n:"Out of hit-points",d:"Removed from the game. Back at camp they roll on the injury table for what it cost them."}
  ]},
+ {ico:"▣",title:"The prop library",build:"claude",items:[
+  {n:"What these are",d:"Ten shapes that build any table. Cut, print or scavenge them once; the DM writes every scenario out of these and only names them for the story. Under 5cm you step and shoot over a piece; 5cm or more must be climbed, and anything taller than a standing model hides one completely."},
+  ...PROPS.map(x=>({n:x.code+" · "+x.name,d:x.size+" — "+x.use}))
+ ]},
  {ico:"⚄",title:"Rolling dice",items:[
   {n:"The one rule",d:"Roll 1D10 UNDER the skill to succeed. Equal or over is a failure. A 1 always succeeds and a 10 always fails, whatever the modifiers."},
   {n:"Measuring",d:"Between characters, measure base edge to base edge. For movement, start and finish from the same point on the model. Everything is in centimetres."}
@@ -3287,7 +3315,7 @@ function renderCheat(){
       <button class="iconbtn" id="cheatClose" aria-label="Close">✕</button></div>
     <div class="cheat-body">
       <div class="cheat-roll"><b>Roll 1D10 under the skill.</b> Equal or over fails. A 1 always succeeds, a 10 always fails.</div>
-      ${CHEAT.map((s,i)=>`<div class="cheat-sec${cheatOpen[i]?" open":""}">
+      ${CHEAT.map((s,i)=>[s,i]).filter(([s])=>!(s.build==="claude"&&fbAvailable())).map(([s,i])=>`<div class="cheat-sec${cheatOpen[i]?" open":""}">
         <button class="cheat-q" data-cheat="${i}"><span class="cq-ico">${s.ico}</span>${esc(s.title)}<span class="cq-arrow">›</span></button>
         <div class="cheat-a">${s.items.map(it=>`<div class="cheat-item">
           <div class="ci-n">${esc(it.n)}</div>
@@ -4520,6 +4548,7 @@ function exportScenarioCode(s){
 }
 
 
+
 /* ---- QUEST TYPES ----
    Naming the SHAPE of the game up front gives the DM something to build toward, instead of
    inventing a premise and a win condition from nothing every time. Each brief says what the
@@ -4664,6 +4693,10 @@ GROUND TYPE ON EVERY MAP FEATURE. Separately from what a piece DOES, the ruleboo
 - "hazardous" — an Agility roll for EVERY action spent in it; pass and you move at half speed, fail and you cannot move at all and take 1D10 damage minus armour. Lava, raging water, grinding machinery, hostile fauna.
 - "impassable" — cannot be crossed at all; characters must go around. Energy fields, sheer walls of rock.
 Do NOT make everything even — a table of flat ground plays flat. Rough ground is the workhorse: it is what makes a ruin feel like a ruin and gives Agility, Sure-footed, Climber and the vehicle types (Walker, Hover, Flyer) something to matter against. Reserve hazardous for genuinely lethal ground and place little of it, and use impassable sparingly for hard edges. Ground and role are independent: a collapsed spire can be tall cover AND rough, a reactor pool can be an objective AND hazardous.
+BUILD THE TABLE OUT OF THE STANDARD PROPS. The host owns a fixed set of shapes, so every terrain entry must name one by its code in a "prop" field, and its "size" must be that prop's size copied exactly. Name the piece for the fiction, not the shape — "P5 — The Rust Spire", "P2 — collapsed handrail". Reuse the same prop as often as you like; a table is usually 8-14 pieces. The library:
+${propsForAI()}
+GET THE COVER LANGUAGE RIGHT. Planet 28 has ONE cover rule: if any part of a character's body is covered by terrain they are in cover, and gain an extra 1D6 armour roll against shooting. There is no "heavy" or "light" cover, and cover never blocks a shot by itself. What height changes is LINE OF SIGHT — you may shoot anyone with any part of their body visible — so a piece taller than a standing model hides them completely (no shot at all), while a low piece leaves them targetable but in cover. Say it that way in the scenario: "blocks line of sight" or "gives cover", never "heavy cover".
+If the table truly needs a shape the library does not have, do NOT bend an existing prop — instead add it to "newProps" (see the JSON shape) so the host can build it before next time, and use the closest existing prop for this game.
 CONNECT THE CHECKLIST TO THE MAP — this is important. Every map feature needs a "role" saying what it DOES in play, chosen from: "cover-low" (shoot over it), "cover-tall" (blocks sight, can hide behind), "blocking" (impassable/solid), "deco" (pure scenery, no game effect), "cache" (can be SEARCHED — this is where a collectible item is found), "interactive" (can be operated/hacked/opened/triggered), "objective", "hazard", "spawn" (where something arrives). And every checklist entry (terrain, markers, npcs, items) must set "mapLabel" to the EXACT label text of the map feature or zone it corresponds to, copied character-for-character (use a comma-separated list if one entry covers several identical pieces, e.g. "Wreck Spire, Wreck Spire"). The app turns those into the numbers shown on the map, so the host knows exactly which printed piece goes where and which one is searchable. If a collectible item is found by searching a terrain piece, give that feature role "cache" and point the item's "mapLabel" at it. Leave "mapLabel" as "" ONLY for things genuinely not on the map (e.g. a spare token kept off-table).
 SEARCHING IS RESOLVED BY THE APP: a feature with role "cache" gets a Search button in play. Any item whose mapLabel points at that cache stays hidden until someone searches it, and the app picks which one turns up (at random if several share one cache). So it is GOOD to hide 1-3 items in caches, and fine for two different items to share a cache — that creates a real gamble. An item that just lies in the open (like the main objective) should point at a non-cache feature instead, so it needs no searching.
 ITEMS ARE THE MOST IMPORTANT PLACE TO GET THIS RIGHT, AND THE EASIEST TO FORGET: every entry in "items" MUST carry BOTH a "mapLabel" (where on the table it is found — normally the cache it is hidden in) AND a "when". Do not leave an item's mapLabel empty; if it is not hidden in a cache, point it at whatever feature it lies on or beside. An item with no mapLabel is useless to the host because they cannot place it.
@@ -4671,7 +4704,7 @@ EVERY item MUST have a "when" field: one short, concrete sentence saying WHEN OR
 LASTING INJURIES — when a character is taken down the players roll on the rulebook's own 1D8 injury table, so do NOT invent mechanics. Instead write an "injuries" list of 5-7 SCENARIO-FLAVOURED wound descriptions this place could inflict — each just a "name" (e.g. "Venom-withered arm", "Pressure-burst eardrum"), a one-line "note" of prose, and a "cause" tag matching a threat in this scenario (an enemy name, a hazard, an event) so the right flavour is drawn for what actually happened. The app pairs your description with whatever the dice decide.
 SECRETS & SURPRISES — make the world feel alive: you MAY include plot twists and surprise reveals. Mark any NPC, item, or timed event that should be a SECRET (hidden from the host until it happens) with "secret": true. For a secret NPC or item, DO NOT spoil it in the checklist — instead give a non-spoiler "hint" telling the host only what to PREPARE (e.g. "a large monstrous miniature", "a mysterious relic token"). A hint says WHAT TO BUILD and nothing else — never put the turn, the trigger or any timing in it ("kept hidden until turn 8" is wrong), because in a co-op game the host is playing too and would be spoiling their own surprise while keeping the real name/note/round in the normal fields (the app hides them until the host reveals or the moment arrives). A collectible item whose effect should only be discovered on pickup should be marked "secret": true with a vague "hint". Not everything needs to be secret — obvious, up-front elements stay visible.
 Reply with ONLY a JSON object (no prose, no code fence) shaped EXACTLY like:
-{"title":"short evocative title","premise":"1-2 sentence hook","briefing":"vivid 4-6 sentence atmospheric second-person narration","scenery":"1-2 sentences describing the terrain to build","objectives":["a victory condition","..."],"specialRules":["an optional special rule","..."],"twist":"one mid-game complication (or empty string)","events":[{"round":4,"kind":"surprise","title":"short event name","text":"what happens this round, written atmospherically","effect":{"apply":true,"type":"damage","amount":"1D6","scope":"chosen","duration":"turn","negatedBy":["Power armour"]}}],"deployment":"how the warbands deploy, referencing table sides/centre","gameLength":"1D10+6 turns","terrain":[{"name":"terrain piece to build","note":"how many / what it looks like","mapLabel":"Wreck Spire","role":"cover-tall"}],"markers":[{"name":"objective/token to print","note":"what it marks","mapLabel":"Hadal Core","role":"objective"}],"npcs":[{"name":"extra character/creature","note":"what it is / when it appears","when":"when and where it shows up","mapLabel":"Vent Mouth","secret":false,"hint":""}],"items":[{"name":"collectible item","note":"what it does / what it changes about whoever picks it up","when":"the concrete moment it matters, naming the rule/hazard it answers","mapLabel":"Supply Locker","secret":false,"hint":""}],"injuries":[{"name":"Venom-withered arm","note":"The limb never regains its strength.","cause":"Scorpion Swarm"}],"map":{"note":"one-line caption of the battlefield","zones":[{"label":"short deployment label","side":"a","x":5,"y":5,"w":30,"h":18}],"features":[{"type":"terrain","role":"cover-tall","ground":"rough","label":"Wreck Spire","x":50,"y":50,"r":8}]}}
+{"title":"short evocative title","premise":"1-2 sentence hook","briefing":"vivid 4-6 sentence atmospheric second-person narration","scenery":"1-2 sentences describing the terrain to build","objectives":["a victory condition","..."],"specialRules":["an optional special rule","..."],"twist":"one mid-game complication (or empty string)","events":[{"round":4,"kind":"surprise","title":"short event name","text":"what happens this round, written atmospherically","effect":{"apply":true,"type":"damage","amount":"1D6","scope":"chosen","duration":"turn","negatedBy":["Power armour"]}}],"deployment":"how the warbands deploy, referencing table sides/centre","gameLength":"1D10+6 turns","terrain":[{"name":"terrain piece to build","note":"how many / what it looks like","prop":"P4","size":"8×8cm, 12cm tall","mapLabel":"Wreck Spire","role":"cover-tall"}],"newProps":[{"name":"Gantry bridge","size":"20×4cm, 8cm tall with a walkable top","why":"This table wants a raised crossing between two spires; nothing in the library spans a gap."}],"markers":[{"name":"objective/token to print","note":"what it marks","mapLabel":"Hadal Core","role":"objective"}],"npcs":[{"name":"extra character/creature","note":"what it is / when it appears","when":"when and where it shows up","mapLabel":"Vent Mouth","secret":false,"hint":""}],"items":[{"name":"collectible item","note":"what it does / what it changes about whoever picks it up","when":"the concrete moment it matters, naming the rule/hazard it answers","mapLabel":"Supply Locker","secret":false,"hint":""}],"injuries":[{"name":"Venom-withered arm","note":"The limb never regains its strength.","cause":"Scorpion Swarm"}],"map":{"note":"one-line caption of the battlefield","zones":[{"label":"short deployment label","side":"a","x":5,"y":5,"w":30,"h":18}],"features":[{"type":"terrain","role":"cover-tall","ground":"rough","label":"Wreck Spire","x":50,"y":50,"r":8}]}}
 Map coordinates are percentages of the 90×90 board: x from 0 (left) to 100 (right), y from 0 (top) to 100 (bottom). Provide 2-4 deployment zones (side is "a", "b" or "neutral") and 6-10 features (type is one of "terrain","cover","objective","hazard"; role is one of the roles listed above and is REQUIRED on every feature; "ground" is one of "even","rough","hazardous","impassable" and is also REQUIRED on every feature; add "r" — how far the ground of that type spreads, 4-28 in the same percentage units — on any rough, hazardous or impassable feature, so the map can shade the area rather than a point). Keep every map label under 22 characters and make each one distinctive enough to reference. Keep the checklist arrays short and concrete (omit any that don't apply), and give every checklist entry a "mapLabel" matching a map label exactly wherever it belongs on the table.`;
   try{
     const raw=await s.json(prompt,{modelTier:"default",cache:false});
@@ -4695,7 +4728,7 @@ Map coordinates are percentages of the 90×90 board: x from 0 (left) to 100 (rig
 function coerceScenario(raw,opts){
   raw=raw&&typeof raw==="object"?raw:{};
   const arr=x=>Array.isArray(x)?x.filter(Boolean).map(String):[];
-  const named=x=>Array.isArray(x)?x.map(v=>typeof v==="string"?{name:v,note:"",when:"",mapLabel:"",role:"",secret:false,hint:"",revealed:false}:{name:String(v&&v.name||"").slice(0,60),note:String(v&&v.note||"").slice(0,180),when:String(v&&v.when||"").slice(0,180),mapLabel:String(v&&v.mapLabel||"").slice(0,120),role:String(v&&v.role||"").toLowerCase().slice(0,20),secret:!!(v&&v.secret),hint:String(v&&v.hint||"").slice(0,90),revealed:false}).filter(v=>v.name||v.hint):[];
+  const named=x=>Array.isArray(x)?x.map(v=>typeof v==="string"?{name:v,note:"",when:"",size:"",prop:"",mapLabel:"",role:"",secret:false,hint:"",revealed:false}:{name:String(v&&v.name||"").slice(0,60),note:String(v&&v.note||"").slice(0,180),when:String(v&&v.when||"").slice(0,180),size:String(v&&v.size||"").slice(0,40),prop:String(v&&v.prop||"").slice(0,6).toUpperCase(),mapLabel:String(v&&v.mapLabel||"").slice(0,120),role:String(v&&v.role||"").toLowerCase().slice(0,20),secret:!!(v&&v.secret),hint:String(v&&v.hint||"").slice(0,90),revealed:false}).filter(v=>v.name||v.hint):[];
   const m=raw.map&&typeof raw.map==="object"?raw.map:{};
   const num=(v,d)=>{const n=+v;return isFinite(n)?Math.max(0,Math.min(100,n)):d;};
   const zones=(Array.isArray(m.zones)?m.zones:[]).map(z=>({label:String(z&&z.label||"").slice(0,34),side:(z&&z.side)==="b"?"b":(z&&z.side)==="neutral"?"neutral":"a",x:num(z&&z.x,5),y:num(z&&z.y,5),w:num(z&&z.w,25),h:num(z&&z.h,18)}));
@@ -4735,6 +4768,7 @@ function coerceScenario(raw,opts){
     items:itemsL.map((x,i)=>({name:x.name,note:x.note,when:x.when,mapLabel:x.mapLabel,role:x.role,secret:x.secret,hint:x.hint,revealed:false,found:false,id:"it"+i,heldBy:null})),
     searched:[],
     injuries:(Array.isArray(raw.injuries)?raw.injuries:[]).map(coerceInjury).filter(Boolean).slice(0,10),
+    newProps:(Array.isArray(raw.newProps)?raw.newProps:[]).slice(0,3).map(x=>({name:String(x&&x.name||"").slice(0,40),size:String(x&&x.size||"").slice(0,40),why:String(x&&x.why||"").slice(0,160)})).filter(x=>x.name&&x.size),
     difficulty:opts.difficulty||"normal",
     round:1, rounds:opts.length||null,
     map:{note:String(m.note||""),zones,features:feats},
@@ -5162,9 +5196,9 @@ function scenarioMapSVG(map,mini){
    scenarioMapSVG draws its badges in). Build-list entries name the map label they belong to
    via `mapLabel`, so the app can resolve it to those numbers and show them side by side. */
 const FEAT_ROLES={
-  "cover-low":{label:"low cover",cls:"r-cover"},
-  "cover-tall":{label:"tall cover",cls:"r-cover"},
-  "blocking":{label:"blocks line of sight",cls:"r-cover"},
+  "cover-low":{label:"cover · shoot over",cls:"r-cover"},
+  "cover-tall":{label:"cover · hides a model",cls:"r-cover"},
+  "blocking":{label:"impassable",cls:"r-cover"},
   "deco":{label:"scenic only",cls:"r-deco"},
   "cache":{label:"searchable",cls:"r-cache"},
   "interactive":{label:"interactive",cls:"r-inter"},
@@ -5231,8 +5265,8 @@ function numBadges(nums){
 }
 // build-list entries may be plain strings (older scenarios) or {name,note,mapLabel,role,...}
 function prepEntry(x){
-  if(typeof x==="string")return {name:x,note:"",when:"",mapLabel:"",role:"",secret:false,hint:"",revealed:false};
-  return {name:String(x&&x.name||""),note:String(x&&x.note||""),when:String(x&&x.when||""),mapLabel:String(x&&x.mapLabel||""),role:String(x&&x.role||""),secret:!!(x&&x.secret),hint:String(x&&x.hint||""),revealed:!!(x&&x.revealed)};
+  if(typeof x==="string")return {name:x,note:"",when:"",size:"",prop:"",mapLabel:"",role:"",secret:false,hint:"",revealed:false};
+  return {name:String(x&&x.name||""),note:String(x&&x.note||""),when:String(x&&x.when||""),size:String(x&&x.size||""),prop:String(x&&x.prop||""),mapLabel:String(x&&x.mapLabel||""),role:String(x&&x.role||""),secret:!!(x&&x.secret),hint:String(x&&x.hint||""),revealed:!!(x&&x.revealed)};
 }
 // an entry with no role of its own inherits the role of the map feature it points at
 function prepRole(map,e){
@@ -5790,7 +5824,7 @@ function renderScenarioDetail(scnOverride){
       const whenLine=x.when&&!(x.secret&&!x.revealed)?`<div class="prep-when">⏱ ${esc(x.when)}</div>`:"";
       if(x.secret&&!x.revealed)
         return `<li class="secret-li">${nums}<span class="redacted">${esc(x.hint||"A hidden surprise — prepare a spare miniature/token")}</span>${chip}${trackChip}${scnReadOnly?"":` <button class="reveal-btn" data-reveal="${catKey}|${i}">reveal</button>`}</li>`;
-      return `<li>${nums}${x.secret?'🔓 ':""}<b>${esc(x.name)}</b>${x.note?` — ${esc(x.note)}`:""}${chip}${trackChip}${whenLine}</li>`;
+      return `<li>${nums}${x.secret?'🔓 ':""}<b>${esc(x.name)}</b>${x.prop||x.size?` <span class="prep-size">${x.prop?esc(x.prop)+(x.size?" · ":""):""}${esc(x.size||"")}</span>`:""}${x.note?` — ${esc(x.note)}`:""}${chip}${trackChip}${whenLine}</li>`;
     }).join("");
     return `<div class="prep-sec"><div class="prep-h">${title}</div><ul class="scn-list">${rows}</ul></div>`;
   };
@@ -5802,6 +5836,9 @@ function renderScenarioDetail(scnOverride){
       ${prepSec("Extra characters / creatures",s.npcs||[],"npcs")}
       ${prepSec("Custom items",s.items||[],"items",true)}
       <div class="none-note" style="font-style:normal;margin-top:8px">Numbers match the battlefield map below. Hidden or conditional elements may be revealed during play — improvise those as they come up.</div>
+      ${(s.newProps||[]).length?`<div class="prep-sec"><div class="prep-h">🔨 Worth building before next time</div>
+        <ul class="scn-list">${s.newProps.map(np=>`<li><b>${esc(np.name)}</b> <span class="prep-size">${esc(np.size)}</span>${np.why?` — ${esc(np.why)}`:""}</li>`).join("")}</ul>
+        <div class="none-note" style="font-style:normal;margin-top:5px">The DM used the closest existing prop for this game.</div></div>`:""}
       ${(()=>{const g=scnReadOnly?[]:scenarioGaps(s);return g.length?`<div class="gap-box"><div class="prep-h">⚠ Needs a decision from you</div><ul class="scn-list">${g.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`:"";})()}
     </div>`:"";
   el.innerHTML=`
