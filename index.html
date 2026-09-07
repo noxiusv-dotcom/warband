@@ -3583,13 +3583,23 @@ function takeAgenda(c){
   toast("⚑ A hidden agenda — tap Reveal to read it");
 }
 let agendaOpen={};
+/* The rulebook has a player "select which character has the agenda" — one, not one each —
+   so once somebody carries one, everybody else's offer is closed and names the holder. */
+function agendaHolder(){ return (activeWB().characters||[]).find(x=>x&&x.agenda)||null; }
 function cardAgenda(c){
   const a=c.agenda;
-  if(!a)return `<div class="gc-sec">
-    <div class="sh">⚑ Hidden agenda</div>
-    <div class="gc-spellnote">A private goal, rolled in secret and worth <b>5 campaign points</b>. Tell the others you have one — never what it is.</div>
-    <div class="rollrow"><button class="rollbtn" id="agTake">🎲 Take a hidden agenda</button></div>
-  </div>`;
+  if(!a){
+    const other=agendaHolder();
+    if(other)return `<div class="gc-sec">
+      <div class="sh">⚑ Hidden agenda</div>
+      <div class="gc-spellnote">One character carries the warband's agenda, and <b>${esc(other.name||"another character")}</b> has it. When theirs is done or given up, this one can take a turn.</div>
+    </div>`;
+    return `<div class="gc-sec">
+      <div class="sh">⚑ Hidden agenda</div>
+      <div class="gc-spellnote">A private goal for your next quest, rolled in secret and worth <b>5 campaign points</b>. Only one character in the warband carries one. Tell the others you have it — never what it is.</div>
+      <div class="rollrow"><button class="rollbtn" id="agTake">🎲 Take a hidden agenda</button></div>
+    </div>`;
+  }
   const o=AGENDAS.find(x=>x.roll===a.roll)||AGENDAS[0];
   const shown=!!agendaOpen[c.id];
   return `<div class="gc-sec">
@@ -3613,15 +3623,16 @@ function openAgendaCheck(chars,then){
     const c=list[i], a=c.agenda, o=AGENDAS.find(x=>x.roll===a.roll)||AGENDAS[0], val=agendaValue(a);
     $("#modalBody").innerHTML=`<h3>⚑ ${esc(c.name||"Unnamed")} — ${esc(o.name)}</h3>
       <p class="lead">${esc(o.text)}</p>
-      <div class="ng-result"><b>Worth ${val} campaign point${val===1?"":"s"}</b>${(a.fails|0)?`<div class="ed" style="margin-top:4px">Reduced by ${a.fails} for the game${a.fails>1?"s":""} already spent carrying it.</div>`:""}</div>
+      <div class="ng-result"><b>Worth ${val} campaign point${val===1?"":"s"}</b> <span class="none-note" style="font-style:normal">${a.roll===6?"— split among the warband":"— kept by "+esc(c.name||"this character")}</span>${(a.fails|0)?`<div class="ed" style="margin-top:4px">Reduced by ${a.fails} for the game${a.fails>1?"s":""} already spent carrying it.</div>`:""}</div>
       <div class="modal-actions">
         <button class="btn primary sm" id="agDone">Completed — award ${val}</button>
         <button class="btn sm" id="agFail">Failed — carry it on</button>
       </div>`;
     $("#agDone").onclick=()=>{
-      if(val>0)grantCP([c],val);
+      const shared=(a.roll===6);            // "An honourable death" splits its points
+      if(val>0){ if(shared){const w=activeWB();w.cp=(w.cp||0)+val;} else grantCP([c],val); }
       delete c.agenda; save();
-      toast(val>0?("+"+val+" campaign points"):"Completed — but it is worth nothing now");
+      toast(val>0?("+"+val+" campaign points"+(shared?" to the warband pool":" for "+(c.name||"them"))):"Completed — but it is worth nothing now");
       i++;step();
     };
     $("#agFail").onclick=()=>{
