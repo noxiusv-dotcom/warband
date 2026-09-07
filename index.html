@@ -3306,12 +3306,11 @@ function renderCheat(){
 function openCheat(){const d=$("#cheatDrawer");if(!d)return;renderCheat();d.hidden=false;requestAnimationFrame(()=>d.classList.add("show"));}
 function closeCheat(){const d=$("#cheatDrawer");if(!d)return;d.classList.remove("show");setTimeout(()=>{d.hidden=true;},240);}
 function toggleCheat(){const d=$("#cheatDrawer");if(d&&d.classList.contains("show"))closeCheat();else openCheat();}
-// the sheet belongs to play, so it rides along with the scenario view only
+/* The sheet answers rules questions, and those come up while kitting a character out as much
+   as mid-turn — what Fearsome does to a charge, what a break test costs — so it rides along
+   on both sides rather than only during play. */
 function syncCheatFab(){
-  const f=$("#cheatFab"); if(!f)return;
-  const on=(currentView==="scenarios");
-  f.hidden=!on;
-  if(!on)closeCheat();
+  const f=$("#cheatFab"); if(f)f.hidden=false;
 }
 
 
