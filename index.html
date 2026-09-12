@@ -502,6 +502,8 @@ body.host-device .host-only{display:inline}
 .ng-cand .cn{font-family:var(--disp);font-weight:600;font-size:16px;color:var(--ink);line-height:1.2}
 .ng-cand .ct{font-size:11px;color:var(--ink-mute);font-style:italic;text-align:right;flex:none}
 .ng-cand .cs{font-size:13px;color:var(--ink-dim);line-height:1.5}
+.ng-cand .cb{font-family:var(--mono);font-size:11.5px;line-height:1.55;color:var(--ink-dim);background:var(--sunk);border-radius:6px;padding:7px 9px}
+.ng-cand .cb b{color:var(--teal)}
 .ng-cand .ca{display:flex;gap:8px;flex-wrap:wrap}
 .ng-cand .ca .btn{padding:6px 12px}
 /* ---------- confirm dialog ---------- */
@@ -3039,6 +3041,7 @@ async function runNameGen(o,isVeh){
   const s=await getSample();
   if(!s){res.innerHTML=`<div class="ng-note">${sampleErr("not_granted")}</div>`;go.disabled=false;return;}
   const brief=$("#ngBrief").value.trim();
+  const allow=isVeh?null:buildAllowanceFor(o);
   go.textContent="Summoning…";
   res.innerHTML=`<div class="ng-note spin">Summoning names &amp; backstories… this can take a few seconds.</div>`;
   const prompt=isVeh
@@ -3052,27 +3055,34 @@ No other text.`
     : `Invent 4 distinct character concepts for a miniature in the grimdark science-fiction tabletop skirmish game Planet 28 (deep space, mercenaries, void pirates, bounty hunters, arcane tech, alien horrors).
 Tone: ${nameTone}.
 Character brief: ${brief||"a mysterious operative of unknown origin"}.
-For each concept, give a fitting name (full name, title, or codename) and a short vivid background of 2-3 sentences that fits the brief and tone.
+For each concept, give a fitting name (full name, title, or codename) and a short vivid background of 2-3 sentences that fits the brief and tone.${allow?`
+Also give each concept a "build" that MATCHES ITS STORY — a brawler fights, a sniper shoots, a mystic has Psyche and arcana, a coward has a negative trait. Rules: five skills A (Agility) F (Fighting) S (Shooting) AW (Awareness) P (Psyche), each 1-10, base 10 points plus 10 points per level above 1; hit-points start at 20 and each +2 HP costs 10 points (fewer HP refunds). Traits and abilities cost their listed points${allow.gear?"; weapons, armour and items cost their listed points at build time":" — do NOT include weapons, armour or items, they are bought separately"}. Use ONLY exact names from this catalogue:
+${catForBuild(allow.gear)}
+Fit each build to at most ${allow.pts} ${allow.label} in total — spend most of it, never go over. Make the four builds genuinely different from one another.`:""}
 Reply with ONLY a JSON array of exactly 4 objects like:
-[{"name":"...","note":"3-6 word flavour tag","background":"a 2-3 sentence backstory"}]
+[{"name":"...","note":"3-6 word flavour tag","background":"a 2-3 sentence backstory"${allow?`,"build":{"skills":{"A":2,"F":4,"S":1,"AW":3,"P":2},"hp":24,"traits":["exact trait name"],"abilities":["exact ability name"]${allow.gear?`,"weapons":["exact weapon name"],"armour":["exact armour name"],"items":["exact item name"]`:""}}`:""}]
 No other text.`;
   try{
     const list=await s.json(prompt,{modelTier:"default",cache:false});
     const arr=(Array.isArray(list)?list:[]).map(x=>({
       name:String(x&&x.name||"").trim(),
       note:x&&x.note?String(x.note).trim():"",
-      bg:x&&x.background?String(x.background).trim():""
+      bg:x&&x.background?String(x.background).trim():"",
+      build:allow?legaliseBuild(x&&x.build,allow):null
     })).filter(x=>x.name);
     if(!arr.length){res.innerHTML=`<div class="ng-note">Nothing came back — try again.</div>`;go.textContent="✦ Generate concepts";go.disabled=false;return;}
     res.innerHTML=arr.map((x,i)=>`
       <div class="ng-cand">
         <div class="ch"><span class="cn">${esc(x.name)}</span>${x.note?`<span class="ct">${esc(x.note)}</span>`:""}</div>
         ${x.bg?`<div class="cs">${esc(x.bg)}</div>`:""}
+        ${x.build?`<div class="cb">⚙ ${buildSummary(x.build,allow)}</div>`:""}
         <div class="ca">
-          <button class="btn primary sm" data-both="${i}">Use name${x.bg?" + background":""}</button>
+          ${x.build?`<button class="btn primary sm" data-all="${i}">Use everything</button>`:""}
+          <button class="btn ${x.build?"":"primary "}sm" data-both="${i}">Name${x.bg?" + background":""}</button>
           ${x.bg?`<button class="btn ghost sm" data-nameonly="${i}">Name only</button>`:""}
         </div>
       </div>`).join("");
+    res.querySelectorAll("[data-all]").forEach(b=>b.onclick=()=>{const x=arr[+b.dataset.all];applyBuild(o,x.build);applyNameBg(o,x.name,x.bg);buildDossier();persist();toast("Concept applied — "+x.build.cost+(allow.gear?" pts":" cp"));});
     res.querySelectorAll("[data-both]").forEach(b=>b.onclick=()=>{const x=arr[+b.dataset.both];applyNameBg(o,x.name,x.bg);});
     res.querySelectorAll("[data-nameonly]").forEach(b=>b.onclick=()=>{const x=arr[+b.dataset.nameonly];applyNameBg(o,x.name,"");});
     go.textContent="✦ Generate more";
@@ -3080,6 +3090,65 @@ No other text.`;
     res.innerHTML=`<div class="ng-note">${sampleErr(e&&e.code)}</div>`;
     go.textContent="✦ Generate concepts";
   }finally{go.disabled=false;}
+}
+/* what this character may cost: the room in the build budget (its own current cost counts as
+   free to re-spend), or the pool for a recruit. null = the dossier is locked, no builds offered */
+function buildAllowanceFor(c){
+  const w=activeWB();
+  if(wbSealed(w)){
+    if(!c.recruit)return null;
+    return {pts:Math.max(0,(w.cp||0)),gear:false,label:"campaign points in the pool"};
+  }
+  const n=memberCount(c), room=w.budget-wbSpent(w)+(isFielded(c)?unitCost(c):0);
+  return {pts:Math.max(RULES.baseCost,Math.floor(room/n)),gear:true,label:"build points"};
+}
+function catForBuild(gear){
+  const L=(cat)=>Object.values(CAT[cat]).map(o=>`${o.name} (${o.cost})`).join(", ");
+  return `TRAITS (points; negative ones refund points): ${L("trait")}
+ABILITIES (points): ${L("ability")}`+(gear?`
+WEAPONS (points): ${L("weapon")}
+ARMOUR (points): ${L("armour")}
+ITEMS (points): ${L("item")}`:"");
+}
+/* trim a suggested build to the catalogue and the allowance — never over, never illegal */
+function legaliseBuild(raw,allow){
+  if(!raw||typeof raw!=="object")return null;
+  const b={skills:{},hp:RULES.hpStart,traits:[],abilities:[],weapons:[],armour:[],items:[]};
+  SKILLS.forEach(([k])=>{b.skills[k]=Math.max(RULES.skillMin,Math.min(RULES.skillMax,Math.round(+((raw.skills||{})[k])||1)));});
+  let hp=Math.round(+raw.hp||RULES.hpStart); hp=RULES.hpStart+Math.round((hp-RULES.hpStart)/RULES.hpStep)*RULES.hpStep; b.hp=Math.max(2,Math.min(60,hp));
+  const ids=(arr,cat)=>[...new Set((Array.isArray(arr)?arr:[]).map(n=>{const o=findCat(cat,n);return o?o.id:null;}).filter(Boolean))];
+  b.traits=ids(raw.traits,"trait").slice(0,4); b.abilities=ids(raw.abilities,"ability").slice(0,3);
+  if(allow.gear){b.weapons=ids(raw.weapons,"weapon").slice(0,3).map(id=>({id,qty:1}));b.armour=ids(raw.armour,"armour").slice(0,1).map(id=>({id,qty:1}));b.items=ids(raw.items,"item").slice(0,2).map(id=>({id,qty:1}));}
+  const cost=()=>allow.gear?charCost(Object.assign({},b)):RULES.baseCost+skillPts(b)+hpPts(b)+listPts(b.traits,"trait")+listPts(b.abilities,"ability");
+  // recruits pay only for levels, traits and abilities — gear is credits later
+  let guard=60;
+  while(cost()>allow.pts&&guard-->0){
+    if(b.items.length){b.items.pop();continue;}
+    if(b.abilities.length){b.abilities.pop();continue;}
+    if(b.armour.length){b.armour.pop();continue;}
+    if(b.weapons.length>1){b.weapons.pop();continue;}
+    const posT=b.traits.filter(id=>CAT.trait[id].cost>0); if(posT.length){b.traits.splice(b.traits.indexOf(posT[posT.length-1]),1);continue;}
+    // one weapon left: if losing it alone closes the gap, it goes before the character's own levels do
+    if(b.weapons.length&&CAT.weapon[b.weapons[0].id].cost>=cost()-allow.pts){b.weapons.pop();continue;}
+    if(b.hp>RULES.hpStart){b.hp-=RULES.hpStep;continue;}
+    const top=SKILLS.map(([k])=>k).sort((x,y)=>b.skills[y]-b.skills[x])[0]; if(b.skills[top]>1){b.skills[top]--;continue;}
+    if(b.weapons.length){b.weapons.pop();continue;}
+    break;
+  }
+  b.cost=cost();
+  return b;
+}
+function buildSummary(b,allow){
+  const names=(arr,cat,qty)=>arr.map(e=>CAT[cat][qty?e.id:e]).filter(Boolean).map(o=>o.name);
+  const parts=[SKILLS.map(([k])=>k+" "+b.skills[k]).join(" · "),b.hp+" HP"];
+  const ta=names(b.traits,"trait").concat(names(b.abilities,"ability")); if(ta.length)parts.push(ta.join(", "));
+  const g=names(b.weapons,"weapon",1).concat(names(b.armour,"armour",1),names(b.items,"item",1)); if(g.length)parts.push(g.join(", "));
+  return parts.join("  ·  ")+`  ·  <b>${b.cost} ${allow.gear?"pts":"cp"}</b>`;
+}
+function applyBuild(c,b){
+  c.skills=Object.assign({},b.skills); c.hp=b.hp;
+  c.traits=[...b.traits]; c.abilities=[...b.abilities];
+  c.weapons=b.weapons.map(e=>({id:e.id,qty:1})); c.armour=b.armour.map(e=>({id:e.id,qty:1})); c.items=b.items.map(e=>({id:e.id,qty:1}));
 }
 function applyNameBg(o,nm,bg){
   o.name=nm;
