@@ -107,6 +107,9 @@ input,textarea,select{font-family:var(--body);color:inherit}
 .gauge-spent .of{color:var(--ink-mute);font-size:14px;font-weight:400}
 .budget-edit{font-family:var(--mono);background:var(--sunk);border:1px solid var(--line);border-radius:6px;color:var(--ink);width:74px;padding:2px 6px;font-size:14px;text-align:right;font-weight:700}
 .budget-edit:focus{outline:none;border-color:var(--amber)}
+.budget-edit[readonly]{opacity:.6;cursor:default}
+.seal-note{border:1px solid color-mix(in srgb,var(--amber) 50%,var(--line));background:var(--amber-glow);border-radius:var(--r-sm);padding:9px 12px;font-size:13px;line-height:1.45;margin-bottom:12px}
+.seal-note.recruit{border-color:color-mix(in srgb,var(--teal) 50%,var(--line));background:color-mix(in srgb,var(--teal) 9%,transparent)}
 .remain{font-family:var(--disp);text-transform:uppercase;letter-spacing:.14em;font-size:11px;font-weight:600}
 .remain b{font-family:var(--mono);letter-spacing:0}
 .remain.ok{color:var(--teal)} .remain.over{color:var(--danger)}
@@ -176,6 +179,8 @@ main{max-width:1120px;margin:0 auto;padding:22px clamp(12px,3vw,26px) 90px}
 .dossier-head .eyebrow{color:var(--amber)}
 .dossier-head .dcost{margin-left:auto;font-family:var(--mono);font-weight:700;font-size:18px;color:var(--amber);text-align:right;white-space:nowrap}
 .dossier-head .dcost small{display:block;font-family:var(--disp);font-size:9px;letter-spacing:.13em;color:var(--ink-mute);text-transform:uppercase}
+.dossier-head .dcost small b{font-weight:700;letter-spacing:.08em}
+.dossier-head .dcost small b.ok{color:var(--teal)} .dossier-head .dcost small b.over{color:var(--danger)}
 .dbody{flex:1;overflow-y:auto;padding:clamp(14px,3vw,22px);display:flex;flex-direction:column;gap:22px}
 .dgroup > .ghead{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .dgroup > .ghead .eyebrow{color:var(--ink-dim)}
@@ -1513,10 +1518,10 @@ function esc(s){return (s||"").replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">"
 function renderHeader(){
   const w=activeWB();
   $("#wbName").value=w.name;
-  $("#wbBudget").value=w.budget;
+  $("#wbBudget").value=w.budget; $("#wbBudget").readOnly=wbSealed(w); $("#wbBudget").title=wbSealed(w)?"Sealed for the campaign — the build is final":"";
   const spent=wbSpent(w), rem=w.budget-spent, pool=wbPool(w);
   const total=w.characters.length, fieldedN=w.characters.filter(isFielded).length;
-  const over=spent>w.budget;
+  const over=spent>w.budget&&!wbSealed(w);
   const pct=w.budget>0?Math.min(100,spent/w.budget*100):0;
   $("#gSpent").textContent=spent;
   $("#gSpent").classList.toggle("over",over);
@@ -1526,7 +1531,7 @@ function renderHeader(){
   const bank=$("#gBank"); if(bank){const left=w.budget-wbSpent(w); bank.hidden=!(left>0); bank.textContent="Bank "+left+" → credits";}
   const gr=$("#gRemain");
   gr.className="remain "+(over?"over":"ok");
-  gr.innerHTML=over?`Over by <b>${Math.abs(rem)}</b>`:`<b>${rem}</b> left`;
+  gr.innerHTML=wbSealed(w)?`🔒 sealed`:over?`Over by <b>${Math.abs(rem)}</b>`:`<b>${rem}</b> left`;
   const vTotal=vehsOf(w).length, vFielded=vehsOf(w).filter(isFielded).length;
   let info=`${fieldedN}/${total} fielded`;
   if(vTotal)info+=` · ${vFielded}/${vTotal} vehicles`;
@@ -1741,7 +1746,7 @@ function renderRoster(){
   });
   const add=document.createElement("button");
   add.className="card add";add.onclick=addCharacter;
-  add.innerHTML=`<div class="plus">+</div><span>Recruit character</span>`;
+  add.innerHTML=`<div class="plus">+</div><span>${wbSealed(w)?((w.freeRecruits||0)>0?"Recruit replacement · free":"Recruit character · "+CP_COSTS.recruit+" cp"):"Recruit character"}</span>`;
   el.appendChild(add);
 }
 
@@ -1936,7 +1941,16 @@ function renderCampBar(){
 function render(){renderHeader();renderRoster();renderVehicleRoster();renderCampBar();syncAppButtons();syncQuestGlow();save()}
 
 function addCharacter(){
-  const w=activeWB();const c=newChar();w.characters.push(c);render();openDossier(c.id);
+  const w=activeWB();
+  if(!wbSealed(w)){const c=newChar();w.characters.push(c);render();openDossier(c.id);return;}
+  const free=(w.freeRecruits||0)>0, fee=free?0:CP_COSTS.recruit, pool=w.cp||0;
+  if(fee>pool){toast("Recruiting costs "+CP_COSTS.recruit+" campaign points from the warband pool — you have "+pool);return;}
+  askConfirm(free?"A replacement for the fallen joins without the usual "+CP_COSTS.recruit+"-point fee. Their levels, traits and abilities still cost their points from the warband pool ("+pool+" available); gear costs credits."
+    :"Recruit a new character for "+CP_COSTS.recruit+" campaign points from the warband pool ("+pool+" available)? Their levels, traits and abilities cost their points on top; gear costs credits.",
+    ()=>{
+      if(free)w.freeRecruits--; else w.cp=pool-fee;
+      const c=newChar(); c.recruit=true; c.recruitFee=fee; w.characters.push(c); save(); render(); openDossier(c.id);
+    },{danger:false,yesLabel:free?"Bring them in":"Pay "+CP_COSTS.recruit+" cp"});
 }
 function addVehicle(){
   const w=activeWB();if(!w.vehicles)w.vehicles=[];const v=newVehicle();w.vehicles.push(v);render();openVehicleDossier(v.id);
@@ -1973,6 +1987,7 @@ function curChar(){return activeWB().characters.find(c=>c.id===curCharId)}
 
 function buildDossier(){
   const c=curChar();if(!c)return;
+  const wbL=activeWB(), locked=wbSealed(wbL)&&!c.recruit, recruit=wbSealed(wbL)&&!!c.recruit;
   const cost=charCost(c);
   const d=$("#dossier");
   d.innerHTML=`
@@ -1981,7 +1996,7 @@ function buildDossier(){
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
       </button>
       <div><div class="eyebrow">Character dossier</div></div>
-      <div class="dcost">${cost}<small>points</small></div>
+      <div class="dcost">${dossierCostHTML(cost,c)}</div>
     </div>
     <div class="dbody" id="dbody"></div>
     <div class="dossier-foot">
@@ -1989,6 +2004,8 @@ function buildDossier(){
       <button class="btn primary" id="dDone">Done</button>
     </div>`;
   const b=$("#dbody");
+  if(locked)b.insertAdjacentHTML("beforeend",`<div class="seal-note">🔒 <b>Sealed for the campaign.</b> Skills, hit-points, traits and abilities advance with campaign points (⭐ Advance below); gear is bought with credits (🛒). Name and background stay yours to edit.</div>`);
+  if(recruit)b.insertAdjacentHTML("beforeend",`<div class="seal-note recruit">🪖 <b>New recruit.</b> Build them here — levels, traits and abilities cost their points from the warband pool (<b>${wbL.cp||0}</b> available), taken when you press Done. Gear is bought with credits.</div>`);
 
   // identity
   const idc=document.createElement("div");idc.className="dgroup";
@@ -2016,9 +2033,9 @@ function buildDossier(){
       <div class="lbl" data-tip="${esc(SKILL_INFO[k]+" "+SKILL_ROLL)}"><b>${name} <span style="color:var(--ink-mute)">(${k})</span></b><span>${RULES.skillStep} pts / level · range ${RULES.skillMin}–${RULES.skillMax}</span></div>
       <div style="display:flex;align-items:center;gap:10px">
         <div class="stepper">
-          <button data-d="-1" ${c.skills[k]<=RULES.skillMin?"disabled":""} aria-label="Lower ${name}">−</button>
+          <button data-d="-1" ${locked||c.skills[k]<=RULES.skillMin?"disabled":""} aria-label="Lower ${name}">−</button>
           <span class="val">${c.skills[k]}</span>
-          <button data-d="1" ${c.skills[k]>=RULES.skillMax?"disabled":""} aria-label="Raise ${name}">+</button>
+          <button data-d="1" ${locked||c.skills[k]>=RULES.skillMax?"disabled":""} aria-label="Raise ${name}">+</button>
         </div>
         <span class="pts mono ${pts>0?"pos":""}">${pts?"+"+pts:"—"}</span>
       </div>`;
@@ -2039,9 +2056,9 @@ function buildDossier(){
     <div class="lbl" data-tip="${esc(VITAL_INFO.hp)}"><b>Hit-points</b><span>start ${RULES.hpStart} · ±${RULES.hpStep} HP = ±${RULES.hpPts} pts</span></div>
     <div style="display:flex;align-items:center;gap:10px">
       <div class="stepper">
-        <button data-d="-1" ${c.hp<=2?"disabled":""} aria-label="Lower HP">−</button>
+        <button data-d="-1" ${locked||c.hp<=2?"disabled":""} aria-label="Lower HP">−</button>
         <span class="val">${c.hp}</span>
-        <button data-d="1" aria-label="Raise HP">+</button>
+        <button data-d="1" ${locked?"disabled":""} aria-label="Raise HP">+</button>
       </div>
       <span class="pts mono ${hpPts(c)>0?"pos":hpPts(c)<0?"neg":""}">${hpPts(c)?fmtSigned(hpPts(c)):"—"}</span>
     </div>`;
@@ -2064,9 +2081,9 @@ function buildDossier(){
       <b>${n>1?"Squad size":"Single character"}</b><span>${n>1?"squad · cost = profile × members":"set 3+ to deploy as a squad"}</span></div>
     <div style="display:flex;align-items:center;gap:10px">
       <div class="stepper">
-        <button data-d="-1" ${n<=1?"disabled":""} aria-label="Fewer members">−</button>
+        <button data-d="-1" ${locked||n<=1?"disabled":""} aria-label="Fewer members">−</button>
         <span class="val">${n}</span>
-        <button data-d="1" ${n>=10?"disabled":""} aria-label="More members">+</button>
+        <button data-d="1" ${locked||n>=10?"disabled":""} aria-label="More members">+</button>
       </div>
       <span class="pts mono">${n>1?n+"×":""}</span>
     </div>`;
@@ -2084,19 +2101,28 @@ function buildDossier(){
   if((c.pickups||[]).length)b.appendChild(renderPickupsGroup(c));
 
   // traits, abilities
-  b.appendChild(gearGroup(c,"Traits","trait",c.traits,buildDossier));
-  b.appendChild(gearGroup(c,"Abilities","ability",c.abilities,buildDossier));
+  const cpLock=locked?"cp":null, shopLock=(locked||recruit)?"shop":null;
+  b.appendChild(gearGroup(c,"Traits","trait",c.traits,buildDossier,cpLock));
+  b.appendChild(gearGroup(c,"Abilities","ability",c.abilities,buildDossier,cpLock));
   // equipment
-  b.appendChild(gearGroup(c,"Weapons","weapon",c.weapons,buildDossier));
-  b.appendChild(gearGroup(c,"Armour","armour",c.armour,buildDossier));
-  b.appendChild(gearGroup(c,"Items & consumables","item",c.items,buildDossier));
+  b.appendChild(gearGroup(c,"Weapons","weapon",c.weapons,buildDossier,shopLock));
+  b.appendChild(gearGroup(c,"Armour","armour",c.armour,buildDossier,shopLock));
+  b.appendChild(gearGroup(c,"Items & consumables","item",c.items,buildDossier,shopLock));
 
-  const backToCard=()=>{const id=curCharId;closeDossier();openCard(id);};
+  const backToCard=()=>{
+    if(recruit){
+      // the recruit's build is paid for now, from the pool — or it doesn't leave the desk
+      const need=recruitBuildCost(c), pool=wbL.cp||0;
+      if(need>pool){toast("This build costs "+need+" campaign points — the pool has "+pool+". Trim it, or earn more first.");return;}
+      wbL.cp=pool-need; delete c.recruit; delete c.recruitFee; save();
+      toast(need>0?"Recruited — "+need+" campaign points spent on their build":"Recruited");
+    }
+    const id=curCharId;closeDossier();openCard(id);};
   $("#dBack").onclick=backToCard;
   $("#dDone").onclick=backToCard;
   $("#dDelete").onclick=()=>{
     askConfirm("Discharge "+(c.name||"this character")+" from the warband? This can't be undone.",()=>{
-      const w=activeWB();w.characters=w.characters.filter(x=>x.id!==c.id);closeDossier();render();toast("Character discharged");
+      const w=activeWB();if(c.recruit&&c.recruitFee)w.cp=(w.cp||0)+c.recruitFee;w.characters=w.characters.filter(x=>x.id!==c.id);closeDossier();render();toast("Character discharged");
     },{danger:true,yesLabel:"Discharge"});
   };
 }
@@ -2108,7 +2134,22 @@ function syncAppButtons(){
   if(quest)quest.hidden=!fbAvailable();
 }
 function persist(){renderHeader();renderRoster();renderVehicleRoster();renderCampBar();syncQuestGlow();save()}
-function liveCost(){const el=$("#dossier .dcost");if(el)el.innerHTML=charCost(curChar())+"<small>points</small>"}
+/* cost badge: what this one costs, and what is still available to spend on it —
+   build points while the warband is being built, the pool for a recruit, campaign points once sealed */
+function dossierCostHTML(cost,obj){
+  const w=activeWB();
+  if(obj&&obj.recruit&&wbSealed(w)){
+    const left=(w.cp||0)-recruitBuildCost(obj);
+    return `${cost}<small>points · <b class="${left<0?"over":"ok"}">${left<0?"pool short by "+(-left):left+" cp left in pool"}</b></small>`;
+  }
+  if(wbSealed(w)){
+    const cp=obj&&obj.id?cpOf(obj)+(w.cp||0):(w.cp||0);
+    return `${cost}<small>points · <b class="ok">⭐ ${cp} cp to spend</b></small>`;
+  }
+  const left=w.budget-wbSpent(w);
+  return `${cost}<small>points · <b class="${left<0?"over":"ok"}">${left<0?"over by "+(-left):left+" left of "+w.budget}</b></small>`;
+}
+function liveCost(){const el=$("#dossier .dcost");if(el)el.innerHTML=dossierCostHTML(charCost(curChar()),curChar())}
 
 /* meta/description line for a catalog entry (shared by group rows + picker) */
 function entryDesc(cat,o){
@@ -2128,7 +2169,7 @@ const ADD_NOUN={trait:"trait",ability:"ability",weapon:"weapon",armour:"armour",
 
 /* generic group renderer — obj[field] is a list of ids (traits/abilities) or {id,qty} (gear).
    rebuild() re-renders the parent editor (buildDossier or buildVehicleDossier). */
-function gearGroup(obj,label,cat,arr,rebuild){
+function gearGroup(obj,label,cat,arr,rebuild,lock){
   const meta=CAT_META[cat], isQty=meta.kind==="qty", unit=meta.unit;
   const g=document.createElement("div");g.className="dgroup";
   const groupCost=isQty?gearPts(arr,cat):listPts(arr,cat);
@@ -2147,18 +2188,19 @@ function gearGroup(obj,label,cat,arr,rebuild){
       <div class="srmain"><div class="srname">${esc(o.name)}</div>${d?`<div class="srdesc">${esc(d)}</div>`:""}</div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:7px">
         <span class="srcost ${costCls}">${costTxt}</span>
-        ${isQty?`<div class="qty"><button data-q="-1" aria-label="less">−</button><span class="qv">${entry.qty}</span><button data-q="1" aria-label="more">+</button></div>`:""}
+        ${isQty?(lock?`<span class="qv mono">×${entry.qty}</span>`:`<div class="qty"><button data-q="-1" aria-label="less">−</button><span class="qv">${entry.qty}</span><button data-q="1" aria-label="more">+</button></div>`):""}
       </div>
-      <button class="rm" aria-label="Remove">×</button>`;
+      ${lock==="cp"?"":`<button class="rm" aria-label="Remove">×</button>`}`;
     if(isQty)row.querySelectorAll(".qty button").forEach(bt=>bt.onclick=()=>{entry.qty=Math.max(1,entry.qty+ +bt.dataset.q);rebuild();persist();});
-    row.querySelector(".rm").onclick=()=>{arr.splice(arr.indexOf(entry),1);rebuild();persist();};
+    const rmb=row.querySelector(".rm");if(rmb)rmb.onclick=()=>{arr.splice(arr.indexOf(entry),1);rebuild();persist();};
     list.appendChild(row);
   });
   g.appendChild(list);
   const addLine=document.createElement("div");addLine.className="add-line";addLine.style.marginTop="9px";
   const ab=document.createElement("button");ab.className="addbtn";
-  ab.innerHTML=`<span class="p">+</span> Add ${ADD_NOUN[cat]||"item"}`;
-  ab.onclick=()=>openPicker(cat,obj,rebuild);
+  if(lock==="cp"){ab.innerHTML=`<span class="p">⭐</span> Advance with campaign points`;ab.onclick=()=>openSpendCP(obj.id);}
+  else if(lock==="shop"){ab.innerHTML=`<span class="p">🛒</span> Buy with credits`;ab.onclick=()=>openBuyGear(obj.id);}
+  else {ab.innerHTML=`<span class="p">+</span> Add ${ADD_NOUN[cat]||"item"}`;ab.onclick=()=>openPicker(cat,obj,rebuild);}
   addLine.appendChild(ab);g.appendChild(addLine);
   return g;
 }
@@ -2273,6 +2315,11 @@ function openLibrary(){
       const won=L.filter(e=>e.result==="victory").length, lost=L.filter(e=>e.result==="defeat").length;
       return `<div class="eyebrow wb-only" style="margin-bottom:8px">📜 Battle ledger <span class="none-note" style="font-style:normal">${L.length} quest${L.length===1?"":"s"} · ${won} won · ${lost} lost</span></div>
       <div class="wb-only" style="margin-bottom:14px">${L.slice(0,12).map(line).join("")}${L.length>12?`<div class="none-note">…and ${L.length-12} more</div>`:""}</div>`;})()}
+    <div class="wb-only camp-box" style="margin-bottom:14px">
+      <div class="prep-h">${wbSealed()?"🔒 Sealed for the campaign":"🔓 Still being built"}</div>
+      <div class="none-note" style="font-style:normal">${wbSealed()?"Since "+new Date(activeWB().sealed).toLocaleDateString()+". Characters advance with campaign points and buy gear with credits. Unseal only to fix a build mistake.":"Free editing until the first quest is claimed or the leftover points are banked — or seal it now to start the campaign."}</div>
+      <div class="modal-actions" style="margin-top:8px"><button class="btn sm ${wbSealed()?"ghost":""}" id="wbSealBtn">${wbSealed()?"Unseal to fix a mistake":"🔒 Seal the warband"}</button></div>
+    </div>
     <div class="eyebrow" style="margin-bottom:8px"><span class="wb-only">⛺ Camp name &amp; backup</span><span class="host-only">🗺 Hosting as</span></div>
     <div class="wb-only">
     ${(()=>{const chars=activeWB().characters||[];
@@ -2365,6 +2412,10 @@ function openLibrary(){
     },{danger:true,yesLabel:"Delete all"});
   };
   body.querySelectorAll("[data-treat]").forEach(b=>b.onclick=()=>{const[cid,i]=b.dataset.treat.split("|");openTreatInjury(cid,+i);});
+  const sb=$("#wbSealBtn");if(sb)sb.onclick=()=>{
+    if(wbSealed())askConfirm("Unseal the warband? Free editing comes back — use it only to correct a build mistake, then seal again.",()=>{unsealWarband();closeModal();},{danger:true,yesLabel:"Unseal"});
+    else askConfirm("Seal the warband and start the campaign? From here on, characters only grow with campaign points and gear costs credits.",()=>{sealWarband();closeModal();},{danger:false,yesLabel:"Seal it"});
+  };
   body.querySelectorAll("[data-injury]").forEach(b=>b.onclick=()=>{
     const c=activeWB().characters.find(x=>x.id===b.dataset.injury);
     if(c&&c.pendingInjury)openInjuryRoll(c);
@@ -3186,7 +3237,7 @@ function buildVehicleDossier(){
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
       </button>
       <div><div class="eyebrow">Vehicle dossier</div></div>
-      <div class="dcost">${cost}<small>points</small></div>
+      <div class="dcost">${dossierCostHTML(cost,null)}</div>
     </div>
     <div class="dbody" id="dvbody"></div>
     <div class="dossier-foot">
@@ -3698,6 +3749,11 @@ function rememberQuestState(scn){
    collective pool for scenario goals and recruiting. Equipment is bought with POINTS only when
    the warband is first built — after that it costs CREDITS, and CP convert to credits at 2:1. */
 const CP_COSTS={skill:20,hp:20,hpStep:5,recruit:10,heal:10};
+function wbSealed(w){w=w||activeWB();return !!(w&&w.sealed);}
+function sealWarband(w,quiet){w=w||activeWB();if(w.sealed)return;w.sealed=Date.now();save();render();if(!quiet)toast("🔒 Warband sealed — it grows by campaign points and credits now");}
+function unsealWarband(w){w=w||activeWB();delete w.sealed;(w.characters||[]).forEach(c=>{delete c.recruit;delete c.recruitFee;});save();render();toast("Unsealed — free editing is back");}
+/* what a new recruit's build costs in campaign points: levels, hit-points, traits, abilities (gear is credits) */
+function recruitBuildCost(c){return skillPts(c)+hpPts(c)+listPts(c.traits,"trait")+listPts(c.abilities,"ability");}
 const CP_EARN=[
   {key:"actions",label:"Successful shoot or fight actions",per:1,input:true},
   {key:"kills",label:"Enemies killed",per:5,input:true},
@@ -4254,6 +4310,7 @@ function openDeathRites(charId,injName){
     </div>`;
   const finish=()=>{
     w.characters=w.characters.filter(x=>x.id!==c.id);
+    w.freeRecruits=(w.freeRecruits||0)+1;      // rulebook: a replacement skips the 10-point fee
     if(curCharId===c.id)curCharId=null;
     save();closeModal();render();toast(esc(c.name||"They")+" has fallen");
   };
@@ -4491,6 +4548,7 @@ function claimQuest(snap,then){
   vehsOf(w).forEach(v=>{if(v.laidUp&&!(snap.combatants||[]).some(m=>m.vehId===v.id))v.laidUp=false;});
   (snap.combatants||[]).forEach(m=>{const c=w.characters.find(x=>x.id===m.charId);if(c)tickInjuries(c);});
   markClaimed(snap.scnId);
+  if(!w.sealed)w.sealed=Date.now();   // the campaign has begun — the build is final
   w.ledger=Array.isArray(w.ledger)?w.ledger:[];
   w.ledger.unshift({scnId:snap.scnId,title:snap.title||"a quest",at:Date.now(),
     result:(snap.outcome&&snap.outcome.result)||"unknown",round:(snap.outcome&&snap.outcome.round)||snap.round||0,
@@ -6296,7 +6354,7 @@ $("#gBank").onclick=()=>{
   const w=activeWB(), left=w.budget-wbSpent(w);
   if(left<=0){toast("Nothing left to bank");return;}
   askConfirm("Exchange "+left+" leftover build points for "+left+" credits? The rulebook allows this once the warband is finished — after that, equipment costs credits rather than points.",
-    ()=>{w.credits=creditsOf(w)+left; w.budget=wbSpent(w); save(); render(); toast("+"+left+" credits");},
+    ()=>{w.credits=creditsOf(w)+left; w.budget=wbSpent(w); w.sealed=w.sealed||Date.now(); save(); render(); toast("+"+left+" credits · warband sealed");},
     {danger:false,yesLabel:"Bank them"});
 };
 $("#wbBudget").addEventListener("input",e=>{
