@@ -3885,6 +3885,30 @@ function rememberQuestState(scn){
    collective pool for scenario goals and recruiting. Equipment is bought with POINTS only when
    the warband is first built — after that it costs CREDITS, and CP convert to credits at 2:1. */
 const CP_COSTS={skill:20,hp:20,hpStep:5,recruit:10,heal:10};
+/* gate on the way out: sealed → go; unsealed → seal here, or go back to camp */
+function ensureSealedForQuest(then){
+  const w=activeWB();
+  if(wbSealed(w)){then();return;}
+  const spent=wbSpent(w), over=spent-w.budget;
+  const body=$("#modalBody");
+  body.innerHTML=`<h3>Seal the warband first</h3>
+    <p class="lead">A warband goes to war finished. Once sealed, ${esc(w.name||"it")} only grows by campaign points and buys gear with credits — no more free editing.</p>
+    <div class="camp-box" style="margin-bottom:12px${over>0?";border-color:color-mix(in srgb,var(--danger) 55%,var(--line));background:var(--danger-bg)":""}">
+      <div class="prep-h">${over>0?"⚠ Over budget by "+over+" points":"✓ "+spent+" of "+w.budget+" points fielded"}</div>
+      <div class="none-note" style="font-style:normal">${over>0?"Trim the build before it can seal.":(w.budget-spent>0?"The "+(w.budget-spent)+" unspent points become credits, one for one.":"Nothing left over.")}</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn primary sm" id="sqSeal"${over>0?" disabled":""}>🔒 Seal and embark</button>
+      <button class="btn ghost sm" id="sqBack" style="margin-left:auto">Return to camp</button>
+    </div>`;
+  $("#sqSeal").onclick=()=>{
+    const left=w.budget-spent; if(left>0){w.credits=creditsOf(w)+left;w.budget=spent;}
+    w.sealed=Date.now(); save(); render(); closeModal();
+    toast("🔒 Sealed"+(left>0?" · +"+left+" credits":"")); then();
+  };
+  $("#sqBack").onclick=closeModal;
+  showModal();
+}
 function wbSealed(w){w=w||activeWB();return !!(w&&w.sealed);}
 function sealWarband(w,quiet){w=w||activeWB();if(w.sealed)return;w.sealed=Date.now();save();render();if(!quiet)toast("🔒 Warband sealed — it grows by campaign points and credits now");}
 function unsealWarband(w){w=w||activeWB();delete w.sealed;(w.characters||[]).forEach(c=>{delete c.recruit;delete c.recruitFee;});save();render();toast("Unsealed — free editing is back");}
@@ -6362,7 +6386,10 @@ function renderScenarioDetail(scnOverride){
   const eq=$("#endQuest");if(eq)eq.onclick=()=>openEndQuest(s);
   const equ=$("#eqUndo");if(equ)equ.onclick=()=>{delete s.outcome;save();renderScenarioView();if(liveRole==="host"&&hostScenarioId===s.id)scheduleHostSync(s);};
   // battle roster
-  const bs=$("#btlStart");if(bs)bs.onclick=()=>{buildBattle(s);renderScenarioView();};
+  const bs=$("#btlStart");if(bs)bs.onclick=()=>{
+    const go=()=>{buildBattle(s);renderScenarioView();};
+    if(activeWB().characters.some(isFielded))ensureSealedForQuest(go); else go();
+  };
   const br=$("#btlReset");if(br)br.onclick=()=>{buildBattle(s);renderScenarioView();toast("Battle roster rebuilt");};
   const bh=$("#btlHome");if(bh)bh.onclick=()=>{const snap=pendingQuest(s);if(!snap){toast("Nothing to bring home");return;}
     askConfirm("Bring your warband home from “"+(snap.title||"the quest")+"”? Wounds and finds come back with them, and this quest won't be claimed again.",
@@ -6481,7 +6508,7 @@ $("#btnLibrary").onclick=openLibrary;
 $("#btnRef").onclick=openReference;
 $("#btnPrint").onclick=openSummary;
 $("#btnShareWB").onclick=()=>exportCurrent(false);
-$("#btnQuest").onclick=async()=>{if(!(await ensureRoom()))return;openJoinDialog();};
+$("#btnQuest").onclick=async()=>{if(!(await ensureRoom()))return;ensureSealedForQuest(openJoinDialog);};
 
 $("#wbName").addEventListener("input",e=>{activeWB().name=e.target.value;save()});
 $("#wbGen").onclick=openWarbandNameGen;
