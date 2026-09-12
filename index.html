@@ -2455,11 +2455,62 @@ function exportCurrent(fromLibrary){
   $("#exBack").onclick=fromLibrary===false?closeModal:openLibrary;
   showModal();setTimeout(()=>{const t=$("#exBox");if(t)t.select();},60);
 }
+function exportCharacter(c){
+  const o={p28char:1,name:c.name||"",role:c.role||"",bg:c.bg||"",count:memberCount(c),skills:Object.assign({},c.skills),hp:c.hp,
+    traits:[...(c.traits||[])],abilities:[...(c.abilities||[])],
+    weapons:(c.weapons||[]).map(e=>({id:e.id,qty:e.qty||1})),armour:(c.armour||[]).map(e=>({id:e.id,qty:e.qty||1})),items:(c.items||[]).map(e=>({id:e.id,qty:e.qty||1}))};
+  const json=JSON.stringify(o);
+  const body=$("#modalBody");
+  body.innerHTML=`
+    <h3>Move “${esc(c.name||"this character")}” to a warband</h3>
+    <p class="lead">Copy this code and paste it into Warbands → Import… on the device that holds the warband. A sealed warband takes them in as a recruit — the ${CP_COSTS.recruit}-point fee, their levels, traits and abilities from the pool, and their gear in credits.</p>
+    <textarea class="jsonbox" id="exBox" readonly>${esc(json)}</textarea>
+    <div class="modal-actions">
+      <button class="btn primary sm" id="exCopy">Copy to clipboard</button>
+      <button class="btn ghost sm" id="exBack">Close</button>
+    </div>`;
+  const box=$("#exBox");box.onclick=()=>box.select();
+  $("#exCopy").onclick=()=>{box.select();try{navigator.clipboard.writeText(json)}catch(e){document.execCommand("copy")}toast("Copied")};
+  $("#exBack").onclick=closeModal;
+  showModal();setTimeout(()=>{const b=$("#exBox");if(b)b.select();},60);
+}
+/* a character code becomes a clean character: only catalogue ids survive, nothing campaign-worn */
+function charFromCode(raw){
+  if(!raw||typeof raw!=="object"||!raw.skills)return null;
+  const c=newChar();
+  c.name=String(raw.name||"").slice(0,42); c.role=String(raw.role||"").slice(0,40); c.bg=String(raw.bg||"").slice(0,600);
+  c.count=Math.max(1,Math.min(10,Math.round(+raw.count||1))); if(c.count===2)c.count=1;
+  SKILLS.forEach(([k])=>{c.skills[k]=Math.max(RULES.skillMin,Math.min(RULES.skillMax,Math.round(+raw.skills[k])||1));});
+  c.hp=Math.max(2,Math.min(80,Math.round(+raw.hp||RULES.hpStart)));
+  const ids=(arr,cat)=>[...new Set((Array.isArray(arr)?arr:[]).map(v=>typeof v==="string"?v:(v&&v.id)).filter(id=>id&&CAT[cat][id]))];
+  const qty=(arr,cat)=>(Array.isArray(arr)?arr:[]).filter(e=>e&&e.id&&CAT[cat][e.id]).map(e=>({id:e.id,qty:Math.max(1,Math.min(9,Math.round(+e.qty)||1))}));
+  c.traits=ids(raw.traits,"trait"); c.abilities=ids(raw.abilities,"ability");
+  c.weapons=qty(raw.weapons,"weapon"); c.armour=qty(raw.armour,"armour"); c.items=qty(raw.items,"item");
+  return c;
+}
+function importCharacter(raw){
+  const w=activeWB(), c=charFromCode(raw);
+  if(!c){toast("That isn't a character code");return;}
+  if(!wbSealed(w)){w.characters.push(c);save();render();closeModal();toast((c.name||"Character")+" joined the warband");return;}
+  // sealed: the recruit is paid for on the way in
+  const free=(w.freeRecruits||0)>0, fee=free?0:CP_COSTS.recruit, build=recruitBuildCost(c), pool=w.cp||0;
+  const gearCost=gearPts(c.weapons,"weapon")+gearPts(c.armour,"armour")+gearPts(c.items,"item"), credits=creditsOf(w);
+  if(fee+build>pool){toast("Needs "+(fee+build)+" campaign points (fee "+fee+" + build "+build+") — the pool has "+pool);return;}
+  const gearOk=gearCost<=credits;
+  askConfirm((c.name||"This recruit")+" joins for "+(fee+build)+" campaign points"+(free?" (replacement — no fee)":" ("+fee+" fee + "+build+" build)")+" from the pool of "+pool
+    +(gearCost?(gearOk?", and their gear costs "+gearCost+" credits of your "+credits+".":". Their gear would cost "+gearCost+" credits but you have "+credits+" — they arrive with EMPTY hands; buy gear with credits later."):"."),
+    ()=>{
+      if(free)w.freeRecruits--; w.cp=pool-fee-build;
+      if(gearCost){ if(gearOk)w.credits=credits-gearCost; else {c.weapons=[];c.armour=[];c.items=[];} }
+      w.characters.push(c);save();render();closeModal();
+      toast((c.name||"Recruit")+" joined — "+(fee+build)+" cp"+(gearCost&&gearOk?" + "+gearCost+" credits":""));
+    },{danger:false,yesLabel:"Take them on"});
+}
 function importDialog(){
   const body=$("#modalBody");
   body.innerHTML=`
-    <h3>Import a warband</h3>
-    <p class="lead">Paste warband text you exported earlier. It will be added as a new warband — nothing is overwritten.</p>
+    <h3>Import a warband — or one character</h3>
+    <p class="lead">Paste a warband code to add it as a new warband (nothing is overwritten), or a single character's code to bring them into <b>${esc(activeWB().name||"this warband")}</b>${wbSealed()?" as a paid recruit":""}.</p>
     <textarea class="jsonbox" id="imBox" placeholder="Paste exported warband JSON here…"></textarea>
     <div class="modal-actions">
       <button class="btn primary sm" id="imDo">Import</button>
@@ -2468,6 +2519,7 @@ function importDialog(){
   $("#imDo").onclick=()=>{
     try{
       const w=JSON.parse($("#imBox").value);
+      if(w&&w.p28char){importCharacter(w);return;}
       if(!w||!w.characters||!Array.isArray(w.characters))throw 0;
       w.id=uid();if(!w.name)w.name="Imported Warband";if(typeof w.budget!=="number")w.budget=500;
       w.characters.forEach(c=>{c.id=c.id||uid()});
@@ -2764,12 +2816,14 @@ function buildCard(){
       ${cardIsEnemy?"":`<button class="btn ${isFielded(c)?"gc-fielded":""}" id="gcField">${isFielded(c)?"◉ Fielded":"○ Benched"}</button>`}
       <button class="btn" id="gcArt">✦ Art prompt</button>
       ${cardIsEnemy?"":`<button class="btn" id="gcAdjust">✎ Adjust</button>`}
+      ${cardIsEnemy?"":`<button class="btn" id="gcExport" title="Copy this character as a code for another warband or device">⇪ Move</button>`}
       ${cardIsEnemy?"":`<button class="btn primary" id="gcEdit">Edit</button>`}
       <button class="btn ${cardIsEnemy?"primary":"ghost"}" id="gcClose">Close</button>
     </div>`;
   $("#gcClose").onclick=closeCard;
   const gEdit=$("#gcEdit");if(gEdit)gEdit.onclick=()=>{const id=cardCharId;closeCard();openDossier(id);};
   const gAdj=$("#gcAdjust");if(gAdj)gAdj.onclick=()=>openAdjust(c,false);
+  const gEx=$("#gcExport");if(gEx)gEx.onclick=()=>{closeCard();exportCharacter(c);};
   $("#gcArt").onclick=()=>openPrompt(cardChar(),false);
   const gFld=$("#gcField");if(gFld)gFld.onclick=()=>toggleFielded(c);
   const sr=$("#spRoll");if(sr)sr.onclick=()=>rollArcana(c,isMajor?3:1);
