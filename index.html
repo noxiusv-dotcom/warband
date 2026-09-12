@@ -2308,7 +2308,8 @@ function openLibrary(){
       <div class="wb-switch">${rows}</div>
       <button class="btn ghost" id="mNew" style="width:100%;justify-content:center;margin-bottom:16px">+ New warband</button>
     </div>
-    ${(()=>{const L=(activeWB().ledger||[]);if(!L.length||isHost())return "";
+    ${(()=>{const L=(activeWB().ledger||[]);if(isHost())return "";
+      if(!L.length)return `<div class="eyebrow wb-only" style="margin-bottom:8px">📜 Battle ledger</div><div class="wb-only none-note" style="margin-bottom:14px">No quests recorded yet — a line is written each time this warband returns to camp from a quest.</div>`;
       const line=e=>{const o=OUTCOMES[e.result];const bits=[];if(e.downed)bits.push(e.downed+" down");if(e.wounded)bits.push(e.wounded+" hurt");if(e.found)bits.push(e.found+" find"+(e.found>1?"s":""));
         return `<div class="ledger-row ${o?o.cls:""}"><span class="lg-ico">${o?o.icon:"❔"}</span><div class="lg-main"><b>${esc(e.title)}</b> <span class="lg-res">${o?esc(o.short):"unrecorded"}</span>${e.round?` · turn ${e.round}`:""}
           <div class="none-note" style="font-style:normal">${new Date(e.at).toLocaleDateString()}${e.fought&&e.fought.length?" · "+esc(e.fought.join(", ")):""}${bits.length?" · "+bits.join(", "):""}</div></div></div>`;};
