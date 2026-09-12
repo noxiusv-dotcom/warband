@@ -262,7 +262,13 @@ textarea.input{resize:vertical;min-height:56px;line-height:1.45}
 .modal-panel p.lead{color:var(--ink-dim);font-size:13.5px;margin:0 0 14px}
 .jsonbox{width:100%;height:180px;background:var(--sunk);border:1px solid var(--line);border-radius:8px;color:var(--ink-dim);font-family:var(--mono);font-size:11px;padding:10px;resize:vertical}
 .modal-actions{display:flex;gap:9px;margin-top:14px;flex-wrap:wrap}
+#modalBody select#fiWho{width:100%;margin-top:6px}
 .wb-switch{display:flex;flex-direction:column;gap:7px;margin-bottom:8px}
+.ledger-row{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border:1px solid var(--line);border-left-width:3px;border-radius:8px;margin-bottom:6px;background:var(--panel)}
+.ledger-row.win{border-left-color:var(--teal)} .ledger-row.lose{border-left-color:var(--danger)} .ledger-row.draw{border-left-color:var(--warn)}
+.ledger-row .lg-ico{font-size:18px;line-height:1.2}
+.ledger-row .lg-main{min-width:0;font-size:13.5px}
+.ledger-row .lg-res{font-family:var(--disp);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-dim)}
 .wb-item{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
 .wb-item.active{border-color:var(--amber)}
 .wb-item .wbi-main{flex:1;min-width:0;text-align:left}
@@ -316,6 +322,10 @@ body.host-device .host-only{display:inline}
   box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--danger) 70%,transparent),
              inset 0 0 26px -4px color-mix(in srgb,var(--danger) 55%,transparent);
   animation:questPulse 3.4s ease-in-out infinite}
+.questglow.wounded{
+  box-shadow:inset 0 0 0 3px color-mix(in srgb,var(--warn) 85%,transparent),
+             inset 0 0 36px -3px color-mix(in srgb,var(--warn) 65%,transparent);
+  animation-duration:1.8s}
 .questglow.urgent{
   box-shadow:inset 0 0 0 3px var(--danger),
              inset 0 0 44px -2px color-mix(in srgb,var(--danger) 75%,transparent);
@@ -367,6 +377,9 @@ body.host-device .host-only{display:inline}
 .cheat-item ol,.cheat-item ul{margin:5px 0 0;padding-left:18px}
 .cheat-item li{font-size:12.5px;color:var(--ink-dim);line-height:1.5;margin-bottom:3px}
 .cheat-item .ci-mod{font-family:var(--mono);font-size:12px;color:var(--warn)}
+.prop-own{display:flex;align-items:center;gap:8px;margin-top:6px}
+.prop-own .rbtn.sm{width:30px;height:26px;font-size:16px}
+.prop-own b{min-width:18px;text-align:center;color:var(--amber)}
 @media(max-width:600px){.cheatfab{right:12px;bottom:12px}}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--panel);border:1px solid var(--amber);color:var(--ink);padding:11px 18px;border-radius:9px;font-family:var(--disp);font-weight:600;font-size:13px;letter-spacing:.03em;z-index:95;opacity:0;transition:.25s;box-shadow:var(--shadow);pointer-events:none}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -597,6 +610,12 @@ body.host-device .host-only{display:inline}
 .evt-x{font-size:12.5px;color:var(--ink-dim);line-height:1.45;margin-top:3px}
 .scn-lenrow{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;background:var(--sunk);border:1px solid var(--line);border-radius:8px;padding:9px 11px;margin-top:12px}
 .scn-lenrow b{color:var(--amber);font-size:14px}
+.outcome{display:flex;align-items:center;gap:12px;border:2px solid var(--line);border-radius:var(--r);padding:11px 13px;margin-bottom:12px;background:var(--panel)}
+.outcome .oc-ico{font-size:24px;line-height:1}
+.outcome.win{border-color:color-mix(in srgb,var(--teal) 60%,var(--line));background:color-mix(in srgb,var(--teal) 10%,transparent)}
+.outcome.lose{border-color:color-mix(in srgb,var(--danger) 60%,var(--line));background:var(--danger-bg)}
+.outcome.draw{border-color:color-mix(in srgb,var(--warn) 55%,var(--line));background:color-mix(in srgb,var(--warn) 10%,transparent)}
+.outcome .linkbtn{margin-left:auto}
 .tk-sec{margin-top:14px}
 .tk-h{font-family:var(--disp);text-transform:uppercase;letter-spacing:.1em;font-size:10px;font-weight:600;color:var(--ink-mute);margin-bottom:8px}
 .deadline{display:flex;gap:9px;background:var(--sunk);border:1px solid color-mix(in srgb,var(--amber) 30%,var(--line));border-radius:8px;padding:9px 10px;margin-bottom:7px}
@@ -617,6 +636,8 @@ body.host-device .host-only{display:inline}
 .btl-main{min-width:0;display:flex;flex-direction:column;gap:4px}
 .btl-side{display:none}
 .btl-name{font-family:var(--disp);font-weight:600;font-size:13.5px}
+.btl-open{text-align:left;padding:0;border-bottom:1px dashed transparent}
+.btl-open:hover{border-bottom-color:currentColor}
 .btl-row.enemy .btl-name{color:var(--danger)}
 .btl-row.player .btl-name{color:var(--teal)}
 .btl-conds{display:flex;flex-wrap:wrap;gap:5px}
@@ -625,6 +646,12 @@ body.host-device .host-only{display:inline}
 .cond button{color:var(--ink-mute);font-size:12px;line-height:0;padding:2px}
 .cond button:hover{color:var(--danger)}
 .btl-hp{display:flex;align-items:center;gap:2px;flex:none}
+.tally{display:inline-flex;gap:4px;align-items:center}
+.tbtn{font-family:var(--disp);font-size:11px;font-weight:700;letter-spacing:.03em;padding:3px 9px;border-radius:20px;border:1px solid color-mix(in srgb,var(--amber) 55%,var(--line));background:var(--amber-glow);color:var(--amber);cursor:pointer;line-height:1.3}
+.tbtn:active{transform:scale(.94)}
+.tbtn.undo{color:var(--ink-mute);background:var(--panel-2);border-color:var(--line);padding:3px 7px}
+.btl-tally{margin-top:5px}
+.cond.maim{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 55%,var(--line));background:var(--danger-bg)}
 .hpb{width:28px;height:28px;border-radius:6px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink-dim);font-size:16px;line-height:0;font-family:var(--body)}
 .hpb:hover{border-color:var(--amber);color:var(--amber)}
 .hpv{min-width:56px;text-align:center;font-family:var(--mono);font-weight:700;font-size:13px}
@@ -696,6 +723,7 @@ body.host-device .host-only{display:inline}
 .role-chip.r-deco{color:var(--ink-mute)}
 .role-chip.r-track{color:var(--teal);border-color:color-mix(in srgb,var(--teal) 40%,var(--line));text-transform:none;letter-spacing:0;font-weight:500}
 .prep-when,.pick-when{font-size:11.5px;color:var(--ink-dim);margin-top:3px;line-height:1.4;font-style:italic}
+.btn.searched{opacity:.55;text-decoration:line-through;text-decoration-color:var(--amber)}
 .cache-block{border:1px solid color-mix(in srgb,var(--amber) 35%,var(--line));background:var(--amber-glow);border-radius:var(--r-sm);padding:10px 12px;margin-bottom:12px}
 .cache-row{display:flex;align-items:center;gap:10px;justify-content:space-between;padding:5px 0;flex-wrap:wrap}
 .cache-row+.cache-row{border-top:1px solid var(--line-soft)}
@@ -1530,12 +1558,32 @@ function questUnitFor(id,isVeh){
   return (s.battle.combatants||[]).find(m=>m&&m.side==="player"&&(isVeh?m.vehId===id:m.charId===id)
     &&(!m.campId||!cid||m.campId===cid))||null;
 }
+/* ⚔ hits and ☠ kills, tapped by the player on their own character as the game goes. Kept on
+   the character, tagged with the quest, so coming home pre-fills the campaign-point tally. */
+function tallyFor(c,s){
+  const id=s&&s.id;
+  if(!c.tally||c.tally.scnId!==id)c.tally={scnId:id,hits:0,kills:0,log:[]};
+  return c.tally;
+}
+function bumpTally(c,k){
+  const s=activeQuestScn(); if(!s)return;
+  const t=tallyFor(c,s);
+  if(k==="undo"){const last=t.log.pop();if(last)t[last]=Math.max(0,t[last]-1);}
+  else {t[k]++;t.log.push(k);if(t.log.length>60)t.log.shift();}
+  save();renderRoster();if(scnScreen==="detail")renderScenarioView();
+  if(k!=="undo")toast(k==="hits"?"⚔ hit — +1 cp":"☠ kill — +5 cp");
+}
+function tallyHTML(c){
+  const s=activeQuestScn(); if(!s||!questUnitFor(c.id,false))return "";
+  const t=tallyFor(c,s);
+  return `<span class="tally"><button class="tbtn" data-tally="${c.id}|hits" title="Tap when a shoot or fight action does damage — 1 campaign point each">⚔ ${t.hits}</button><button class="tbtn" data-tally="${c.id}|kills" title="Tap when this character kills an enemy — 5 campaign points each">☠ ${t.kills}</button>${t.log.length?`<button class="tbtn undo" data-tally="${c.id}|undo" title="Undo the last tap">↶</button>`:""}</span>`;
+}
 /* One HP chip, live when a quest is running and otherwise the lingering wounds it always showed. */
 function hpChipFor(o,max,isVeh){
   const live=questUnitFor(o.id,isVeh);
   if(live){
     const cur=Math.max(0,live.curHP|0), half=cur<=live.maxHP*0.5;
-    return `<span class="chip hp live ${cur<=0?"down":half?"hurt":""}">${cur<=0?"DOWN":cur+"/"+live.maxHP+" HP"}</span>`;
+    return `<span class="chip hp live ${cur<=0?"down":half?"hurt":""}">${cur<=0?"DOWN":cur+"/"+live.maxHP+" HP"}</span>${cur>0&&half?`<span class="chip brk" tabindex="0" data-tip="Under half: every skill is −1 and each hit forces a break test — fail and they run for the board edge.">⚠ −1 all skills · break tests</span>`:""}`;
   }
   const cur=(typeof o.curHP==="number"&&o.curHP<max)?o.curHP:null;
   return cur===null?`<span class="chip hp">${max} HP</span>`
@@ -1677,6 +1725,7 @@ function renderRoster(){
           ${n>1?`<span class="chip squad">⛊ Squad ×${n}</span>`:""}
           ${hpChipFor(c,c.hp*n,false)}
           ${questUnitFor(c.id,false)?`<span class="chip onquest">⚔ deployed</span>`:""}
+          ${tallyHTML(c)}
           <span class="chip">${RULES.speed}cm</span>
           ${cpTotalOf(c)>0?`<span class="chip rank">${esc(rankOf(cpTotalOf(c)))}</span>`:""}
           ${cpOf(c)>0?`<span class="chip xp">⭐ ${cpOf(c)} cp</span>`:""}
@@ -1686,6 +1735,7 @@ function renderRoster(){
         <button class="fieldtog ${fielded?"on":""}" data-tog title="Bring in / out of the battle">${fielded?"◉ Fielded":"○ Benched"}</button>
       </div>`;
     card.querySelector("[data-tog]").onclick=e=>{e.stopPropagation();toggleFielded(c);};
+    card.querySelectorAll("[data-tally]").forEach(b=>b.onclick=e=>{e.stopPropagation();bumpTally(c,b.dataset.tally.split("|")[1]);});
     el.appendChild(card);
   });
   const add=document.createElement("button");
@@ -1850,7 +1900,11 @@ function syncQuestGlow(){
   const mine=s?(s.battle.combatants||[]).filter(m=>m&&m.side==="player"&&(m.charId||m.vehId)):[];
   const on=!!s&&mine.length>0;
   el.hidden=!on;
-  el.classList.toggle("urgent",on&&mine.some(m=>(m.curHP|0)<=0));
+  // steady red = deployed · amber pulse = someone under half (skills −1, break tests) · fast red = someone down
+  const down=on&&mine.some(m=>(m.curHP|0)<=0);
+  const bleeding=on&&!down&&mine.some(m=>(m.curHP|0)>0&&(m.curHP|0)<=m.maxHP*0.5);
+  el.classList.toggle("urgent",down);
+  el.classList.toggle("wounded",bleeding);
 }
 function renderCampBar(){
   const el=$("#campBar"); if(!el)return;
@@ -2211,6 +2265,13 @@ function openLibrary(){
       <div class="wb-switch">${rows}</div>
       <button class="btn ghost" id="mNew" style="width:100%;justify-content:center;margin-bottom:16px">+ New warband</button>
     </div>
+    ${(()=>{const L=(activeWB().ledger||[]);if(!L.length||isHost())return "";
+      const line=e=>{const o=OUTCOMES[e.result];const bits=[];if(e.downed)bits.push(e.downed+" down");if(e.wounded)bits.push(e.wounded+" hurt");if(e.found)bits.push(e.found+" find"+(e.found>1?"s":""));
+        return `<div class="ledger-row ${o?o.cls:""}"><span class="lg-ico">${o?o.icon:"❔"}</span><div class="lg-main"><b>${esc(e.title)}</b> <span class="lg-res">${o?esc(o.short):"unrecorded"}</span>${e.round?` · turn ${e.round}`:""}
+          <div class="none-note" style="font-style:normal">${new Date(e.at).toLocaleDateString()}${e.fought&&e.fought.length?" · "+esc(e.fought.join(", ")):""}${bits.length?" · "+bits.join(", "):""}</div></div></div>`;};
+      const won=L.filter(e=>e.result==="victory").length, lost=L.filter(e=>e.result==="defeat").length;
+      return `<div class="eyebrow wb-only" style="margin-bottom:8px">📜 Battle ledger <span class="none-note" style="font-style:normal">${L.length} quest${L.length===1?"":"s"} · ${won} won · ${lost} lost</span></div>
+      <div class="wb-only" style="margin-bottom:14px">${L.slice(0,12).map(line).join("")}${L.length>12?`<div class="none-note">…and ${L.length-12} more</div>`:""}</div>`;})()}
     <div class="eyebrow" style="margin-bottom:8px"><span class="wb-only">⛺ Camp name &amp; backup</span><span class="host-only">🗺 Hosting as</span></div>
     <div class="wb-only">
     ${(()=>{const chars=activeWB().characters||[];
@@ -2220,7 +2281,7 @@ function openLibrary(){
       if(pend.length)h+=`<div class="camp-box" style="margin-bottom:12px;border-color:color-mix(in srgb,var(--danger) 55%,var(--line));background:var(--danger-bg)">
         <div class="prep-h" style="color:var(--danger)">🩸 Taken down — roll for what it cost them</div>
         ${pend.map(c=>`<div class="wb-item"><div class="wbi-main" style="cursor:default"><div class="wbi-name">${esc(c.name||"Unnamed")}</div>
-          <div class="wbi-sub">fell at ${esc((c.pendingInjury||{}).title||"a quest")}</div></div>
+          <div class="wbi-sub">${(c.pendingInjury||{}).cause?"maimed by "+esc(c.pendingInjury.cause)+" at ":"fell at "}${esc((c.pendingInjury||{}).title||"a quest")}</div></div>
           <button class="linkbtn" data-injury="${c.id}">Roll injury</button></div>`).join("")}
       </div>`;
       if(hurt.length)h+=`<div class="camp-box" style="margin-bottom:12px;border-color:color-mix(in srgb,var(--warn) 45%,var(--line));background:color-mix(in srgb,var(--warn) 9%,transparent)">
@@ -3233,20 +3294,37 @@ function switchView(v){
    5cm or more must be CLIMBED, and anything taller than a standing model (about 4cm plus
    base) can hide one completely. */
 const PROPS=[
- {code:"P1",name:"Low block",   size:"5×5cm, 3cm tall",    use:"Gives cover; shot over and stepped over. No climbing."},
- {code:"P2",name:"Long low wall",size:"20×2cm, 3cm tall",  use:"Gives cover along a line; shot over. Good for splitting open ground."},
- {code:"P3",name:"Crate stack", size:"6×6cm, 6cm tall",    use:"Hides a standing model. Must be climbed."},
- {code:"P4",name:"Tall block",  size:"8×8cm, 12cm tall",   use:"Blocks line of sight outright. Climbed in stages."},
- {code:"P5",name:"Spire",       size:"6×6cm, 20cm tall",   use:"Blocks line of sight and dominates a quarter of the board."},
- {code:"P6",name:"Platform",    size:"12×12cm, 6cm tall",  use:"Flat top to stand on — a model up here shoots down at +1."},
- {code:"P7",name:"Ramp",        size:"10×5cm, rising to 6cm",use:"Reaches a platform without climbing rolls."},
- {code:"P8",name:"Barrel cluster",size:"6cm across, 5cm tall",use:"Small hard cover; hides a crouching model, climbable."},
- {code:"P9",name:"Ground area", size:"12cm circle, flat",  use:"Marks ground: rough, hazardous or impassable. Never blocks sight."},
- {code:"P10",name:"Token",      size:"3cm disc, flat",     use:"An objective, a cache or a spawn point."}
+ {code:"P1",start:4,full:6,name:"Low block",   size:"5×5cm, 3cm tall",    use:"Gives cover; shot over and stepped over. No climbing."},
+ {code:"P2",start:2,full:4,name:"Long low wall",size:"20×2cm, 3cm tall",  use:"Gives cover along a line; shot over. Good for splitting open ground."},
+ {code:"P3",start:3,full:4,name:"Crate stack", size:"6×6cm, 6cm tall",    use:"Hides a standing model. Must be climbed."},
+ {code:"P4",start:2,full:3,name:"Tall block",  size:"8×8cm, 12cm tall",   use:"Blocks line of sight outright. Climbed in stages."},
+ {code:"P5",start:0,full:2,name:"Spire",       size:"6×6cm, 20cm tall",   use:"Blocks line of sight and dominates a quarter of the board."},
+ {code:"P6",start:0,full:2,name:"Platform",    size:"12×12cm, 6cm tall",  use:"Flat top to stand on — a model up here shoots down at +1."},
+ {code:"P7",start:0,full:2,name:"Ramp",        size:"10×5cm, rising to 6cm",use:"Reaches a platform without climbing rolls."},
+ {code:"P8",start:0,full:4,name:"Barrel cluster",size:"6cm across, 5cm tall",use:"Small hard cover; hides a crouching model, climbable."},
+ {code:"P9",start:2,full:4,name:"Ground area", size:"12cm circle, flat",  use:"Marks ground: rough, hazardous or impassable. Never blocks sight."},
+ {code:"P10",start:6,full:8,name:"Token",      size:"3cm disc, flat",     use:"An objective, a cache or a spawn point."}
 ];
+
+/* What you actually own, which is not the same as what the library describes. Starts at a
+   19-piece set you can cut in an evening and grows as you build; the DM is only ever told
+   about pieces you have, so a scenario is always buildable tonight. */
+function propCounts(){
+  let saved={};
+  try{ saved=JSON.parse(localStorage.getItem("p28_props")||"{}")||{}; }catch(e){ saved={}; }
+  const out={};
+  PROPS.forEach(p=>{ out[p.code]=(typeof saved[p.code]==="number")?Math.max(0,saved[p.code]):p.start; });
+  return out;
+}
+function setPropCount(code,n){
+  const c=propCounts(); c[code]=Math.max(0,Math.min(20,n|0));
+  try{ localStorage.setItem("p28_props",JSON.stringify(c)); }catch(e){}
+  renderCheat();
+}
+function ownedProps(){ const c=propCounts(); return PROPS.filter(p=>c[p.code]>0).map(p=>Object.assign({},p,{qty:c[p.code]})); }
 function propByCode(c){c=String(c||"").trim().toUpperCase();return PROPS.find(p=>p.code===c)||null;}
 function propsForAI(){
-  return PROPS.map(p=>`${p.code} — ${p.name}: ${p.size}. ${p.use}`).join("\n");
+  return ownedProps().map(p=>`${p.code} — ${p.name} (the host owns ${p.qty}): ${p.size}. ${p.use}`).join("\n");
 }
 const CHEAT=[
  {ico:"◉",title:"Your two actions",items:[
@@ -3301,7 +3379,43 @@ const CHEAT=[
  ]},
  {ico:"▣",title:"The prop library",build:"claude",items:[
   {n:"What these are",d:"Ten shapes that build any table. Cut, print or scavenge them once; the DM writes every scenario out of these and only names them for the story. Under 5cm you step and shoot over a piece; 5cm or more must be climbed, and anything taller than a standing model hides one completely."},
-  ...PROPS.map(x=>({n:x.code+" · "+x.name,d:x.size+" — "+x.use}))
+  {n:"Build up over time",d:"Set what you actually own and the DM will only use those pieces, so every scenario is buildable tonight. The starting set is 19 quick shapes; the target beside each is what a full 90×90cm board eventually wants. Add the spires, platforms and ramps whenever you have an evening."},
+  ...PROPS.map(x=>({n:x.code+" · "+x.name,d:x.size+" — "+x.use,prop:x.code}))
+ ]},
+ {ico:"⛊",title:"Squads",items:[
+  {n:"What a squad is",d:"3 to 10 models sharing one profile and (mostly) one kit — at least 75% must carry identical weapons. Drops to 2 members and they become separate characters."},
+  {n:"Moving",d:"They move together and every member must stay within 5cm of another. One that cannot is out of unit: it must spend all its actions getting back and may not attack until it does."},
+  {n:"Attacking",d:"One member with line of sight (or in base contact) lets the whole squad attack. Roll once per member; you may split members between targets. A squad charging gets the charge bonus on every member."},
+  {n:"Being attacked",d:"Anyone who can see or reach one member can attack the squad, and a squad never counts as multiple opponents against you. It is in cover when at least half of it is."},
+  {n:"Damage",d:"You choose which member takes the first hit; every further hit goes to that same member until they die, then you choose the next. That is why each member has its own row."},
+  {n:"Break tests — squads are different",d:"Members do NOT test as they take damage. Add up the squad's total hit-points at the start; when that total falls to 25% or less, every surviving member tests, and each one that fails runs. Below 25% they test again every time another member dies."},
+  {n:"After the game",d:"Under half its starting hit-points at the end? It is battle-scarred next game: −1 to all skills. Roll 1D10 for each slain or fled member — on a 10 they are gone for good."}
+ ]},
+ {ico:"⚝",title:"Arcana & psychic powers",items:[
+  {n:"Who can cast",d:"Only a character with Minor arcana (1 power) or Major arcana (3 powers). Powers are rolled at the start of each game, and cast as often as you like — casting is an Ability action. A Psyka dose lets anyone cast one power of their choice."},
+  {n:"Casting",d:"Roll 1D10 under Psyche. Most powers need a target in line of sight; Shield reaches anywhere; Summon casts at −2 Psyche."},
+  {n:"Rent asunder — every failed cast",d:"Roll 1D10 again. Under your current Psyche, nothing happens. Equal or over and your mind tears: take damage equal to the failed cast roll minus your Psyche, armour cannot stop it, and your Psyche drops by 1 for the rest of the game — so each rending makes the next likelier."},
+  {n:"Wards",d:"A Psy-hood cannot be targeted by arcane abilities or Psychic weapons at all. Unbreakable conviction makes you and friends within 10cm immune to Persuade and Mind control."}
+ ]},
+ {ico:"⚙",title:"Items & abilities in play",items:[
+  {n:"Using an item",d:"An Item action. Med kit restores 5 hit-points. Stimulants give +1 to all skills for 1D6 turns, but each further dose that game needs one more vial. Swapping weapons is also an Item action."},
+  {n:"Ammo",d:"A weapon marked Ammo spends one piece per shot and cannot fire on an empty pack. Reloading is a universal action — it costs time, not a roll."},
+  {n:"Heal · Drain · Inspire",d:"Heal: 1D6 hit-points to someone in base contact. Drain: take 1 hit-point from anyone within 5cm and keep it. Inspire: one friend in line of sight gets +1D6 to their skills for the rest of the turn."},
+  {n:"Aimed shot · Throw · Persuade",d:"Aimed shot: spend an action aiming; your next attack this turn does +1D8. Throw: hurl anyone in base contact 1D12cm in a straight line — fall damage applies. Persuade: a Psyche roll in combat breaks you both apart for the turn."},
+  {n:"Loot",d:"Once per game, after killing an enemy in combat, take one piece of their equipment permanently."}
+ ]},
+ {ico:"▰",title:"Vehicles",items:[
+  {n:"Hull, not hit-points",d:"A vehicle is sections — Engine and Crew for free, plus what was bought. Each has its own hit-points; the vehicle dies section by section. It makes no armour rolls, but gets 1D6 if in cover."},
+  {n:"Acting",d:"Agility for turn order and terrain, Shooting to fire; one weapon per Crew section per shooting action. Melee comes from size: small fights at 3 for 1D6, medium at 5 for 1D10, large at 7 for 1D10+6."},
+  {n:"Cover for a vehicle",d:"Small: any part of the hull obscured. Medium: more than half. Large: more than three quarters."},
+  {n:"Ground",d:"Ground vehicles move normally. Walkers: +2 Agility over rough, +1 over hazardous. Hover: rough counts as even, and an action lets it cross 5cm+ obstacles. Flyers ignore terrain but MUST move every turn or be destroyed, and must land to stop."},
+  {n:"Riding along",d:"Each Transport section carries 3 characters. Loopholes let them shoot out. A Pilot on board lends the vehicle their Agility and Shooting; an Engineer patches 1D4 hull a turn."}
+ ]},
+ {ico:"🏕",title:"Back at camp",items:[
+  {n:"Campaign points",d:"Per character: 1 per successful shoot or fight action, 5 per kill, 1 for surviving, 5 for ending unwounded. Per warband: 10 for the scenario goal, 10 for breaking half the enemy. 20 points buys +1 to a skill or +5 hit-points; traits and abilities cost their listed price; a recruit is 10; points become credits at 2 to 1."},
+  {n:"Taken down",d:"Roll 1D8 on the injury table: from complete recovery, through missing a game, lasting wounds, a shattered hand or a lost leg, to death. Any injury except death can be treated after one full game, for 10 points a try."},
+  {n:"Healing",d:"Rest at camp restores hit-points only. Scars are separate: they stay until treated, and some are permanent."},
+  {n:"Gear",d:"After the warband is built, equipment costs credits, not points. Leftover build points can be banked as credits once, one for one."}
  ]},
  {ico:"⚄",title:"Rolling dice",items:[
   {n:"The one rule",d:"Roll 1D10 UNDER the skill to succeed. Equal or over is a failure. A 1 always succeeds and a 10 always fails, whatever the modifiers."},
@@ -3321,11 +3435,20 @@ function renderCheat(){
           <div class="ci-n">${esc(it.n)}</div>
           ${it.d?`<div class="ci-d">${esc(it.d)}</div>`:""}
           ${it.steps?`<ol>${it.steps.map(x=>`<li>${esc(x)}</li>`).join("")}</ol>`:""}
+          ${it.prop?(()=>{const c=propCounts()[it.prop],f=(propByCode(it.prop)||{}).full;
+            return `<div class="prop-own"><button class="rbtn sm" data-prop="${it.prop}|-1">−</button>
+              <b class="mono">${c}</b><span class="none-note" style="font-style:normal">of ${f} built</span>
+              <button class="rbtn sm" data-prop="${it.prop}|1">+</button></div>`;})():""}
           ${it.mod?`<div class="ci-d ci-mod" style="margin-top:5px">${esc(it.mod)}</div>`:""}
         </div>`).join("")}</div>
       </div>`).join("")}
     </div>`;
   $("#cheatClose").onclick=closeCheat;
+  d.querySelectorAll("[data-prop]").forEach(b=>b.onclick=e=>{
+    e.stopPropagation();
+    const [code,delta]=b.dataset.prop.split("|");
+    setPropCount(code,(propCounts()[code]||0)+(+delta));
+  });
   d.querySelectorAll("[data-cheat]").forEach(b=>b.onclick=()=>{
     const i=+b.dataset.cheat; cheatOpen[i]=!cheatOpen[i];
     b.parentElement.classList.toggle("open",!!cheatOpen[i]);
@@ -3409,6 +3532,11 @@ const DIFFICULTY={
 };
 const DIFF_ORDER=["easy","normal","hard","deadly"];
 function diffOf(s){return DIFFICULTY[s&&s.difficulty]||DIFFICULTY.normal;}
+/* The force the DM must build: every player warband put together, plus the difficulty margin. */
+function enemyTargetFor(s){
+  const d=diffOf(s), n=Math.max(1,+((s&&s.players))||1);
+  return (+((s&&s.points))||0)*n + d.enemyBonus;
+}
 function rollD10p6(){return 6+(1+Math.floor(Math.random()*10));}   // 1D10+6 → 7-16
 function scnFinalLength(){return Math.max(4,Math.min(20,(scnLengthBase||rollD10p6())+DIFFICULTY[scnDifficulty].roundMod));}
 function scnsOf(){return visibleScns()}
@@ -3546,13 +3674,19 @@ function myCombatantsIn(scn){
     (m.charId?(w.characters.some(c=>c.id===m.charId)||(cid&&m.campId===cid))
              :(vehsOf(w).some(v=>v.id===m.vehId)||(cid&&m.campId===cid))));
 }
+/* "Destroyed 50% or more of an enemy warband" — read straight off the roster. */
+function enemyRoutedIn(scn){
+  const rows=((scn&&scn.battle&&scn.battle.combatants)||[]).filter(m=>m&&m.side==="enemy");
+  if(!rows.length)return false;
+  return rows.filter(m=>(m.curHP|0)<=0).length*2>=rows.length;
+}
 function rememberQuestState(scn){
   try{
     if(!scn||!scn.battle)return;
     const mine=myCombatantsIn(scn);
     if(!mine.length)return;
     localStorage.setItem("p28_quest_"+scn.id,JSON.stringify({scnId:scn.id,title:scn.title||"",at:Date.now(),combatants:mine,
-      injuries:injuryTableFor(scn),causes:injuryCauses(scn)}));
+      injuries:injuryTableFor(scn),causes:injuryCauses(scn),outcome:scn.outcome||null,round:curRound(scn),mode:scn.mode||"",enemyRouted:enemyRoutedIn(scn)}));
   }catch(e){}
 }
 /* ---- experience & rank ----
@@ -3679,7 +3813,8 @@ function openCPAwards(snap,charIds,then){
   const state=took.map(c=>{
     const m=(snap.combatants||[]).find(x=>x.charId===c.id)||{};
     const max=c.hp*memberCount(c);
-    return {c,actions:0,kills:0,survived:(m.curHP||0)>0,unwounded:(m.curHP||0)>=max};
+    const t=(c.tally&&c.tally.scnId===snap.scnId)?c.tally:null;
+    return {c,actions:t?t.hits|0:0,kills:t?t.kills|0:0,survived:(m.curHP||0)>0,unwounded:(m.curHP||0)>=max};
   });
   const body=$("#modalBody");
   const draw=()=>{
@@ -3701,10 +3836,10 @@ function openCPAwards(snap,charIds,then){
     const wbTot=CP_WARBAND.reduce((t,a)=>t+((body.querySelector('[data-wcp="'+a.key+'"]')||{}).checked?a.per:0),0);
     body.innerHTML=`
       <h3>Campaign points — ${esc(snap.title||"the quest")}</h3>
-      <p class="lead">Tally what each character managed. The rulebook's rates: 1 per successful shoot or fight action, 5 per enemy killed, 1 for surviving, 5 for finishing unwounded.</p>
+      <p class="lead">${state.some(s=>s.c.tally&&s.c.tally.scnId===snap.scnId)?"Filled in from the ⚔ and ☠ taps during the game — check and correct.":"Tally what each character managed."} The rulebook's rates: 1 per successful shoot or fight action, 5 per enemy killed, 1 for surviving, 5 for finishing unwounded.</p>
       ${rows}
       <div class="eyebrow" style="margin:14px 0 7px">The warband as a whole</div>
-      ${CP_WARBAND.map(a=>`<label class="xp-award"><input type="checkbox" data-wcp="${a.key}"> <b>${esc(a.label)}</b> <span class="mono xp-val">+${a.per}</span></label>`).join("")}
+      ${CP_WARBAND.map(a=>`<label class="xp-award"><input type="checkbox" data-wcp="${a.key}"${(a.key==="goal"&&snap.outcome&&snap.outcome.result==="victory")||(a.key==="rout"&&snap.enemyRouted)?" checked":""}> <b>${esc(a.label)}</b> <span class="mono xp-val">+${a.per}</span></label>`).join("")}
       <div class="none-note" style="font-style:normal">These go to the warband's shared pool — spend them on recruits, or hand them out later.</div>
       <div class="modal-actions">
         <button class="btn primary sm" id="cpGive">Award campaign points</button>
@@ -3732,6 +3867,8 @@ function openCPAwards(snap,charIds,then){
         });
         save();render();
       }
+      state.forEach(s=>{delete s.c.tally;});   // spent — the next quest starts at nought
+      save();
       closeModal();
       const up=state.map(s=>s.c).filter(c=>c._rankedUp);
       up.forEach(c=>delete c._rankedUp);
@@ -4091,6 +4228,7 @@ function openInjuryRoll(c){
     <div class="modal-actions"><button class="btn ghost sm" id="injLater" style="margin-left:auto">Decide later</button></div>`;
   body.querySelectorAll("[data-cause]").forEach(b=>b.onclick=()=>draw(b.dataset.cause));
   $("#injLater").onclick=closeModal;
+  if(p.cause){draw(p.cause);return;}
   showModal();
 }
 /* Death: possessions are divided amongst the survivors, and a replacement doesn't pay the
@@ -4264,7 +4402,7 @@ function pendingQuest(scn){
   let snap=null;
   if(scn&&scn.battle){
     const mine=myCombatantsIn(scn);
-    if(mine.length)snap={scnId:scn.id,title:scn.title||"",combatants:mine,injuries:injuryTableFor(scn),causes:injuryCauses(scn)};
+    if(mine.length)snap={scnId:scn.id,title:scn.title||"",combatants:mine,injuries:injuryTableFor(scn),causes:injuryCauses(scn),outcome:scn.outcome||null,round:curRound(scn),mode:scn.mode||"",enemyRouted:enemyRoutedIn(scn)};
   }
   if(!snap&&scn){try{const raw=localStorage.getItem("p28_quest_"+scn.id);if(raw)snap=JSON.parse(raw);}catch(e){}}
   if(!snap||questClaims().includes(snap.scnId))return null;
@@ -4309,16 +4447,16 @@ function openVehicleDamage(v,then){
 }
 function claimQuest(snap,then){
   const w=activeWB();
-  let wounded=0,downed=0,found=0;
+  let wounded=0,downed=0,found=0,maimed=0;
   const fell=[];
   const byChar={};
   (snap.combatants||[]).forEach(m=>{ if(!m.charId)return;
     const e=byChar[m.charId]||(byChar[m.charId]={cur:0,down:true,finds:[]});
-    e.cur+=Math.max(0,m.curHP|0); if((m.curHP|0)>0)e.down=false; (m.finds||[]).forEach(f=>e.finds.push(f));
+    e.cur+=Math.max(0,m.curHP|0); if((m.curHP|0)>0)e.down=false; (m.finds||[]).forEach(f=>e.finds.push(f)); if(m.maimedBy)e.maimedBy=m.maimedBy;
   });
   Object.keys(byChar).forEach(id=>{const m=byChar[id];
     const first=(snap.combatants||[]).find(x=>x.charId===id);
-    if(first){first.curHP=m.cur; first.finds=m.finds;}
+    if(first){first.curHP=m.cur; first.finds=m.finds; if(m.maimedBy)first.maimedBy=m.maimedBy;}
   });
   (snap.combatants||[]).filter((m,i,arr)=>!m.charId||arr.findIndex(x=>x.charId===m.charId)===i).forEach(m=>{
     const c=w.characters.find(x=>x.id===m.charId); if(!c)return;
@@ -4326,6 +4464,10 @@ function claimQuest(snap,then){
       fell.push({charId:c.id,name:c.name});
       // they'll roll for a lasting injury at camp — the table travels with them
       c.pendingInjury={scnId:snap.scnId,title:snap.title||"",table:snap.injuries||[],causes:snap.causes||[]};
+    } else if(m.maimedBy){
+      // still standing, but the scenario itself marked them — same table, cause already known
+      maimed++; fell.push({charId:c.id,name:c.name});
+      c.pendingInjury={scnId:snap.scnId,title:snap.title||"",table:snap.injuries||[],causes:snap.causes||[],cause:m.maimedBy};
     }
     const max=c.hp*memberCount(c);
     if(typeof m.curHP==="number"&&m.curHP<max){ c.curHP=Math.max(0,m.curHP); if(m.curHP<=0)downed++; else wounded++; }
@@ -4348,11 +4490,17 @@ function claimQuest(snap,then){
   vehsOf(w).forEach(v=>{if(v.laidUp&&!(snap.combatants||[]).some(m=>m.vehId===v.id))v.laidUp=false;});
   (snap.combatants||[]).forEach(m=>{const c=w.characters.find(x=>x.id===m.charId);if(c)tickInjuries(c);});
   markClaimed(snap.scnId);
+  w.ledger=Array.isArray(w.ledger)?w.ledger:[];
+  w.ledger.unshift({scnId:snap.scnId,title:snap.title||"a quest",at:Date.now(),
+    result:(snap.outcome&&snap.outcome.result)||"unknown",round:(snap.outcome&&snap.outcome.round)||snap.round||0,
+    fought:(snap.combatants||[]).filter((m,i,a)=>m.charId&&a.findIndex(x=>x.charId===m.charId)===i).map(m=>m.name.replace(/ \d+\/\d+$/,"")),
+    wounded,downed,found,fell:fell.map(f=>f.name)});
   const ok=save();
   render();
   const bits=[];
   if(wounded)bits.push(wounded+" wounded");
   if(downed)bits.push(downed+" taken down");
+  if(maimed)bits.push(maimed+" maimed");
   if(wrecks.length)bits.push(wrecks.length+" vehicle"+(wrecks.length>1?"s":"")+" wrecked");
   if(found)bits.push(found+" find"+(found>1?"s":""));
   toast(ok?("Back at camp"+(bits.length?" — "+bits.join(", "):"")):"⚠ Returned but NOT saved — storage is full");
@@ -4523,7 +4671,7 @@ function normalizeImportedScn(raw){
   s.items=s.items.map((x,i)=>({name:String(x&&x.name||""),note:String(x&&x.note||""),
     when:String(x&&x.when||""),mapLabel:String(x&&x.mapLabel||""),role:String(x&&x.role||""),
     secret:!!(x&&x.secret),hint:String(x&&x.hint||""),revealed:!!(x&&x.revealed),
-    found:!!(x&&x.found),id:(x&&x.id)||("it"+i),heldBy:(x&&x.heldBy)||null}));
+    found:!!(x&&x.found),effect:coerceItemEffect(x&&x.effect),id:(x&&x.id)||("it"+i),heldBy:(x&&x.heldBy)||null}));
   s.title=String(s.title||"Imported scenario").slice(0,80);
   s.premise=String(s.premise||"");
   if(!s.map||typeof s.map!=="object")s.map={note:"",zones:[],features:[]};
@@ -4596,7 +4744,7 @@ function openScenarioWizard(){
       <textarea class="input" id="scSeed" style="min-height:64px" placeholder="Leave blank and the DM invents one — or seed it, e.g. “raid a derelict ship for a data-core before it self-destructs”."></textarea></div>
     <div style="display:flex;gap:18px;flex-wrap:wrap;margin-bottom:12px">
       <div>
-        <div class="eyebrow" style="margin-bottom:8px">Players</div>
+        <div class="eyebrow" style="margin-bottom:8px">Player warbands</div>
         <div class="stepper" style="width:fit-content">
           <button id="scPlMinus" aria-label="Fewer players">−</button>
           <span class="val" id="scPlVal">${scnPlayers}</span>
@@ -4604,7 +4752,7 @@ function openScenarioWizard(){
         </div>
       </div>
       <div style="flex:1;min-width:180px">
-        <div class="eyebrow" style="margin-bottom:8px">Points per warband</div>
+        <div class="eyebrow" style="margin-bottom:8px">Points each</div>
         <input class="input" id="scPoints" inputmode="numeric" value="${w.budget}" style="max-width:140px">
       </div>
     </div>
@@ -4636,7 +4784,7 @@ function openScenarioWizard(){
     $("#scLenVal").textContent=scnFinalLength()+" turns";
     $("#scLenNote").textContent=`rolled 1D10+6 = ${scnLengthBase}${d.roundMod?` · ${d.roundMod>0?"+":""}${d.roundMod} (${d.label})`:""}`;
     $("#scModeNote").innerHTML=(scnMode==="coop"
-      ? `<b>Co-op</b> vs the DM's enemy force, worth your points <b>+ ${d.enemyBonus}</b> (${d.label}). `
+      ? `<b>Co-op</b>: ${scnPlayers} warbands of ${$("#scPoints")?(+$("#scPoints").value||0):0} pts face one enemy force of <b>${(+($("#scPoints")?$("#scPoints").value:0)||0)*scnPlayers+d.enemyBonus} pts</b> (${d.label}). `
       : `<b>PvP</b>: warbands fight each other. `)+d.tone+".";
   };
   upd();
@@ -4680,12 +4828,12 @@ Obey the game's real rules:
 - Deployment: number the 4 table sides 1-4; each warband deploys within 10cm of a side, or within 10cm of the centre.
 - A scenario must include: a premise/motivation, a scenery description, victory conditions/objectives, deployment details, and any special rules.
 Example Planet 28 scenario premises (for tone only, do not copy): ${SCN_EXAMPLES.map((e,i)=>(i+1)+") "+e).join(" ")}
-This scenario: ${players} players; ${mode==="coop"?`CO-OPERATIVE — the players team up against an AI-controlled enemy force that is 200 points larger than a single player warband`:"PvP — the players' warbands fight each other"}; ${points} points per player warband.
+This scenario: ${players} players; ${mode==="coop"?`CO-OPERATIVE — ${players} player warbands of ${points} points each team up against ONE enemy force run by the host, worth ${points*players+DIFFICULTY[difficulty||"normal"].enemyBonus} points in total`:"PvP — the players' warbands fight each other"}; ${points} points per player warband.
 ${seed?`Base the scenario on this idea: "${seed}".`:"Invent an original, evocative premise."}
 Write it to be ATMOSPHERIC and immersive: rich sensory detail (sights, sounds, smells, the feel of the place), so the players feel they are really THERE. The "briefing" field is a vivid, cinematic 4-6 sentence second-person narration that sets the mood before the game; the "premise" stays a short one-hook summary.
 This game lasts EXACTLY ${length} turns (already rolled) — place every timed event on a round from 1 to ${length}; never use a round beyond ${length}. Difficulty is ${diff.label} (${diff.tone}); reflect that in the danger, timing and opposition.
 Include 2-5 TIMED EVENTS, each with a "round" (1 to ${length}) and a "kind": "deadline" for a time-pressure objective the PLAYERS must achieve BY that turn (shown to them in advance, e.g. "by turn 4 disarm the reactor" — use these sparingly, only when the narrative needs a clock), or "surprise" for a hidden reveal that only appears when that turn arrives (reinforcements, a hazard, a betrayal, an environmental shift). Prefer surprises. Write each event atmospherically.
-When a surprise event has a concrete mechanical effect the app can auto-apply to characters, add an "effect" object: {"apply":true,"type":"damage"|"heal"|"skill"|"condition","amount":"1D6" (a dice string, for damage/heal),"skill":"A"|"F"|"S"|"AW"|"P" (for a skill change),"delta":-1 (for skill),"condition":"short label like Blinded or On fire" (for condition/skill),"duration":"turn" (wears off next turn) or "game" (lasts the game),"scope":"chosen" (the host picks who is in range) or "all" (every combatant),"negatedBy":["trait/ability/armour/item names that cancel it"]}. Choose negatedBy from things that logically cancel the effect (e.g. Power armour negates Poisonous and Cumulative; Psy-hood negates Psychic/Arcane; Fearless negates fear/break effects; Iron skin, Death-proof, Painless, Unearthly, Bulwark can apply). For a purely narrative event set "effect":{"apply":false}.
+When a surprise event has a concrete mechanical effect the app can auto-apply to characters, add an "effect" object: {"apply":true,"type":"damage"|"heal"|"skill"|"condition"|"injury","amount":"1D6" (a dice string, for damage/heal),"skill":"A"|"F"|"S"|"AW"|"P" (for a skill change),"delta":-1 (for skill),"condition":"short label like Blinded or On fire" (for condition/skill),"duration":"turn" (wears off next turn) or "game" (lasts the game),"scope":"chosen" (the host picks who is in range) or "all" (every combatant),"negatedBy":["trait/ability/armour/item names that cancel it"]}. Choose negatedBy from things that logically cancel the effect (e.g. Power armour negates Poisonous and Cumulative; Psy-hood negates Psychic/Arcane; Fearless negates fear/break effects; Iron skin, Death-proof, Painless, Unearthly, Bulwark can apply). "injury" is the rarest and cruellest: the chosen characters roll on the 1D8 injury table back at camp even if they survive the game (a collapsing gantry, a toxic bloom, a curse that takes hold) — use it in AT MOST one event per scenario, only for a danger the briefing or scenery warned about, with "scope":"chosen" and a fair "negatedBy". For a purely narrative event set "effect":{"apply":false}.
 This is a PRINT-AND-PLAY game: players 3D-print their miniatures and build/print terrain. So also produce a preparation checklist of what must be built or printed BEFORE the game — terrain pieces, objective/token markers, any extra non-player characters or creatures the scenario needs, and any custom collectible items it introduces (things a character can pick up during play).
 GROUND TYPE ON EVERY MAP FEATURE. Separately from what a piece DOES, the rulebook sorts all terrain into four movement categories, and the players are told to agree them BEFORE the game — so decide them here, as the DM, and set "ground" on every feature:
 - "even" — moved over without impediment, no skill roll. Flat ground, steps, ladders, puddles.
@@ -4693,7 +4841,7 @@ GROUND TYPE ON EVERY MAP FEATURE. Separately from what a piece DOES, the ruleboo
 - "hazardous" — an Agility roll for EVERY action spent in it; pass and you move at half speed, fail and you cannot move at all and take 1D10 damage minus armour. Lava, raging water, grinding machinery, hostile fauna.
 - "impassable" — cannot be crossed at all; characters must go around. Energy fields, sheer walls of rock.
 Do NOT make everything even — a table of flat ground plays flat. Rough ground is the workhorse: it is what makes a ruin feel like a ruin and gives Agility, Sure-footed, Climber and the vehicle types (Walker, Hover, Flyer) something to matter against. Reserve hazardous for genuinely lethal ground and place little of it, and use impassable sparingly for hard edges. Ground and role are independent: a collapsed spire can be tall cover AND rough, a reactor pool can be an objective AND hazardous.
-BUILD THE TABLE OUT OF THE STANDARD PROPS. The host owns a fixed set of shapes, so every terrain entry must name one by its code in a "prop" field, and its "size" must be that prop's size copied exactly. Name the piece for the fiction, not the shape — "P5 — The Rust Spire", "P2 — collapsed handrail". Reuse the same prop as often as you like; a table is usually 8-14 pieces. The library:
+BUILD THE TABLE OUT OF THE STANDARD PROPS. The host owns a fixed set of shapes, so every terrain entry must name one by its code in a "prop" field, and its "size" must be that prop's size copied exactly. Name the piece for the fiction, not the shape — "P5 — The Rust Spire", "P2 — collapsed handrail". Each prop line says how many the host OWNS — never call for more of one than that, and never use a prop that is not listed, because it does not exist yet. A table is usually 8-14 pieces in total. If the list is short, build the scenario around what is there: fewer, better-placed pieces and ground areas beat imaginary scenery. The library:
 ${propsForAI()}
 GET THE COVER LANGUAGE RIGHT. Planet 28 has ONE cover rule: if any part of a character's body is covered by terrain they are in cover, and gain an extra 1D6 armour roll against shooting. There is no "heavy" or "light" cover, and cover never blocks a shot by itself. What height changes is LINE OF SIGHT — you may shoot anyone with any part of their body visible — so a piece taller than a standing model hides them completely (no shot at all), while a low piece leaves them targetable but in cover. Say it that way in the scenario: "blocks line of sight" or "gives cover", never "heavy cover".
 If the table truly needs a shape the library does not have, do NOT bend an existing prop — instead add it to "newProps" (see the JSON shape) so the host can build it before next time, and use the closest existing prop for this game.
@@ -4702,9 +4850,10 @@ SEARCHING IS RESOLVED BY THE APP: a feature with role "cache" gets a Search butt
 ITEMS ARE THE MOST IMPORTANT PLACE TO GET THIS RIGHT, AND THE EASIEST TO FORGET: every entry in "items" MUST carry BOTH a "mapLabel" (where on the table it is found — normally the cache it is hidden in) AND a "when". Do not leave an item's mapLabel empty; if it is not hidden in a cache, point it at whatever feature it lies on or beside. An item with no mapLabel is useless to the host because they cannot place it.
 EVERY item MUST have a "when" field: one short, concrete sentence saying WHEN OR WHERE it matters, naming the specific special rule, hazard, event or place it interacts with — e.g. "Wear it before entering the flooded lower level; cancels the Deep-pressure -1 Athletics penalty" rather than a vague "useful later". If an item counters something, that something must exist in specialRules, events or a hazard feature — never invent a rule the scenario doesn't have. Do the same for npcs where it helps ("when" = when/where it shows up).
 LASTING INJURIES — when a character is taken down the players roll on the rulebook's own 1D8 injury table, so do NOT invent mechanics. Instead write an "injuries" list of 5-7 SCENARIO-FLAVOURED wound descriptions this place could inflict — each just a "name" (e.g. "Venom-withered arm", "Pressure-burst eardrum"), a one-line "note" of prose, and a "cause" tag matching a threat in this scenario (an enemy name, a hazard, an event) so the right flavour is drawn for what actually happened. The app pairs your description with whatever the dice decide.
+EVERY ITEM DECIDES ITS OWN EFFECT NOW. The host has no AI at the table, so write each item's mechanical "effect" here, in the exact shape shown: skill deltas between -4 and +4, HP delta between -10 and +10, traits and abilities by their exact catalogue names, an optional new name for a true transformation, and a one-sentence "summary". A plain piece of gear, or a pure objective like a data-core or a golden brick, gets {"apply":false,"summary":"..."} — it is carried, not absorbed. Never leave "effect" out.
 SECRETS & SURPRISES — make the world feel alive: you MAY include plot twists and surprise reveals. Mark any NPC, item, or timed event that should be a SECRET (hidden from the host until it happens) with "secret": true. For a secret NPC or item, DO NOT spoil it in the checklist — instead give a non-spoiler "hint" telling the host only what to PREPARE (e.g. "a large monstrous miniature", "a mysterious relic token"). A hint says WHAT TO BUILD and nothing else — never put the turn, the trigger or any timing in it ("kept hidden until turn 8" is wrong), because in a co-op game the host is playing too and would be spoiling their own surprise while keeping the real name/note/round in the normal fields (the app hides them until the host reveals or the moment arrives). A collectible item whose effect should only be discovered on pickup should be marked "secret": true with a vague "hint". Not everything needs to be secret — obvious, up-front elements stay visible.
 Reply with ONLY a JSON object (no prose, no code fence) shaped EXACTLY like:
-{"title":"short evocative title","premise":"1-2 sentence hook","briefing":"vivid 4-6 sentence atmospheric second-person narration","scenery":"1-2 sentences describing the terrain to build","objectives":["a victory condition","..."],"specialRules":["an optional special rule","..."],"twist":"one mid-game complication (or empty string)","events":[{"round":4,"kind":"surprise","title":"short event name","text":"what happens this round, written atmospherically","effect":{"apply":true,"type":"damage","amount":"1D6","scope":"chosen","duration":"turn","negatedBy":["Power armour"]}}],"deployment":"how the warbands deploy, referencing table sides/centre","gameLength":"1D10+6 turns","terrain":[{"name":"terrain piece to build","note":"how many / what it looks like","prop":"P4","size":"8×8cm, 12cm tall","mapLabel":"Wreck Spire","role":"cover-tall"}],"newProps":[{"name":"Gantry bridge","size":"20×4cm, 8cm tall with a walkable top","why":"This table wants a raised crossing between two spires; nothing in the library spans a gap."}],"markers":[{"name":"objective/token to print","note":"what it marks","mapLabel":"Hadal Core","role":"objective"}],"npcs":[{"name":"extra character/creature","note":"what it is / when it appears","when":"when and where it shows up","mapLabel":"Vent Mouth","secret":false,"hint":""}],"items":[{"name":"collectible item","note":"what it does / what it changes about whoever picks it up","when":"the concrete moment it matters, naming the rule/hazard it answers","mapLabel":"Supply Locker","secret":false,"hint":""}],"injuries":[{"name":"Venom-withered arm","note":"The limb never regains its strength.","cause":"Scorpion Swarm"}],"map":{"note":"one-line caption of the battlefield","zones":[{"label":"short deployment label","side":"a","x":5,"y":5,"w":30,"h":18}],"features":[{"type":"terrain","role":"cover-tall","ground":"rough","label":"Wreck Spire","x":50,"y":50,"r":8}]}}
+{"title":"short evocative title","premise":"1-2 sentence hook","briefing":"vivid 4-6 sentence atmospheric second-person narration","scenery":"1-2 sentences describing the terrain to build","objectives":["a victory condition","..."],"specialRules":["an optional special rule","..."],"twist":"one mid-game complication (or empty string)","events":[{"round":4,"kind":"surprise","title":"short event name","text":"what happens this round, written atmospherically","effect":{"apply":true,"type":"damage","amount":"1D6","scope":"chosen","duration":"turn","negatedBy":["Power armour"]}}],"deployment":"how the warbands deploy, referencing table sides/centre","gameLength":"1D10+6 turns","terrain":[{"name":"terrain piece to build","note":"how many / what it looks like","prop":"P4","size":"8×8cm, 12cm tall","mapLabel":"Wreck Spire","role":"cover-tall"}],"newProps":[{"name":"Gantry bridge","size":"20×4cm, 8cm tall with a walkable top","why":"This table wants a raised crossing between two spires; nothing in the library spans a gap."}],"markers":[{"name":"objective/token to print","note":"what it marks","mapLabel":"Hadal Core","role":"objective"}],"npcs":[{"name":"extra character/creature","note":"what it is / when it appears","when":"when and where it shows up","mapLabel":"Vent Mouth","secret":false,"hint":""}],"items":[{"name":"collectible item","note":"what it does / what it changes about whoever picks it up","when":"the concrete moment it matters, naming the rule/hazard it answers","mapLabel":"Supply Locker","secret":false,"hint":"","effect":{"apply":true,"summary":"one vivid sentence of what happens to whoever keeps it","newName":"","skills":{"A":0,"F":0,"S":0,"AW":0,"P":0},"hp":0,"addTraits":[],"removeTraits":[],"addAbilities":[],"note":""}}],"injuries":[{"name":"Venom-withered arm","note":"The limb never regains its strength.","cause":"Scorpion Swarm"}],"map":{"note":"one-line caption of the battlefield","zones":[{"label":"short deployment label","side":"a","x":5,"y":5,"w":30,"h":18}],"features":[{"type":"terrain","role":"cover-tall","ground":"rough","label":"Wreck Spire","x":50,"y":50,"r":8}]}}
 Map coordinates are percentages of the 90×90 board: x from 0 (left) to 100 (right), y from 0 (top) to 100 (bottom). Provide 2-4 deployment zones (side is "a", "b" or "neutral") and 6-10 features (type is one of "terrain","cover","objective","hazard"; role is one of the roles listed above and is REQUIRED on every feature; "ground" is one of "even","rough","hazardous","impassable" and is also REQUIRED on every feature; add "r" — how far the ground of that type spreads, 4-28 in the same percentage units — on any rough, hazardous or impassable feature, so the map can shade the area rather than a point). Keep every map label under 22 characters and make each one distinctive enough to reference. Keep the checklist arrays short and concrete (omit any that don't apply), and give every checklist entry a "mapLabel" matching a map label exactly wherever it belongs on the table.`;
   try{
     const raw=await s.json(prompt,{modelTier:"default",cache:false});
@@ -4725,10 +4874,25 @@ Map coordinates are percentages of the 90×90 board: x from 0 (left) to 100 (rig
     res.innerHTML=`<div class="ng-note">${sampleErr(e&&e.code)}</div>`;go.textContent="✦ Ask the DM";
   }finally{go.disabled=false;}
 }
+/* The shape applyEffect() already understands. Anything malformed becomes "flavour only"
+   rather than a guess — the app never invents a stat change. */
+function coerceItemEffect(e){
+  if(!e||typeof e!=="object")return null;
+  if(e.apply===false)return {apply:false,summary:String(e.summary||"").slice(0,160)};
+  const sk={};["A","F","S","AW","P"].forEach(k=>{const d=Math.round(+((e.skills||{})[k])||0);if(d)sk[k]=Math.max(-4,Math.min(4,d));});
+  const names=(arr,cat)=>(Array.isArray(arr)?arr:[]).map(n=>{const o=findCat(cat,n);return o?o.name:null;}).filter(Boolean).slice(0,3);
+  const out={apply:true,summary:String(e.summary||"").slice(0,160),newName:String(e.newName||"").slice(0,42),
+    skills:sk,hp:Math.max(-10,Math.min(10,Math.round(+e.hp||0))),
+    addTraits:names(e.addTraits,"trait"),removeTraits:names(e.removeTraits,"trait"),addAbilities:names(e.addAbilities,"ability"),
+    note:String(e.note||"").slice(0,200)};
+  const changes=Object.keys(sk).length+Math.abs(out.hp)+out.addTraits.length+out.removeTraits.length+out.addAbilities.length+(out.newName?1:0);
+  if(!changes)out.apply=false;
+  return out;
+}
 function coerceScenario(raw,opts){
   raw=raw&&typeof raw==="object"?raw:{};
   const arr=x=>Array.isArray(x)?x.filter(Boolean).map(String):[];
-  const named=x=>Array.isArray(x)?x.map(v=>typeof v==="string"?{name:v,note:"",when:"",size:"",prop:"",mapLabel:"",role:"",secret:false,hint:"",revealed:false}:{name:String(v&&v.name||"").slice(0,60),note:String(v&&v.note||"").slice(0,180),when:String(v&&v.when||"").slice(0,180),size:String(v&&v.size||"").slice(0,40),prop:String(v&&v.prop||"").slice(0,6).toUpperCase(),mapLabel:String(v&&v.mapLabel||"").slice(0,120),role:String(v&&v.role||"").toLowerCase().slice(0,20),secret:!!(v&&v.secret),hint:String(v&&v.hint||"").slice(0,90),revealed:false}).filter(v=>v.name||v.hint):[];
+  const named=x=>Array.isArray(x)?x.map(v=>typeof v==="string"?{name:v,note:"",when:"",size:"",prop:"",mapLabel:"",role:"",secret:false,hint:"",revealed:false}:{name:String(v&&v.name||"").slice(0,60),note:String(v&&v.note||"").slice(0,180),when:String(v&&v.when||"").slice(0,180),size:String(v&&v.size||"").slice(0,40),prop:String(v&&v.prop||"").slice(0,6).toUpperCase(),effect:coerceItemEffect(v&&v.effect),mapLabel:String(v&&v.mapLabel||"").slice(0,120),role:String(v&&v.role||"").toLowerCase().slice(0,20),secret:!!(v&&v.secret),hint:String(v&&v.hint||"").slice(0,90),revealed:false}).filter(v=>v.name||v.hint):[];
   const m=raw.map&&typeof raw.map==="object"?raw.map:{};
   const num=(v,d)=>{const n=+v;return isFinite(n)?Math.max(0,Math.min(100,n)):d;};
   const zones=(Array.isArray(m.zones)?m.zones:[]).map(z=>({label:String(z&&z.label||"").slice(0,34),side:(z&&z.side)==="b"?"b":(z&&z.side)==="neutral"?"neutral":"a",x:num(z&&z.x,5),y:num(z&&z.y,5),w:num(z&&z.w,25),h:num(z&&z.h,18)}));
@@ -4765,7 +4929,7 @@ function coerceScenario(raw,opts){
     deployment:String(raw.deployment||""),
     gameLength:String(raw.gameLength||"1D10+6 turns"),
     terrain:terrainL, markers:markersL, npcs:npcsL,
-    items:itemsL.map((x,i)=>({name:x.name,note:x.note,when:x.when,mapLabel:x.mapLabel,role:x.role,secret:x.secret,hint:x.hint,revealed:false,found:false,id:"it"+i,heldBy:null})),
+    items:itemsL.map((x,i)=>({name:x.name,note:x.note,when:x.when,mapLabel:x.mapLabel,role:x.role,secret:x.secret,hint:x.hint,effect:x.effect||null,revealed:false,found:false,id:"it"+i,heldBy:null})),
     searched:[],
     injuries:(Array.isArray(raw.injuries)?raw.injuries:[]).map(coerceInjury).filter(Boolean).slice(0,10),
     newProps:(Array.isArray(raw.newProps)?raw.newProps:[]).slice(0,3).map(x=>({name:String(x&&x.name||"").slice(0,40),size:String(x&&x.size||"").slice(0,40),why:String(x&&x.why||"").slice(0,160)})).filter(x=>x.name&&x.size),
@@ -5008,7 +5172,7 @@ async function generateEnemyWarband(scn,statusEl){
   const s=await getSample();
   if(!s){if(statusEl)statusEl.innerHTML=`<div class="ng-note">${sampleErr("not_granted")}</div>`;return;}
   const diff=diffOf(scn);
-  const target=scn.points+diff.enemyBonus;
+  const target=enemyTargetFor(scn);
   if(statusEl)statusEl.innerHTML=`<div class="ng-note spin">Mustering the enemy force (~${target} pts, ${diff.label})… this can take up to a minute.</div>`;
   const lore=scnLoreForAI(scn);
   const prompt=`You are the DUNGEON MASTER for a co-operative game of the grimdark sci-fi skirmish game Planet 28: you wrote this scenario, and you now muster the ENEMY warband that will oppose the players in it — and the host will run these units on your behalf at the table. The enemy is meant to be tougher, so build to a total of about ${target} points (get as close as you can; a little under is fine, do not go far over).
@@ -5116,13 +5280,13 @@ function enemyMiniCard(c){
   </button>`;
 }
 function enemyBlock(s){
-  const diff=diffOf(s), bonus=diff.enemyBonus, target=s.points+bonus;
+  const diff=diffOf(s), bonus=diff.enemyBonus, target=enemyTargetFor(s);
   if(enemyAll(s).length){
     const vehs=enemyVehs(s);
     const total=enemyChars(s).reduce((a,c)=>a+unitCost(c),0)+vehs.reduce((a,v)=>a+vehicleCost(v),0);
     const nUnits=enemyAll(s).length;
     return `<div class="scn-block"><div class="bh">Enemy force — run by the DM</div>
-      <p style="margin-bottom:10px">Target <b>${s.enemy.target||target} pts</b> (your ${s.points} + ${bonus}, ${diff.label}) · built <b style="color:var(--danger)">${total} pts</b> across ${nUnits} unit${nUnits===1?"":"s"}${vehs.length?` (including ${vehs.length} vehicle${vehs.length>1?"s":""})`:""}. Tap a unit for its full card.</p>
+      <p style="margin-bottom:10px">Target <b>${s.enemy.target||target} pts</b> (${s.players} × ${s.points} + ${bonus}, ${diff.label}) · built <b style="color:var(--danger)">${total} pts</b> across ${nUnits} unit${nUnits===1?"":"s"}${vehs.length?` (including ${vehs.length} vehicle${vehs.length>1?"s":""})`:""}. Tap a unit for its full card.</p>
       ${(()=>{const cs=enemyAll(s),any=cs.some(c=>c.deployNote||c.atStart===false);
         if(!any)return `<div class="enemy-grid">${cs.map(enemyMiniCard).join("")}</div>`;
         // players never see a fully hidden unit; a foreshadowed one they DO see, as a warning
@@ -5139,7 +5303,7 @@ function enemyBlock(s){
   }
   if(scnReadOnly)return `<div class="scn-block"><div class="bh">Enemy force — run by the DM</div><p>The DM's enemy warband, worth <b>${target} pts</b> — the host musters and runs it.</p></div>`;
   return `<div class="scn-block"><div class="bh">Enemy force — run by the DM</div>
-    <p style="margin-bottom:8px">The DM fields an enemy warband worth <b>${target} pts</b> (your ${s.points} + ${bonus}, ${diff.label} difficulty), built from this scenario's own antagonists. Muster it as playable cards for the host to run.</p>
+    <p style="margin-bottom:8px">The DM fields an enemy warband worth <b>${target} pts</b> (${s.players} warbands × ${s.points} + ${bonus}, ${diff.label} difficulty), built from this scenario's own antagonists. Muster it as playable cards for the host to run.</p>
     <button class="btn primary sm" id="enemyGen">✦ Muster the DM’s enemy</button>
     <div id="enemyStatus"></div>
   </div>`;
@@ -5310,7 +5474,7 @@ function curRound(s){return Math.max(1,s.round||1);}
 function setRound(s,r){s.round=Math.max(1,r);save();renderScenarioView();}
 function parseEventEffect(x){
   if(!x||typeof x!=="object"||!x.apply)return {apply:false};
-  const type=["damage","heal","skill","condition"].includes(x.type)?x.type:"condition";
+  const type=["damage","heal","skill","condition","injury"].includes(x.type)?x.type:"condition";
   return {apply:true,type,
     amount:String(x.amount||"").slice(0,14),
     skill:["A","F","S","AW","P"].includes(x.skill)?x.skill:"",
@@ -5375,6 +5539,37 @@ function mergePlayersIntoHostedBattle(){
   (livePlayers||[]).forEach(p=>(p.combatants||[]).forEach(m=>{if(m&&m.id&&!s.battle.combatants.some(x=>x.id===m.id)){s.battle.combatants.push(JSON.parse(JSON.stringify(m)));added=true;}}));
   if(added){save();scheduleHostSync(s);}
 }
+
+const OUTCOMES={
+  victory:{label:"Objective achieved",short:"Victory",cls:"win",icon:"🏆"},
+  defeat:{label:"Objective failed",short:"Defeat",cls:"lose",icon:"💀"},
+  retreat:{label:"Pulled out",short:"Retreat",cls:"draw",icon:"🏕"}
+};
+function openEndQuest(s){
+  const body=$("#modalBody");
+  body.innerHTML=`<h3>End the quest</h3>
+    <p class="lead">Call it for the table. Everyone sees the result and can bring their warband home; the ledger remembers it.</p>
+    <div class="rolegrid">
+      ${Object.entries(OUTCOMES).map(([k,o])=>`<button class="rolecard" data-outcome="${k}">
+        <div class="rc-ico">${o.icon}</div><div class="rc-n">${esc(o.label)}</div>
+        <div class="rc-d">${k==="victory"?"The scenario's goal was met — the prize delivered, the target down, the line held.":k==="defeat"?"The goal was not met before the game ended, or the warband was broken.":"The warband left the field before the game was decided."}</div>
+      </button>`).join("")}
+    </div>
+    <div class="modal-actions"><button class="btn ghost sm" id="eqX" style="margin-left:auto">Not yet</button></div>`;
+  $("#eqX").onclick=closeModal;
+  body.querySelectorAll("[data-outcome]").forEach(b=>b.onclick=()=>{
+    s.outcome={result:b.dataset.outcome,round:curRound(s),at:Date.now()};
+    save(); closeModal(); renderScenarioView();
+    if(liveRole==="host"&&hostScenarioId===s.id)scheduleHostSync(s);
+    toast(OUTCOMES[s.outcome.result].icon+" "+OUTCOMES[s.outcome.result].label);
+  });
+  showModal();
+}
+function outcomeBanner(s){
+  const o=s&&s.outcome&&OUTCOMES[s.outcome.result]; if(!o)return "";
+  return `<div class="outcome ${o.cls}"><span class="oc-ico">${o.icon}</span><div><b>Quest over — ${esc(o.short)}</b><div class="none-note" style="font-style:normal">${esc(o.label)} on turn ${s.outcome.round||"?"}.${scnReadOnly?" Bring your warband home from the roster below.":" Players can now return to camp."}</div></div>
+    ${scnReadOnly?"":`<button class="linkbtn" id="eqUndo">undo</button>`}</div>`;
+}
 function battleHTML(s){
   if(!s.battle||!s.battle.started){
     if(scnReadOnly)return "";
@@ -5383,12 +5578,21 @@ function battleHTML(s){
   // The roster would otherwise name a hidden unit the moment the battle starts, spoiling the
   // ambush for every player. The host still tracks it; guests don't even get a row to count.
   const sealed=scnReadOnly?enemyAll(s).filter(enemyHidden).map(c=>"e_"+c.id):[];
+  const seenChar={};
   const rows=s.battle.combatants.filter(m=>sealed.indexOf(m.id)<0).map(m=>{
     const down=m.curHP<=0, low=m.curHP<=m.maxHP*0.25;
+    const ownC=m.side==="player"&&m.charId&&!seenChar[m.charId]&&(!m.campId||m.campId===campId())?activeWB().characters.find(x=>x.id===m.charId):null;
+    if(ownC)seenChar[m.charId]=1;
+    const tally=ownC?tallyHTML(ownC):"";
+    const maimed=m.maimedBy?`<span class="cond maim" title="Rolls on the injury table back at camp — ${esc(m.maimedBy)}">🩸 maimed</span>`:"";
     const conds=(m.conditions||[]).map((cd,ci)=>`<span class="cond">${esc(cd.label)}${cd.expireTurn?` <small>→T${cd.expireTurn}</small>`:""}${scnReadOnly?"":` <button data-cond="${m.id}|${ci}" aria-label="remove">×</button>`}</span>`).join("");
-    const half=!down&&m.curHP<=m.maxHP*0.5, safe=m.curHP===1;
+    // a squad member never tests on its own — the squad tests as one when its total is at 25%
+    const inSquad=/_\d+$/.test(String(m.id));
+    const squadRows=inSquad?s.battle.combatants.filter(x=>String(x.id).replace(/_\d+$/,"")===String(m.id).replace(/_\d+$/,"")):[];
+    const squadLow=inSquad&&squadRows.reduce((a,x)=>a+Math.max(0,x.curHP|0),0)<=squadRows.reduce((a,x)=>a+x.maxHP,0)*0.25;
+    const half=!down&&!inSquad&&m.curHP<=m.maxHP*0.5, safe=m.curHP===1;
     return `<div class="btl-row ${m.side} ${down?"down":""}">
-      <div class="btl-main"><span class="btl-side"></span><span class="btl-name">${esc(m.name)}</span>${half?`<span class="chip brk" tabindex="0" data-tip="${esc(safe?"Down to a single hit-point — this one never tests again.":"Under half hit-points: roll under Psyche or run for the nearest board edge. Test again on every hit, at −1 Psyche for each test already taken this turn. All skills are −1 while under half.")}">${safe?"⚑ no more tests":"⚠ break test"}</span>`:""}${m.owner&&m.side==="player"?`<span class="btl-owner">${esc(m.owner)}</span>`:""}${conds?`<div class="btl-conds">${conds}</div>`:""}</div>
+      <div class="btl-main"><span class="btl-side"></span><button class="btl-name btl-open" data-open-unit="${esc(m.id)}" title="Open this unit's card">${esc(m.name)}</button>${half?`<span class="chip brk" tabindex="0" data-tip="${esc(safe?"Down to a single hit-point — this one never tests again.":"Under half hit-points: roll under Psyche or run for the nearest board edge. Test again on every hit, at −1 Psyche for each test already taken this turn. All skills are −1 while under half.")}">${safe?"⚑ no more tests":"⚠ break test"}</span>`:""}${(inSquad&&squadLow&&!down)?`<span class="chip brk" tabindex="0" data-tip="The squad's total hit-points are at a quarter or less: every surviving member rolls under Psyche or runs. They roll again each time another member dies.">⚠ squad breaking</span>`:""}${m.owner&&m.side==="player"?`<span class="btl-owner">${esc(m.owner)}</span>`:""}${(conds||maimed)?`<div class="btl-conds">${maimed}${conds}</div>`:""}${tally?`<div class="btl-tally">${tally}</div>`:""}</div>
       <div class="btl-hp">${scnReadOnly?"":`<button class="hpb" data-hp="${m.id}|-1" aria-label="damage">−</button>`}<span class="hpv ${down?"down":low?"low":""}">${down?"DOWN":m.curHP+"/"+m.maxHP}</span>${scnReadOnly?"":`<button class="hpb" data-hp="${m.id}|1" aria-label="heal">+</button>`}</div>
     </div>`;
   }).join("");
@@ -5416,6 +5620,7 @@ function applyEventEffect(s,eff,ids){
     if(neg){out.push({name:m.name,txt:"negated by "+neg,neg:true});return;}
     if(eff.type==="damage"){const d=rollDice(eff.amount);m.curHP=Math.max(0,m.curHP-d);out.push({name:m.name,txt:"−"+d+" HP"+(m.curHP<=0?" · DOWN":"")});}
     else if(eff.type==="heal"){const h=rollDice(eff.amount);m.curHP=Math.min(m.maxHP,m.curHP+h);out.push({name:m.name,txt:"+"+h+" HP"});}
+    else if(eff.type==="injury"){m.maimedBy=String(eff.cause||"a hazard").slice(0,40);out.push({name:m.name,txt:"maimed — rolls on the injury table back at camp"});}
     else{const label=eff.condition||(eff.skill?((eff.delta>0?"+":"")+eff.delta+" "+eff.skill):"Affected");const expireTurn=eff.duration==="turn"?curRound(s)+1:null;m.conditions=m.conditions||[];m.conditions.push({label,expireTurn});out.push({name:m.name,txt:label+(expireTurn?" (→T"+expireTurn+")":"")});}
   });
   save();return out;
@@ -5435,6 +5640,7 @@ function nextTurn(s){
 function effLabel(eff){
   if(eff.type==="damage")return "Damage "+(eff.amount||"?");
   if(eff.type==="heal")return "Heal "+(eff.amount||"?");
+  if(eff.type==="injury")return "Lasting injury — rolls 1D8 at camp";
   if(eff.skill)return (eff.delta>0?"+":"")+eff.delta+" "+eff.skill+(eff.duration==="turn"?" (this turn)":"");
   return (eff.condition||"Condition")+(eff.duration==="turn"?" (this turn)":"");
 }
@@ -5469,7 +5675,7 @@ function showTurnPopup(s,turn,evs){
     body.querySelector(`[data-applyeff="${ei}"]`).onclick=()=>{
       const ids=[...grid.querySelectorAll(".tgt-chip.on")].map(x=>x.dataset.tgt.split("|")[1]);
       if(!ids.length){toast("Select who's affected");return;}
-      const res=applyEventEffect(s,e.effect,ids);
+      const res=applyEventEffect(s,Object.assign({},e.effect,{cause:e.title}),ids);
       $("#effRes"+ei).innerHTML=res.map(r=>`<div class="eff-r ${r.neg?"neg":""}">${esc(r.name)}: ${esc(r.txt)}</div>`).join("");
       const ab=body.querySelector(`[data-applyeff="${ei}"]`);ab.disabled=true;ab.textContent="Applied";
       renderScenarioView();
@@ -5491,7 +5697,9 @@ function trackerHTML(s){
       <div class="round-cur">Turn <b>${cur}</b>${tot?` <span>/ ${tot}</span>`:""}</div>
       ${scnReadOnly?"":`<button class="rbtn" id="rndNext" aria-label="Next turn"${over?" disabled":""}>+</button>`}
     </div>
-    ${scnReadOnly?"":`<div class="round-actions"><span class="none-note" style="font-style:normal">${over?"Final turn — the game ends.":"Advance a turn to reveal what happens."}</span><button class="linkbtn" id="rndReset">Reset</button></div>`}`;
+    ${scnReadOnly?"":`<div class="round-actions"><span class="none-note" style="font-style:normal">${over?"Final turn — the game ends.":"Advance a turn to reveal what happens."}</span><button class="linkbtn" id="rndReset">Reset</button></div>
+    ${s.outcome?"":`<button class="btn sm" id="endQuest" style="margin-top:10px;width:100%;justify-content:center">⚑ End the quest — call the result</button>`}`}`;
+  h=outcomeBanner(s)+h;
   if(deadlines.length){
     h+=`<div class="tk-sec"><div class="tk-h">⏱ On the clock</div>${deadlines.map(e=>{const st=e.round<cur?"past":(e.round===cur?"now":"");return `<div class="deadline ${st}"><span class="dl-r">by&nbsp;T${e.round}</span><div class="dl-b"><b>${esc(e.title)}</b>${e.text?`<div class="dl-x">${esc(e.text)}</div>`:""}</div></div>`;}).join("")}</div>`;
   }
@@ -5620,9 +5828,9 @@ function searchCache(s,label){
   const found=c.left[Math.floor(Math.random()*c.left.length)];
   found.found=true;
   if(found.secret)found.revealed=true;      // finding it reveals what it is
-  pickupOpenId=found.id;                    // straight into "who picked it up?"
+  pickupOpenId=null;
   save();renderScenarioView();
-  toast("Found: "+(found.name||"something"));
+  openFoundItem(s,found);                   // what it is, what it does, who takes it
 }
 function collectHTML(s){
   const items=(s.items||[]);
@@ -5635,7 +5843,7 @@ function collectHTML(s){
     const done=searched.includes(c.label), empty=!c.left.length;
     const nameLine=c.name&&c.name!==c.label?`<b>${esc(c.name)}</b><span class="pick-note"> at ${esc(c.label)}</span>`:`<b>${esc(c.label)}</b>`;
     const stash=loose.length?`<div class="cache-stash"><span class="pick-lbl">Hide here:</span>${loose.map(it=>`<button class="pick-chip" data-stash="${it.id}|${esc(c.label)}">${esc(it.secret&&!it.revealed?(it.hint||"unknown find"):it.name)}</button>`).join("")}</div>`:"";
-    return `<div class="cache-row"><div class="cache-main">${numBadges([c.n])}${nameLine}${done?`<span class="pick-note"> — ${empty?"emptied":"searched"}</span>`:`<span class="pick-note"> — ${c.left.length} still hidden</span>`}${stash}</div>${scnReadOnly?"":`<button class="btn sm ghost" data-search="${esc(c.label)}"${empty&&done?" disabled":""}>Search</button>`}</div>`;
+    return `<div class="cache-row"><div class="cache-main">${numBadges([c.n])}${nameLine}${done?`<span class="pick-note"> — ${empty?"emptied":"searched"}</span>`:`<span class="pick-note"> — ${c.left.length} still hidden</span>`}${stash}</div>${scnReadOnly?"":`<button class="btn sm ${done?"ghost searched":""}" data-search="${esc(c.label)}"${empty&&done?" disabled":""}>${done?(empty?"✓ Emptied":"✓ Searched · again?"):"🔦 Search"}</button>`}</div>`;
   }).join("")}<div class="none-note" style="font-style:normal;margin-top:6px">The app rolls what's found — searching may also turn up nothing.${loose.length?" Items with no set location are listed above; tap one to hide it in a search point.":""}</div></div>`:"";
   const rows=items.map(it=>{
     if(!it.id)return "";
@@ -5678,6 +5886,38 @@ function collectHTML(s){
 /* combatKey is a battle-roster id ("p_<charId>" for the host's own, "g<pid>_<charId>" for a
    guest's). The find is recorded on the COMBATANT so it syncs to that player's device, and
    also applied locally when the model belongs to this device's warband. */
+/* The moment of discovery. A find is shown in full — name, what it does, when it matters,
+   the sheet changes the DM wrote for it — and the player picks who pockets it from a list. */
+function pickupOptions(s){
+  const roster=((s.battle&&s.battle.combatants)||[]).filter(m=>m&&m.side==="player");
+  if(roster.length)return roster.map(m=>({key:m.id,label:m.name+(m.owner?" · "+m.owner:""),down:(m.curHP|0)<=0}));
+  return activeWB().characters.map(c=>({key:"p_"+c.id,label:c.name||"Unnamed",down:false}));
+}
+function openFoundItem(s,it){
+  if(!it)return;
+  const eff=it.effect&&typeof it.effect==="object"?it.effect:null;
+  const lines=eff&&eff.apply!==false?effectLines(eff):[];
+  const opts=pickupOptions(s);
+  const body=$("#modalBody");
+  body.innerHTML=`<div class="eyebrow">🎒 Found</div>
+    <h3>${esc(it.name||"Something")}</h3>
+    ${it.note?`<p class="lead">${esc(it.note)}</p>`:""}
+    ${it.when?`<p class="lead pick-when" style="margin-top:2px">⏱ ${esc(it.when)}</p>`:""}
+    ${eff&&eff.summary?`<p class="lead" style="font-style:italic;color:var(--arcane)">${esc(eff.summary)}</p>`:""}
+    ${lines.length?`<div class="eff-changes">${lines.map(l=>`<span class="eff-chip">${l}</span>`).join("")}</div>`
+      :eff?`<p class="none-note" style="font-style:normal">Carried, not absorbed — it changes nothing on the sheet.</p>`
+      :`<p class="none-note" style="font-style:normal">Its effect gets worked out back at camp.</p>`}
+    ${opts.length?`<div class="eyebrow" style="margin-top:14px">Picked up by</div>
+      <select class="input" id="fiWho">${opts.map(o=>`<option value="${esc(o.key)}"${o.down?" disabled":""}>${esc(o.label)}${o.down?" (down)":""}</option>`).join("")}</select>`
+      :`<p class="none-note" style="font-style:normal;margin-top:12px">Start the battle roster (or add characters) first.</p>`}
+    <div class="modal-actions">
+      ${opts.length?`<button class="btn primary sm" id="fiTake">Take it</button>`:""}
+      <button class="btn ghost sm" id="fiLeave" style="margin-left:auto">Leave it for now</button>
+    </div>`;
+  const tk=$("#fiTake");if(tk)tk.onclick=()=>{closeModal();assignPickup(s,it.id,$("#fiWho").value);};
+  $("#fiLeave").onclick=()=>{closeModal();pickupOpenId=null;renderScenarioView();};
+  showModal();
+}
 function assignPickup(s,itemId,combatKey){
   const it=(s.items||[]).find(x=>x.id===itemId);if(!it)return;
   const m=((s.battle&&s.battle.combatants)||[]).find(x=>x.id===combatKey);
@@ -5686,7 +5926,7 @@ function assignPickup(s,itemId,combatKey){
   const mine=!!c&&(!m||!m.campId||m.campId===campId());
   it.heldBy=combatKey;
   if(it.secret)it.revealed=true;   // its effect is revealed once picked up
-  const rec={itemId,scnId:s.id,name:it.name,note:it.note,when:it.when||""};
+  const rec={itemId,scnId:s.id,name:it.name,note:it.note,when:it.when||"",effect:it.effect||null};
   if(m){ m.finds=Array.isArray(m.finds)?m.finds:[]; if(!m.finds.some(f=>f.itemId===itemId))m.finds.push(rec); }
   if(mine){ c.pickups=c.pickups||[]; if(!c.pickups.some(p=>p.itemId===itemId&&p.scnId===s.id))c.pickups.push(rec); }
   pickupOpenId=null;save();renderScenarioView();
@@ -5728,8 +5968,14 @@ function renderPickupsGroup(c){
   return g;
 }
 async function applyPickup(c,p){
+  if(p.effect_pre===undefined)p.effect_pre=(p.effect&&p.effect.apply!==undefined&&!p.applied)?p.effect:null;
+  const pre=p.effect_pre||((p.effect&&typeof p.effect.apply==="boolean")?p.effect:null);
+  if(pre){
+    if(pre.apply===false){toast("Flavour only — it changes nothing on the sheet");p.applied=true;p.effect={summary:pre.summary||"Kept."};save();buildDossier&&buildDossier();persist();return;}
+    openEffectPreview(c,p,pre); return;                 // decided by the DM when the scenario was written
+  }
   const s=await getSample();
-  if(!s){toast(sampleErr("not_granted"));return;}
+  if(!s){toast("This find carries no written effect, and only the Claude app can work one out");return;}
   toast("Interpreting the item…");
   const tNames=c.traits.map(id=>CAT.trait[id]&&CAT.trait[id].name).filter(Boolean).join(", ")||"none";
   const aNames=c.abilities.map(id=>CAT.ability[id]&&CAT.ability[id].name).filter(Boolean).join(", ")||"none";
@@ -5854,7 +6100,7 @@ function renderScenarioDetail(scnOverride){
         <div class="scn-fact"><b>Board</b> 90 × 90cm</div>
         <div class="scn-fact"><b>Length</b> ${s.rounds?s.rounds+" turns":esc(s.gameLength)}</div>
         <div class="scn-fact"><b>Scenery</b> ≥ 60% cover</div>
-        ${s.mode==="coop"?`<div class="scn-fact"><b>Enemy</b> ${s.points+diffOf(s).enemyBonus} pts</div>`:""}
+        ${s.mode==="coop"?`<div class="scn-fact"><b>Enemy</b> ${enemyTargetFor(s)} pts</div>`:""}
       </div>
       <div class="scn-cols">
         <div>
@@ -5915,20 +6161,36 @@ function renderScenarioDetail(scnOverride){
   const rp=$("#rndPrev");if(rp)rp.onclick=()=>setRound(s,curRound(s)-1);
   const rn=$("#rndNext");if(rn)rn.onclick=()=>nextTurn(s);
   const rz=$("#rndReset");if(rz)rz.onclick=()=>{s.round=1;save();renderScenarioView();};
+  const eq=$("#endQuest");if(eq)eq.onclick=()=>openEndQuest(s);
+  const equ=$("#eqUndo");if(equ)equ.onclick=()=>{delete s.outcome;save();renderScenarioView();if(liveRole==="host"&&hostScenarioId===s.id)scheduleHostSync(s);};
   // battle roster
   const bs=$("#btlStart");if(bs)bs.onclick=()=>{buildBattle(s);renderScenarioView();};
   const br=$("#btlReset");if(br)br.onclick=()=>{buildBattle(s);renderScenarioView();toast("Battle roster rebuilt");};
   const bh=$("#btlHome");if(bh)bh.onclick=()=>{const snap=pendingQuest(s);if(!snap){toast("Nothing to bring home");return;}
     askConfirm("Bring your warband home from “"+(snap.title||"the quest")+"”? Wounds and finds come back with them, and this quest won't be claimed again.",
       ()=>claimQuest(snap,()=>renderScenarioView()),{danger:false,yesLabel:"Return to camp"});};
+  el.querySelectorAll("[data-open-unit]").forEach(b=>b.onclick=()=>{
+    const id=b.dataset.openUnit;
+    const m=(s.battle.combatants||[]).find(x=>x.id===id); if(!m)return;
+    if(m.side==="enemy"){
+      const base=id.replace(/^e_/,"").replace(/_\d+$/,"");
+      const ec=enemyChars(s).find(x=>x.id===base); if(ec){if(!enemyHidden(ec)||!scnReadOnly)openEnemyCard(ec);return;}
+      const ev=enemyVehs(s).find(x=>x.id===base); if(ev){if(!enemyHidden(ev)||!scnReadOnly)openEnemyVehicleCard(ev);return;}
+      return;
+    }
+    if(m.charId&&activeWB().characters.some(c=>c.id===m.charId))openCard(m.charId);
+    else if(m.vehId&&vehsOf(activeWB()).some(v=>v.id===m.vehId))openVehicleCard(m.vehId);
+    else toast("That one belongs to another player");
+  });
   el.querySelectorAll("[data-hp]").forEach(b=>b.onclick=()=>{const[id,d]=b.dataset.hp.split("|");const m=(s.battle.combatants||[]).find(x=>x.id===id);if(m){m.curHP=Math.max(0,Math.min(m.maxHP,m.curHP+ +d));save();renderScenarioView();renderRoster();renderVehicleRoster();}});
   el.querySelectorAll("[data-cond]").forEach(b=>b.onclick=()=>{const[id,ci]=b.dataset.cond.split("|");const m=(s.battle.combatants||[]).find(x=>x.id===id);if(m){m.conditions.splice(+ci,1);save();renderScenarioView();}});
   // pickups
-  el.querySelectorAll("[data-pick]").forEach(b=>b.onclick=()=>{pickupOpenId=b.dataset.pick;renderScenarioView();});
+  el.querySelectorAll("[data-pick]").forEach(b=>b.onclick=()=>{const it=(s.items||[]).find(x=>x.id===b.dataset.pick);if(it&&it.secret&&!it.revealed){it.revealed=true;save();}openFoundItem(s,it);});
   el.querySelectorAll("[data-pickcancel]").forEach(b=>b.onclick=()=>{pickupOpenId=null;renderScenarioView();});
   el.querySelectorAll("[data-assign]").forEach(b=>b.onclick=()=>{const[itId,cId]=b.dataset.assign.split("|");assignPickup(s,itId,cId);});
   el.querySelectorAll("[data-drop]").forEach(b=>b.onclick=()=>dropPickup(s,b.dataset.drop));
   el.querySelectorAll("[data-search]").forEach(b=>b.onclick=()=>searchCache(s,b.dataset.search));
+  el.querySelectorAll("[data-tally]").forEach(b=>b.onclick=()=>{const[cid,k]=b.dataset.tally.split("|");const c=activeWB().characters.find(x=>x.id===cid);if(c)bumpTally(c,k);});
   el.querySelectorAll("[data-stash]").forEach(b=>b.onclick=()=>{const[id,lbl]=b.dataset.stash.split("|");stashItem(s,id,lbl);});
   // reveal secrets
   el.querySelectorAll("[data-reveal]").forEach(b=>b.onclick=()=>{const[cat,i]=b.dataset.reveal.split("|");const it=(s[cat]||[])[+i];if(it){it.revealed=true;save();renderScenarioView();}});
@@ -5980,7 +6242,7 @@ function scenarioText(s){
   if((s.npcs||[]).length)prep.push("Extra characters: "+pl(s.npcs));
   if((s.items||[]).length)prep.push("Custom items: "+pl(s.items));
   if(prep.length)o+="TO BUILD / PRINT (numbers match the map key):\n"+prep.map(x=>"- "+x).join("\n")+"\n\n";
-  if(s.mode==="coop")o+="ENEMY FORCE: "+(s.points+diffOf(s).enemyBonus)+" pts (run by the DM, "+diffOf(s).label+")\n";
+  if(s.mode==="coop")o+="ENEMY FORCE: "+enemyTargetFor(s)+" pts (run by the DM, "+diffOf(s).label+")\n";
   return o;
 }
 
