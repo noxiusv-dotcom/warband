@@ -1980,7 +1980,17 @@ function openDossier(id){
   const d=$("#dossier");d.classList.add("show");d.setAttribute("aria-hidden","false");
   syncScroll();
 }
+/* a recruit whose build the pool cannot pay for stays on the desk — no back door out */
+function settleRecruit(){
+  const c=curChar(); if(!c||!c.recruit||!wbSealed())return true;
+  const w=activeWB(), need=recruitBuildCost(c), pool=w.cp||0;
+  if(need>pool){toast("This build costs "+need+" campaign points — the pool has "+pool+". Trim it, or discharge them.");return false;}
+  w.cp=pool-need; delete c.recruit; delete c.recruitFee; save();
+  if(need>0)toast("Recruited — "+need+" campaign points spent on their build");
+  return true;
+}
 function closeDossier(){
+  if(curCharId&&!settleRecruit())return;
   $("#scrim").classList.remove("show");
   const d=$("#dossier");d.classList.remove("show");d.setAttribute("aria-hidden","true");
   curCharId=null;curVehId=null;syncScroll();
@@ -2044,6 +2054,7 @@ function buildDossier(){
     row.querySelectorAll("button").forEach(bt=>bt.onclick=()=>{
       const d=+bt.dataset.d,nv=c.skills[k]+d;
       if(nv<RULES.skillMin||nv>RULES.skillMax)return;
+      if(recruit&&d>0&&recruitBuildCost(c)+RULES.skillStep>(wbL.cp||0)){toast("The pool cannot pay for that level");return;}
       c.skills[k]=nv;buildDossier();persist();
     });
     sg.appendChild(row);
@@ -2065,6 +2076,7 @@ function buildDossier(){
       <span class="pts mono ${hpPts(c)>0?"pos":hpPts(c)<0?"neg":""}">${hpPts(c)?fmtSigned(hpPts(c)):"—"}</span>
     </div>`;
   hpRow.querySelectorAll("button").forEach(bt=>bt.onclick=()=>{
+    if(recruit&&+bt.dataset.d>0&&recruitBuildCost(c)+RULES.hpPts>(wbL.cp||0)){toast("The pool cannot pay for those hit-points");return;}
     const d=+bt.dataset.d*RULES.hpStep,nv=c.hp+d;if(nv<2)return;c.hp=nv;buildDossier();persist();
   });
   vg.appendChild(hpRow);
@@ -2083,9 +2095,9 @@ function buildDossier(){
       <b>${n>1?"Squad size":"Single character"}</b><span>${n>1?"squad · cost = profile × members":"set 3+ to deploy as a squad"}</span></div>
     <div style="display:flex;align-items:center;gap:10px">
       <div class="stepper">
-        <button data-d="-1" ${locked||n<=1?"disabled":""} aria-label="Fewer members">−</button>
+        <button data-d="-1" ${locked||recruit||n<=1?"disabled":""} aria-label="Fewer members">−</button>
         <span class="val">${n}</span>
-        <button data-d="1" ${locked||n>=10?"disabled":""} aria-label="More members">+</button>
+        <button data-d="1" ${locked||recruit||n>=10?"disabled":""} aria-label="More members">+</button>
       </div>
       <span class="pts mono">${n>1?n+"×":""}</span>
     </div>`;
@@ -2111,20 +2123,12 @@ function buildDossier(){
   b.appendChild(gearGroup(c,"Armour","armour",c.armour,buildDossier,shopLock));
   b.appendChild(gearGroup(c,"Items & consumables","item",c.items,buildDossier,shopLock));
 
-  const backToCard=()=>{
-    if(recruit){
-      // the recruit's build is paid for now, from the pool — or it doesn't leave the desk
-      const need=recruitBuildCost(c), pool=wbL.cp||0;
-      if(need>pool){toast("This build costs "+need+" campaign points — the pool has "+pool+". Trim it, or earn more first.");return;}
-      wbL.cp=pool-need; delete c.recruit; delete c.recruitFee; save();
-      toast(need>0?"Recruited — "+need+" campaign points spent on their build":"Recruited");
-    }
-    const id=curCharId;closeDossier();openCard(id);};
+  const backToCard=()=>{const id=curCharId;if(!settleRecruit())return;closeDossier();openCard(id);};
   $("#dBack").onclick=backToCard;
   $("#dDone").onclick=backToCard;
   $("#dDelete").onclick=()=>{
     askConfirm("Discharge "+(c.name||"this character")+" from the warband? This can't be undone.",()=>{
-      const w=activeWB();if(c.recruit&&c.recruitFee)w.cp=(w.cp||0)+c.recruitFee;w.characters=w.characters.filter(x=>x.id!==c.id);closeDossier();render();toast("Character discharged");
+      const w=activeWB();if(c.recruit&&c.recruitFee)w.cp=(w.cp||0)+c.recruitFee;w.characters=w.characters.filter(x=>x.id!==c.id);curCharId=null;closeDossier();render();toast("Character discharged");
     },{danger:true,yesLabel:"Discharge"});
   };
 }
@@ -2211,6 +2215,13 @@ function gearGroup(obj,label,cat,arr,rebuild,lock){
 let pickerCtx=null;
 const PICKER_TITLE={trait:"Add a trait",ability:"Add an ability",weapon:"Add a weapon",armour:"Add armour",item:"Add an item",
   vsection:"Add a section",vtrait:"Add a vehicle trait",vability:"Add a vehicle ability",vweapon:"Add a weapon"};
+/* while a sealed warband's recruit is being built, the picker checks the pool before adding */
+function recruitCanAfford(obj,cat,o){
+  if(!obj||!obj.recruit||!wbSealed())return true;
+  if(cat!=="trait"&&cat!=="ability")return true;
+  const room=(activeWB().cp||0)-recruitBuildCost(obj);
+  return o.cost<=room;
+}
 function openPicker(cat,obj,rebuild){
   pickerCtx={cat,obj,field:FIELD_OF[cat],rebuild};
   $("#pkTitle").innerHTML=PICKER_TITLE[cat]||"Add";
@@ -2280,6 +2291,7 @@ function renderPickerList(q){
         if(cat==="weapon")offerAmmoFor(o,obj,rebuild);
       }else{
         if(pickedIds.has(o.id)){arr.splice(arr.indexOf(o.id),1);toast(o.name+" removed");}
+        else if(!recruitCanAfford(obj,cat,o)){toast("The pool cannot pay for "+o.name+" ("+o.cost+" cp)");return;}
         else{arr.push(o.id);toast(o.name+" added");}
       }
       rebuild();persist();
@@ -4081,7 +4093,7 @@ function openSpendCP(charId){
     const hpShort=CP_COSTS.hp-rem;
     const hpChip=`<button class="stylechip${hpShort>0?" unaffordable":""}" data-hp="1"${hpShort>0?` disabled title="Needs ${hpShort} more"`:""}>+${CP_COSTS.hpStep} HP <b class="mono">${CP_COSTS.hp}</b>${hpShort>0?`<span class="short">+${hpShort}</span>`:""}</button>`;
     const rows=[["trait","traits"],["ability","abilities"]].map(([cat,field])=>{
-      const list=Object.values(CAT[cat]).filter(o=>(!f||normLabel(o.name).includes(f))&&!(draft[field]||[]).includes(o.id));
+      const list=Object.values(CAT[cat]).filter(o=>o.cost>0&&(!f||normLabel(o.name).includes(f))&&!(draft[field]||[]).includes(o.id));
       if(!list.length)return "";
       return `<div class="eyebrow" style="margin:10px 0 6px">${cat==="trait"?"Traits":"Abilities"}</div>
         <div class="chips-row">${list.slice(0,60).map(o=>{const short=o.cost-rem;
@@ -4123,6 +4135,7 @@ function openSpendCP(charId){
     $("#cpCancel").onclick=closeModal;
     $("#cpConfirm").onclick=()=>{
       if(spent<=0)return;
+      if(spent>avail()){toast("That is more than the points you have");draft=JSON.parse(JSON.stringify(orig));spent=0;draw(filter);return;}
       // spend the character's own points first, then the warband pool
       let owe=spent, own=Math.min(cpOf(orig),owe); owe-=own;
       orig.cp=cpOf(orig)-own; if(owe>0)w.cp=Math.max(0,(w.cp||0)-owe);
