@@ -338,6 +338,38 @@ body.host-device .host-only{display:inline}
 @keyframes questPulse{0%,100%{opacity:.42}50%{opacity:.92}}
 @media (prefers-reduced-motion: reduce){.questglow{animation:none;opacity:.7}}
 /* ---------- camp bar (top of the camp view) ---------- */
+/* option B: status strip, campaign panel, actions row, menu */
+.statusstrip{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:12px 0 2px}
+.statusstrip .sc{display:inline-flex;align-items:center;gap:5px;font-family:var(--disp);font-size:11.5px;font-weight:600;color:var(--ink-dim);background:var(--sunk);border:1px solid var(--line);border-radius:20px;padding:5px 10px;cursor:pointer;line-height:1.2}
+.statusstrip .sc b{color:var(--ink);font-weight:700}
+.statusstrip .sc.sealed{color:var(--amber);border-color:color-mix(in srgb,var(--amber) 50%,var(--line));background:var(--amber-glow)}
+.statusstrip .sc.quest{color:var(--amber);border-color:color-mix(in srgb,var(--amber) 60%,var(--line));background:var(--amber-glow)}
+.statusstrip .sc.setup{color:#fff;background:var(--amber);border-color:var(--amber)}
+.statusstrip .sc.static{cursor:default}
+body:not(.sealed) .wb-name{font-size:clamp(17px,3.6vw,22px)}
+body.sealed .wb-name{font-size:clamp(22px,5vw,32px)}
+body.sealed .manifest .gauge{display:none}
+body.sealed .manifest{grid-template-columns:1fr;align-items:start}
+.campaign-panel{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-top:4px}
+.campaign-panel .cpk{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 11px}
+.campaign-panel .cpk small{display:block;font-family:var(--disp);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-mute);font-weight:600;margin-bottom:3px}
+.campaign-panel .cpk b{font-family:var(--mono);font-size:17px}
+.campaign-panel .cpk .lq{font-family:var(--body);font-size:12.5px;font-weight:600}
+.actrow{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:12px}
+.actrow .act{display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 4px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--panel);color:var(--ink);font-family:var(--disp);font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;transition:.14s}
+.actrow .act i{font-style:normal;font-size:18px;line-height:1}
+.actrow .act.primary{background:var(--amber);border-color:var(--amber);color:#1b1610}
+.actrow .act:disabled{opacity:.45}
+.menupop{position:fixed;inset:0;z-index:150;display:none}
+.menupop.show{display:block}
+.menupop .mp-scrim{position:absolute;inset:0;background:rgba(6,7,10,.35)}
+.menupop .mp-panel{position:absolute;top:60px;right:max(12px,calc((100vw - 1120px)/2 + 14px));width:min(260px,88vw);background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:6px}
+.menupop .mp-h{font-family:var(--disp);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-mute);font-weight:600;padding:8px 10px 3px}
+.menupop button.mp-i{display:block;width:100%;text-align:left;padding:9px 10px;border-radius:8px;font-size:13.5px;color:var(--ink);background:none;border:none;font-family:var(--body)}
+.menupop button.mp-i:hover{background:var(--sunk)}
+.menupop button.mp-i.danger{color:var(--danger)}
+.campnote{margin-bottom:12px}
+.ledger-box{margin-top:30px}
 .campbar{position:relative;display:flex;align-items:center;gap:14px;flex-wrap:wrap;
   background:var(--sunk);border:2px solid color-mix(in srgb,var(--amber) 40%,var(--line));
   border-radius:var(--r);padding:14px 15px 12px;margin:14px 0 4px;
@@ -805,13 +837,16 @@ body.host-device .host-only{display:inline}
         <div class="sub">Planet 28 · 2nd Ed.</div>
       </div>
       <div class="brand-spacer"></div>
-      <button class="iconbtn" id="btnLibrary" title="Warbands / save &amp; load" aria-label="Warbands">
+      <button class="iconbtn" id="btnMenu" title="Menu" aria-label="Menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+      <button class="iconbtn" id="btnLibrary" hidden title="Warbands / save &amp; load" aria-label="Warbands">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v14H4z"/><path d="M4 9h16M9 5v14"/></svg>
       </button>
-      <button class="iconbtn" id="btnRef" title="Rules reference" aria-label="Reference">
+      <button class="iconbtn" id="btnRef" hidden title="Rules reference" aria-label="Reference">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5V18"/></svg>
       </button>
-      <button class="iconbtn" id="btnTheme" title="Toggle theme" aria-label="Theme">
+      <button class="iconbtn" id="btnTheme" hidden title="Toggle theme" aria-label="Theme">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></svg>
       </button>
     </div>
@@ -846,16 +881,19 @@ body.host-device .host-only{display:inline}
           <span id="mWarn"></span>
         </div>
       </div>
+      <div class="campaign-panel" id="campaignPanel" hidden></div>
     </div>
+    <div class="actrow wb-only" id="actRow"></div>
   </div>
 </header>
 
 <main>
   <div id="warbandView">
+    <div id="campNotes"></div>
     <div class="section-head">
       <span class="eyebrow">The Roster</span>
       <span class="rule"></span>
-      <button class="btn sm ghost" id="btnPrint" title="Open a clean summary you can print or screenshot">Summary</button>
+      <button class="btn sm ghost" id="btnPrint" hidden title="Open a clean summary you can print or screenshot">Summary</button>
       <button class="btn sm ghost" id="btnShareWB" hidden title="Copy a code to bring this warband into your camp on the World App">⛺ Move to camp</button>
       <button class="btn sm" id="btnQuest" hidden title="Join the scenario your host is running">⚔ Embark on a quest</button>
     </div>
@@ -866,6 +904,7 @@ body.host-device .host-only{display:inline}
       <span class="rule"></span>
     </div>
     <div class="roster" id="vehicleRoster"></div>
+    <div id="ledgerBox"></div>
   </div>
 
   <div id="scenarioView" hidden></div>
@@ -1542,6 +1581,20 @@ function renderHeader(){
   const warns=[];
   if(total>0&&fieldedN<2)warns.push("⚠ field ≥ 2 characters for a battle");
   $("#mWarn").innerHTML=warns.length?`<span class="warnflag">${warns.join(" · ")}</span>`:"";
+  // the campaign face of the panel
+  document.body.classList.toggle("sealed",wbSealed(w));
+  const cpan=$("#campaignPanel");
+  if(cpan){
+    if(wbSealed(w)){
+      const L=w.ledger||[], last=L[0], o=last&&OUTCOMES[last.result];
+      cpan.hidden=false;
+      cpan.innerHTML=`<div class="cpk"><small>⭐ Warband pool</small><b>${w.cp||0} cp</b></div>
+        <div class="cpk"><small>🪙 Credits</small><b>${creditsOf(w)}</b></div>
+        <div class="cpk"><small>Fielded</small><b>${fieldedN}/${total}</b>${vTotal?` <span class="none-note" style="font-style:normal">· ${vFielded}/${vTotal} veh</span>`:""}</div>
+        <div class="cpk"><small>Last quest</small><div class="lq">${last?`${o?o.icon+" ":""}${esc(last.title)}`:"—"}</div></div>`;
+    } else {cpan.hidden=true;cpan.innerHTML="";}
+  }
+  renderActRow(); renderCampNotes(); renderLedgerBox();
 }
 
 
@@ -1747,7 +1800,7 @@ function renderRoster(){
     el.appendChild(card);
   });
   const add=document.createElement("button");
-  add.className="card add";add.onclick=addCharacter;
+  add.className="card add";add.onclick=openRecruitChooser;
   add.innerHTML=`<div class="plus">+</div><span>${wbSealed(w)?((w.freeRecruits||0)>0?"Recruit replacement · free":"Recruit character · "+CP_COSTS.recruit+" cp"):"Recruit character"}</span>`;
   el.appendChild(add);
 }
@@ -1831,6 +1884,7 @@ function syncQuestTab(){
   const show=host||!fbAvailable()||onAQuest();     // the Claude app still writes scenarios here
   tab.hidden=!show;
   if(lbl)lbl.textContent=(fbAvailable()&&!host)?"Quest":"Scenarios";
+  const nav=$("#topnav"); if(nav)nav.hidden=host||!show;
   if(!show&&currentView==="scenarios")switchView("warband");
 }
 /* Only camps that have been stashed at the table are listed — a camp living solely on
@@ -1920,27 +1974,193 @@ function renderCampBar(){
   const live=fbAvailable();
   const quest=activeQuestScn();
   const joined=!!roomKey;
-  el.innerHTML=`<div class="campbar">
-    <div class="cb-id">
-      <span class="eyebrow">⛺ Your camp</span>
-      <button class="cb-name" id="cbName">${esc(nm||"Name your camp")}</button>
-    </div>
-    <div class="cb-role">${live?`<button class="btn sm ghost" id="cbRole">🗺 Switch to hosting</button>`:""}
-    </div>
-    ${quest?`<div class="cb-quest"><span class="cb-onq">⚔ On a quest — ${esc(quest.title||"a scenario")}</span><button class="linkbtn" id="cbToScn">open the scenario</button></div>`:""}
-    ${live?`<div class="cb-table">
-      ${joined?`<span class="cb-ok" title="Everything is filed under this realm">◉ Realm: <b class="cb-pass">${esc(savedPass()||"set")}</b></span><button class="linkbtn" id="cbPass">change</button>`
-              :`<button class="btn sm primary" id="cbPass">🔑 Name your realm</button>
-                <span class="none-note" style="font-style:normal">One-time — the realm you share with your players. Different realms keep their own scenarios. After this, joining a game is just a 4-letter code.</span>`}
-    </div>`:""}
-  </div>`;
-  $("#cbName").onclick=openLibrary;
-  const cr=$("#cbRole"); if(cr)cr.onclick=openRoleChooser;
+  const sealed=wbSealed();
+  el.innerHTML=`<div class="statusstrip">
+    <button class="sc" id="cbName" title="Rename your camp">⛺ <b>${esc(nm||"Name your camp")}</b></button>
+    ${live?(joined?`<button class="sc" id="cbPass" title="Change realm">🗝 <b>${esc(savedPass()||"set")}</b></button>`:`<button class="sc setup" id="cbPass">🔑 Name your realm</button>`):""}
+    <span class="sc static ${sealed?"sealed":""}">${sealed?"🔒 sealed":"🔓 building"}</span>
+    ${quest?`<button class="sc quest" id="cbToScn">⚔ ${esc(quest.title||"On a quest")} ›</button>`:""}
+  </div>${live&&!joined?`<div class="none-note" style="font-style:normal;margin:2px 0 4px">One-time — the realm you share with your players. After this, joining a game is just a 4-letter code.</div>`:""}`;
+  $("#cbName").onclick=openCampNamePrompt;
   syncQuestGlow(); syncQuestTab();
   const cq=$("#cbToScn"); if(cq)cq.onclick=()=>{const q=activeQuestScn();if(q){scnCurrentId=q.id;scnScreen="detail";}switchView("scenarios");};
   const cp=$("#cbPass"); if(cp)cp.onclick=async()=>{ if(roomKey){await changePassphrase();return;} if(await ensureRoom()){render();renderScenarioView();} };
+  renderActRow();
+}
+function openCampNamePrompt(){
+  const body=$("#modalBody");
+  body.innerHTML=`<h3>Your camp</h3><p class="lead">Your own space — the name your warbands are filed under, and what players see beside your game code.</p>
+    <div class="field"><label>Camp name</label><input class="input" id="cnpName" value="${esc(campName())}" placeholder="e.g. Rhyno's Camp" maxlength="40" autocapitalize="words"></div>
+    <div class="modal-actions"><button class="btn primary sm" id="cnpOk">Save</button><button class="btn ghost sm" id="cnpX" style="margin-left:auto">Cancel</button></div>`;
+  $("#cnpOk").onclick=()=>{setCampName($("#cnpName").value);closeModal();render();};
+  $("#cnpX").onclick=closeModal; showModal(); setTimeout(()=>{const i=$("#cnpName");if(i)i.focus();},60);
 }
 function render(){renderHeader();renderRoster();renderVehicleRoster();renderCampBar();syncAppButtons();syncQuestGlow();save()}
+/* ☰ — the rare things: other warbands, backup, hosting, rules, theme */
+function openMenu(){
+  let m=$("#menuPop");
+  if(!m){m=document.createElement("div");m.id="menuPop";m.className="menupop";document.body.appendChild(m);}
+  const host=isHost(), live=fbAvailable();
+  m.innerHTML=`<div class="mp-scrim"></div><div class="mp-panel">
+    ${host?"":`<div class="mp-h">Warbands</div>
+    <button class="mp-i" data-m="switch">Switch warband…</button>
+    <button class="mp-i" data-m="import">Import a warband or character…</button>`}
+    <div class="mp-h">This device</div>
+    ${host?"":`<button class="mp-i" data-m="backup">Backup &amp; transfer…</button>`}
+    ${live?`<button class="mp-i" data-m="role">${host?"🏕 Switch to camp":"🗺 Switch to hosting"}</button>`:""}
+    <div class="mp-h">More</div>
+    <button class="mp-i" data-m="rules">Rules reference</button>
+    <button class="mp-i" data-m="theme">Light / dark</button>
+  </div>`;
+  m.classList.add("show");
+  const close=()=>m.classList.remove("show");
+  m.querySelector(".mp-scrim").onclick=close;
+  m.querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{close();
+    const k=b.dataset.m;
+    if(k==="switch")openLibrary(); else if(k==="import")importDialog();
+    else if(k==="backup")openBackup(); else if(k==="role")openRoleChooser();
+    else if(k==="rules")openReference(); else if(k==="theme")$("#btnTheme").click();
+  });
+}
+/* Shop needs a shopper */
+function openShopChooser(){
+  const w=activeWB(), chars=w.characters||[];
+  if(!chars.length){toast("No one to shop for yet");return;}
+  if(chars.length===1){openBuyGear(chars[0].id);return;}
+  const body=$("#modalBody");
+  body.innerHTML=`<h3>Who is shopping?</h3><p class="lead">Gear is bought with the warband's credits (<b>${creditsOf(w)}</b>) and goes straight into their kit.</p>
+    <div class="chips-row">${chars.map(c=>`<button class="stylechip" data-shop="${c.id}">${esc(c.name||"Unnamed")}</button>`).join("")}</div>
+    <div class="modal-actions"><button class="btn ghost sm" id="shX" style="margin-left:auto">Close</button></div>`;
+  body.querySelectorAll("[data-shop]").forEach(b=>b.onclick=()=>openBuyGear(b.dataset.shop));
+  $("#shX").onclick=closeModal; showModal();
+}
+/* Recruit, once sealed: build here, or paste one made elsewhere */
+function openRecruitChooser(){
+  const w=activeWB();
+  if(!wbSealed(w)){addCharacter();return;}
+  const free=(w.freeRecruits||0)>0, pool=w.cp||0;
+  const body=$("#modalBody");
+  body.innerHTML=`<h3>Recruit</h3>
+    <p class="lead">${free?"A replacement for the fallen joins without the "+CP_COSTS.recruit+"-point fee.":"A recruit costs "+CP_COSTS.recruit+" campaign points from the pool."} Their levels, traits and abilities cost their points on top (pool: <b>${pool}</b>); gear is bought with credits.</p>
+    <div class="rolegrid">
+      <button class="rolecard" id="rcScratch"><div class="rc-ico">🪖</div><div class="rc-n">Build from scratch</div><div class="rc-d">A blank character — set them up in the dossier.</div></button>
+      <button class="rolecard" id="rcCode"><div class="rc-ico">⇪</div><div class="rc-n">Paste a character code</div><div class="rc-d">One you made in the Claude app (card → ⇪ Move).</div></button>
+    </div>
+    <div class="modal-actions"><button class="btn ghost sm" id="rcX" style="margin-left:auto">Not now</button></div>`;
+  $("#rcScratch").onclick=()=>{closeModal();addCharacter();};
+  $("#rcCode").onclick=()=>importDialog();
+  $("#rcX").onclick=closeModal; showModal();
+}
+/* the actions row: what you do at camp, in one place, changing with the campaign */
+function renderActRow(){
+  const el=$("#actRow"); if(!el)return;
+  const w=activeWB(), sealed=wbSealed(w), live=fbAvailable(), quest=activeQuestScn();
+  const L=w.ledger||[];
+  el.innerHTML=`
+    <button class="act primary" id="acEmbark">${quest?`<i>⚔</i>On a quest`:live?`<i>⚔</i>Embark`:`<i>🗺</i>Scenarios`}</button>
+    <button class="act" id="acRecruit"><i>+</i>Recruit</button>
+    ${sealed?`<button class="act" id="acShop"><i>🛒</i>Shop</button>`:`<button class="act" id="acSeal"><i>🔒</i>Seal</button>`}
+    ${sealed&&L.length?`<button class="act" id="acLedger"><i>📜</i>Ledger</button>`:`<button class="act" id="acSummary"><i>📋</i>Summary</button>`}`;
+  $("#acEmbark").onclick=()=>{ if(quest){scnCurrentId=quest.id;scnScreen="detail";switchView("scenarios");} else if(live)$("#btnQuest").click(); else switchView("scenarios"); };
+  $("#acRecruit").onclick=openRecruitChooser;
+  const sh=$("#acShop");if(sh)sh.onclick=openShopChooser;
+  const se=$("#acSeal");if(se)se.onclick=()=>ensureSealedForQuest(()=>{},"🔒 Seal the warband");
+  const lg=$("#acLedger");if(lg)lg.onclick=()=>{const b=$("#ledgerBox");if(b)b.scrollIntoView({behavior:"smooth",block:"start"});};
+  const sm=$("#acSummary");if(sm)sm.onclick=openSummary;
+}
+/* injuries to roll, the still-hurt, spoils, scars — above the roster, where they are acted on */
+function renderCampNotes(){
+  const el=$("#campNotes"); if(!el)return;
+  const w=activeWB(), chars=w.characters||[];
+  if(isHost()){el.innerHTML="";return;}
+  const pend=chars.filter(c=>c.pendingInjury);
+  const hurt=chars.filter(c=>typeof c.curHP==="number"&&c.curHP<c.hp*memberCount(c));
+  const spoils=spoilsOf(w);
+  const scarred=chars.filter(c=>(c.injuries||[]).length);
+  let h="";
+  if(pend.length)h+=`<div class="camp-box campnote" style="border-color:color-mix(in srgb,var(--danger) 55%,var(--line));background:var(--danger-bg)">
+    <div class="prep-h" style="color:var(--danger)">🩸 Taken down — roll for what it cost them</div>
+    ${pend.map(c=>`<div class="wb-item"><div class="wbi-main" style="cursor:default"><div class="wbi-name">${esc(c.name||"Unnamed")}</div>
+      <div class="wbi-sub">${(c.pendingInjury||{}).cause?"maimed by "+esc(c.pendingInjury.cause)+" at ":"fell at "}${esc((c.pendingInjury||{}).title||"a quest")}</div></div>
+      <button class="linkbtn" data-injury="${c.id}">Roll injury</button></div>`).join("")}</div>`;
+  if(hurt.length)h+=`<div class="camp-box campnote" style="border-color:color-mix(in srgb,var(--warn) 45%,var(--line));background:color-mix(in srgb,var(--warn) 9%,transparent)">
+    <div class="prep-h" style="color:var(--warn)">🩹 Back from a quest, still hurt</div>
+    <ul class="scn-list">${hurt.map(c=>`<li><b>${esc(c.name||"Unnamed")}</b> — ${c.curHP<=0?"was taken down":c.curHP+"/"+(c.hp*memberCount(c))+" HP"}</li>`).join("")}</ul>
+    <button class="btn sm" id="cnHealAll" style="margin-top:8px">🩹 Rest and heal</button>
+    <div class="none-note" style="font-style:normal;margin-top:6px">Rest restores health only — lasting scars stay with them.</div></div>`;
+  if(spoils.length)h+=`<div class="camp-box campnote" style="border-color:color-mix(in srgb,var(--amber) 50%,var(--line));background:var(--amber-glow)">
+    <div class="prep-h" style="color:var(--amber)">🎒 Spoils waiting to be decided</div>
+    <ul class="scn-list">${spoils.slice(0,5).map(({c,p})=>`<li><b>${esc(p.name)}</b> — carried by ${esc(c.name||"someone")}</li>`).join("")}${spoils.length>5?`<li>…and ${spoils.length-5} more</li>`:""}</ul>
+    <button class="btn sm" id="cnStash" style="margin-top:8px">🎒 Sort the spoils</button></div>`;
+  if(scarred.length)h+=`<div class="camp-box campnote">
+    <div class="prep-h">⚔ Wounds they carry</div>
+    ${scarred.map(c=>(c.injuries||[]).map((x,i)=>`<div class="wb-item"><div class="wbi-main" style="cursor:default">
+      <div class="wbi-name">${esc(c.name)} — ${esc(x.name)}</div>
+      <div class="wbi-sub">${esc(x.effectNote||x.ruleName||"")}${x.games?` · ${Math.max(0,x.games-(x.served||0))} more game${Math.max(0,x.games-(x.served||0))===1?"":"s"}`:x.permanent?" · permanent":""}${(x.served||0)?` · carried ${x.served} game${(x.served||0)===1?"":"s"}`:""}</div></div>
+      ${canTreat(c,x)?`<button class="linkbtn" data-treat="${c.id}|${i}">Treat (D6)</button>`:`<span class="none-note" style="font-style:normal">needs a game first</span>`}</div>`).join("")).join("")}
+    <div class="none-note" style="font-style:normal;margin-top:6px">Treatment costs ${CP_COSTS.heal} campaign points for the attempt, win or lose — roll 4+ on a D6 to be mended.</div></div>`;
+  el.innerHTML=h;
+  el.querySelectorAll("[data-injury]").forEach(b=>b.onclick=()=>{const c=chars.find(x=>x.id===b.dataset.injury);if(c&&c.pendingInjury)openInjuryRoll(c);});
+  el.querySelectorAll("[data-treat]").forEach(b=>b.onclick=()=>{const[cid,i]=b.dataset.treat.split("|");openTreatInjury(cid,+i);});
+  const hl=$("#cnHealAll");if(hl)hl.onclick=()=>{chars.forEach(c=>{delete c.curHP;});if(save())toast("Rested — everyone back to full health");render();};
+  const st=$("#cnStash");if(st)st.onclick=openStash;
+}
+function renderLedgerBox(){
+  const el=$("#ledgerBox"); if(!el)return;
+  const w=activeWB(), L=w.ledger||[];
+  if(isHost()||!wbSealed(w)){el.innerHTML="";return;}
+  const line=e=>{const o=OUTCOMES[e.result];const bits=[];if(e.downed)bits.push(e.downed+" down");if(e.wounded)bits.push(e.wounded+" hurt");if(e.found)bits.push(e.found+" find"+(e.found>1?"s":""));
+    return `<div class="ledger-row ${o?o.cls:""}"><span class="lg-ico">${o?o.icon:"❔"}</span><div class="lg-main"><b>${esc(e.title)}</b> <span class="lg-res">${o?esc(o.short):"unrecorded"}</span>${e.round?` · turn ${e.round}`:""}
+      <div class="none-note" style="font-style:normal">${new Date(e.at).toLocaleDateString()}${e.fought&&e.fought.length?" · "+esc(e.fought.join(", ")):""}${bits.length?" · "+bits.join(", "):""}</div></div></div>`;};
+  const won=L.filter(e=>e.result==="victory").length, lost=L.filter(e=>e.result==="defeat").length;
+  el.innerHTML=`<div class="ledger-box"><div class="section-head"><span class="eyebrow">📜 Battle ledger</span><span class="rule"></span><span class="none-note" style="font-style:normal">${L.length?`${L.length} quest${L.length===1?"":"s"} · ${won} won · ${lost} lost`:"nothing yet"}</span></div>
+    ${L.length?L.slice(0,20).map(line).join("")+(L.length>20?`<div class="none-note">…and ${L.length-20} more</div>`:""):`<div class="none-note">A line is written each time this warband returns to camp from a quest.</div>`}</div>`;
+}
+/* the old Warbands dialog, minus everything that now lives on the page: backup & transfer */
+function openBackup(){
+  const body=$("#modalBody");
+  body.innerHTML=`
+    <h3>Backup &amp; transfer</h3>
+    <div class="camp-box">
+      <div class="field" style="margin-bottom:8px"><label>Camp name</label>
+        <input class="input" id="mCampName" value="${esc(campName())}" placeholder="e.g. Rhyno's Camp" maxlength="40" autocapitalize="words"></div>
+      <div class="none-note" style="font-style:normal;margin-bottom:9px">Your own space — your warbands live here. Your realm is where scenarios live and quests are hosted. Stashing copies your warbands into your realm so you can restore them on any device.${fbAvailable()?"":" Cloud stash lives in the Realm app."}</div>
+      ${fbAvailable()?`<div class="modal-actions" style="margin-top:0">
+        <button class="btn sm" id="mCampSave">☁ Stash camp in your realm</button>
+        <button class="btn sm ghost" id="mCampLoad">⇩ Recover camp here</button></div>
+      <div class="none-note" style="font-style:normal;margin-top:7px">${roomKey?"Stash on the device you just played on; recover on the one you are moving to. Recovering replaces warbands of the same name here.":"Both need your realm name — you will be asked for it once."}</div>`:""}
+    </div>
+    <div class="eyebrow" style="margin:16px 0 8px">This warband</div>
+    <div class="modal-actions" style="margin-top:0">
+      <button class="btn sm" id="mExport">${fbAvailable()?"Export code":"⛺ Move to camp"}</button>
+      <button class="btn sm" id="mImport">Import…</button>
+      <button class="btn sm ghost" id="mSummary">📋 Summary</button>
+    </div>
+    ${visibleScns().length?`<div class="modal-actions" style="margin-top:8px">
+      <button class="btn sm danger ghost" id="mWipeScns">Delete all ${visibleScns().length} scenario${visibleScns().length===1?"":"s"}</button>
+      <span class="none-note" style="font-style:normal;margin-left:auto">Characters and scars are kept.</span></div>`:""}
+    <div class="modal-actions" style="margin-top:8px">
+      <button class="btn sm danger ghost" id="mResetAll">🧨 Reset this device</button>
+      <span class="none-note" style="font-style:normal;margin-left:auto">Erases everything here. Your realm is untouched.</span>
+    </div>
+    <div class="modal-actions"><button class="btn ghost sm" id="mClose" style="margin-left:auto">Close</button></div>`;
+  const cn=$("#mCampName");if(cn)cn.oninput=e=>{setCampName(e.target.value);renderCampBar();};
+  const cs=$("#mCampSave");if(cs)cs.onclick=backupCamp;
+  const cl=$("#mCampLoad");if(cl)cl.onclick=restoreCamp;
+  $("#mExport").onclick=()=>exportCurrent(false);
+  $("#mImport").onclick=importDialog;
+  $("#mSummary").onclick=openSummary;
+  const ra=$("#mResetAll");if(ra)ra.onclick=resetDevice;
+  const cw=$("#mWipeScns");if(cw)cw.onclick=()=>{
+    const n=visibleScns().length;
+    askConfirm("Delete all "+n+" scenario"+(n===1?"":"s")+" in “"+activeWB().name+"”? Your characters, gear and scars are untouched.",()=>{
+      visibleScns().forEach(s=>dropScn(s.id));scnCurrentId=null;scnScreen="list";
+      if(save())toast("Scenarios cleared");render();closeModal();
+    },{danger:true,yesLabel:"Delete all"});
+  };
+  $("#mClose").onclick=closeModal;
+  showModal();
+}
 
 function addCharacter(){
   const w=activeWB();
@@ -2136,8 +2356,8 @@ function buildDossier(){
    action that works where you are: move a warband OUT to your camp, or take it ON a quest. */
 function syncAppButtons(){
   const share=$("#btnShareWB"), quest=$("#btnQuest");
-  if(share)share.hidden=fbAvailable();
-  if(quest)quest.hidden=!fbAvailable();
+  if(share)share.hidden=true;      // both live in the actions row / backup dialog now
+  if(quest)quest.hidden=true;
 }
 function persist(){renderHeader();renderRoster();renderVehicleRoster();renderCampBar();syncQuestGlow();save()}
 /* cost badge: what this one costs, and what is still available to spend on it —
@@ -2305,102 +2525,25 @@ function renderPickerList(q){
 function openLibrary(){
   const body=$("#modalBody");
   const rows=store.warbands.map(w=>{
-    const spent=wbSpent(w);
+    const spent=wbSpent(w), L=(w.ledger||[]).length;
     return `<div class="wb-item ${w.id===store.activeId?"active":""}">
       <button class="wbi-main" data-load="${w.id}">
         <div class="wbi-name">${esc(w.name)}</div>
-        <div class="wbi-sub">${w.characters.length} chars · ${spent}/${w.budget} pts</div>
+        <div class="wbi-sub">${w.characters.length} chars · ${spent} pts · ${w.sealed?"🔒 sealed":"🔓 building"}${L?` · ${L} quest${L===1?"":"s"}`:""}</div>
       </button>
       <button class="linkbtn" data-dup="${w.id}">Copy</button>
       ${store.warbands.length>1?`<button class="linkbtn del" data-del="${w.id}">Delete</button>`:""}
     </div>`;
   }).join("");
   body.innerHTML=`
-    <h3>${isHost()?"This device":"Warbands"}</h3>
-    <p class="lead">Everything is saved automatically in this browser. ${isHost()?"You are hosting the realm, so there are no warbands here.":"Use export to back up or move a warband to another device."}</p>
-    <div class="wb-only">
-      <div class="wb-switch">${rows}</div>
-      <button class="btn ghost" id="mNew" style="width:100%;justify-content:center;margin-bottom:16px">+ New warband</button>
-    </div>
-    ${(()=>{const L=(activeWB().ledger||[]);if(isHost())return "";
-      if(!L.length)return `<div class="eyebrow wb-only" style="margin-bottom:8px">📜 Battle ledger</div><div class="wb-only none-note" style="margin-bottom:14px">No quests recorded yet — a line is written each time this warband returns to camp from a quest.</div>`;
-      const line=e=>{const o=OUTCOMES[e.result];const bits=[];if(e.downed)bits.push(e.downed+" down");if(e.wounded)bits.push(e.wounded+" hurt");if(e.found)bits.push(e.found+" find"+(e.found>1?"s":""));
-        return `<div class="ledger-row ${o?o.cls:""}"><span class="lg-ico">${o?o.icon:"❔"}</span><div class="lg-main"><b>${esc(e.title)}</b> <span class="lg-res">${o?esc(o.short):"unrecorded"}</span>${e.round?` · turn ${e.round}`:""}
-          <div class="none-note" style="font-style:normal">${new Date(e.at).toLocaleDateString()}${e.fought&&e.fought.length?" · "+esc(e.fought.join(", ")):""}${bits.length?" · "+bits.join(", "):""}</div></div></div>`;};
-      const won=L.filter(e=>e.result==="victory").length, lost=L.filter(e=>e.result==="defeat").length;
-      return `<div class="eyebrow wb-only" style="margin-bottom:8px">📜 Battle ledger <span class="none-note" style="font-style:normal">${L.length} quest${L.length===1?"":"s"} · ${won} won · ${lost} lost</span></div>
-      <div class="wb-only" style="margin-bottom:14px">${L.slice(0,12).map(line).join("")}${L.length>12?`<div class="none-note">…and ${L.length-12} more</div>`:""}</div>`;})()}
-    <div class="wb-only camp-box" style="margin-bottom:14px">
-      <div class="prep-h">${wbSealed()?"🔒 Sealed for the campaign":"🔓 Still being built"}</div>
-      <div class="none-note" style="font-style:normal">${wbSealed()?"Since "+new Date(activeWB().sealed).toLocaleDateString()+". Characters advance with campaign points and buy gear with credits. Unseal only to fix a build mistake.":"Free editing until the first quest is claimed or the leftover points are banked — or seal it now to start the campaign."}</div>
-      <div class="modal-actions" style="margin-top:8px"><button class="btn sm ${wbSealed()?"ghost":""}" id="wbSealBtn">${wbSealed()?"Unseal to fix a mistake":"🔒 Seal the warband"}</button></div>
-    </div>
-    <div class="eyebrow" style="margin-bottom:8px"><span class="wb-only">⛺ Camp name &amp; backup</span><span class="host-only">🗺 Hosting as</span></div>
-    <div class="wb-only">
-    ${(()=>{const chars=activeWB().characters||[];
-      const pend=chars.filter(c=>c.pendingInjury);
-      const hurt=chars.filter(c=>typeof c.curHP==="number"&&c.curHP<c.hp*memberCount(c));
-      let h="";
-      if(pend.length)h+=`<div class="camp-box" style="margin-bottom:12px;border-color:color-mix(in srgb,var(--danger) 55%,var(--line));background:var(--danger-bg)">
-        <div class="prep-h" style="color:var(--danger)">🩸 Taken down — roll for what it cost them</div>
-        ${pend.map(c=>`<div class="wb-item"><div class="wbi-main" style="cursor:default"><div class="wbi-name">${esc(c.name||"Unnamed")}</div>
-          <div class="wbi-sub">${(c.pendingInjury||{}).cause?"maimed by "+esc(c.pendingInjury.cause)+" at ":"fell at "}${esc((c.pendingInjury||{}).title||"a quest")}</div></div>
-          <button class="linkbtn" data-injury="${c.id}">Roll injury</button></div>`).join("")}
-      </div>`;
-      if(hurt.length)h+=`<div class="camp-box" style="margin-bottom:12px;border-color:color-mix(in srgb,var(--warn) 45%,var(--line));background:color-mix(in srgb,var(--warn) 9%,transparent)">
-        <div class="prep-h" style="color:var(--warn)">🩹 Back from a quest, still hurt</div>
-        <ul class="scn-list">${hurt.map(c=>`<li><b>${esc(c.name||"Unnamed")}</b> — ${c.curHP<=0?"was taken down":c.curHP+"/"+(c.hp*memberCount(c))+" HP"}</li>`).join("")}</ul>
-        <button class="btn sm" id="mHealAll" style="margin-top:8px">🩹 Rest and heal</button>
-        <div class="none-note" style="font-style:normal;margin-top:6px">Rest restores health only — lasting scars stay with them.</div>
-      </div>`;
-      const spoils=spoilsOf(activeWB());
-      if(spoils.length)h+=`<div class="camp-box" style="margin-bottom:12px;border-color:color-mix(in srgb,var(--amber) 50%,var(--line));background:var(--amber-glow)">
-        <div class="prep-h" style="color:var(--amber)">🎒 Spoils waiting to be decided</div>
-        <ul class="scn-list">${spoils.slice(0,5).map(({c,p})=>`<li><b>${esc(p.name)}</b> — carried by ${esc(c.name||"someone")}</li>`).join("")}${spoils.length>5?`<li>…and ${spoils.length-5} more</li>`:""}</ul>
-        <button class="btn sm" id="mStash" style="margin-top:8px">🎒 Sort the spoils</button>
-        <div class="none-note" style="font-style:normal;margin-top:6px">Free during the quest you found them — keep, or leave them behind.</div>
-      </div>`;
-      const scarred=chars.filter(c=>(c.injuries||[]).length);
-      if(scarred.length)h+=`<div class="camp-box" style="margin-bottom:12px">
-        <div class="prep-h">⚔ Wounds they carry</div>
-        ${scarred.map(c=>(c.injuries||[]).map((x,i)=>`<div class="wb-item"><div class="wbi-main" style="cursor:default">
-          <div class="wbi-name">${esc(c.name)} — ${esc(x.name)}</div>
-          <div class="wbi-sub">${esc(x.effectNote||x.ruleName||"")}${x.games?` · ${Math.max(0,x.games-(x.served||0))} more game${Math.max(0,x.games-(x.served||0))===1?"":"s"}`:x.permanent?" · permanent":""}${(x.served||0)?` · carried ${x.served} game${(x.served||0)===1?"":"s"}`:""}</div></div>
-          ${canTreat(c,x)?`<button class="linkbtn" data-treat="${c.id}|${i}">Treat (D6)</button>`:`<span class="none-note" style="font-style:normal">needs a game first</span>`}</div>`).join("")).join("")}
-        <div class="none-note" style="font-style:normal;margin-top:6px">Treatment costs ${CP_COSTS.heal} campaign points for the attempt, win or lose — roll 4+ on a D6 to be mended.</div>
-      </div>`;
-      return h;})()}
-    </div>
-    <div class="camp-box">
-      <div class="field" style="margin-bottom:8px"><label>Camp name</label>
-        <input class="input" id="mCampName" value="${esc(campName())}" placeholder="e.g. Rhyno's Camp" maxlength="40" autocapitalize="words"></div>
-      <div class="none-note" style="font-style:normal;margin-bottom:9px">${isHost()?"Players see this name beside your game code when they join.":`This is your own space — your warbands live here. Your realm (the name you share with your players) is where scenarios live and quests are hosted. Backing up copies your warbands into your realm so you can restore them on any device.${fbAvailable()?"":" Live features are only available in the Realm."}`}</div>
-      ${fbAvailable()?`<div class="modal-actions wb-only" style="margin-top:0">
-        <button class="btn sm" id="mCampSave">☁ Stash camp in your realm</button>
-        <button class="btn sm ghost" id="mCampLoad">⇩ Recover camp here</button>
-      </div>
-      <div class="none-note wb-only" style="font-style:normal;margin-top:7px">${roomKey
-        ? "Stash on the device you just played on; recover on the one you are moving to. Recovering replaces warbands of the same name here."
-        : "Both need your realm name — it is the address your camp is filed under. You will be asked for it once."}</div>`
-      :`<div class="none-note wb-only" style="font-style:normal;margin-top:7px">Cloud stash lives in the Realm app, where your realm is. From here, use <b>⛺ Move to camp</b> on the roster to copy a warband across.</div>`}
-    </div>
-    <div class="wb-only">
-      <div class="eyebrow" style="margin:16px 0 8px">Backup &amp; transfer</div>
-      <div class="modal-actions" style="margin-top:0">
-        <button class="btn sm" id="mExport">Export current</button>
-        <button class="btn sm" id="mImport">Import…</button>
-        <button class="btn sm ghost" id="mStashOpen">🎒 Spoils</button>
-      </div>
-    </div>
-    ${visibleScns().length?`<div class="modal-actions" style="margin-top:8px">
-      <button class="btn sm danger ghost" id="mWipeScns">Delete all ${visibleScns().length} scenario${visibleScns().length===1?"":"s"}</button>
-      <span class="none-note" style="font-style:normal;margin-left:auto">Characters and scars are kept.</span>
-    </div>`:""}
-    <div class="modal-actions" style="margin-top:8px">
-      <button class="btn sm danger ghost" id="mResetAll">🧨 Reset this device</button>
-      <span class="none-note" style="font-style:normal;margin-left:auto">Erases everything here. Your realm is untouched.</span>
-    </div>
-    <div class="modal-actions"><button class="btn ghost sm" id="mClose" style="margin-left:auto">Close</button></div>`;
+    <h3>Warbands on this device</h3>
+    <p class="lead">Tap one to switch. Everything is saved automatically in this browser.</p>
+    <div class="wb-switch">${rows}</div>
+    <div class="modal-actions" style="margin-top:4px">
+      <button class="btn sm" id="mNew">+ New warband</button>
+      <button class="btn sm ghost" id="mImport">Import…</button>
+      <button class="btn ghost sm" id="mClose" style="margin-left:auto">Close</button>
+    </div>`;
   body.querySelectorAll("[data-load]").forEach(b=>b.onclick=()=>{store.activeId=b.dataset.load;save();render();closeModal();toast("Loaded "+esc(activeWB().name))});
   body.querySelectorAll("[data-dup]").forEach(b=>b.onclick=()=>{
     const src=store.warbands.find(w=>w.id===b.dataset.dup);
@@ -2415,36 +2558,8 @@ function openLibrary(){
       save();render();openLibrary();
     },{danger:true,yesLabel:"Delete"});
   });
-  const mN=$("#mNew"); if(mN)mN.onclick=()=>{const w=newWarband("New Warband");store.warbands.push(w);store.activeId=w.id;save();render();closeModal();openDossierNewHint()};
-  const st=$("#mStash");if(st)st.onclick=openStash;
-  const st2=$("#mStashOpen");if(st2)st2.onclick=openStash;
-  const ra=$("#mResetAll");if(ra)ra.onclick=resetDevice;
-  const cw=$("#mWipeScns");if(cw)cw.onclick=()=>{
-    const n=visibleScns().length;
-    askConfirm("Delete all "+n+" scenario"+(n===1?"":"s")+" in “"+activeWB().name+"”? Your characters, gear and scars are untouched.",()=>{
-      visibleScns().forEach(s=>dropScn(s.id));scnCurrentId=null;scnScreen="list";
-      if(save())toast("Scenarios cleared");render();openLibrary();
-    },{danger:true,yesLabel:"Delete all"});
-  };
-  body.querySelectorAll("[data-treat]").forEach(b=>b.onclick=()=>{const[cid,i]=b.dataset.treat.split("|");openTreatInjury(cid,+i);});
-  const sb=$("#wbSealBtn");if(sb)sb.onclick=()=>{
-    if(wbSealed())askConfirm("Unseal the warband? Free editing comes back — use it only to correct a build mistake, then seal again.",()=>{unsealWarband();closeModal();},{danger:true,yesLabel:"Unseal"});
-    else askConfirm("Seal the warband and start the campaign? From here on, characters only grow with campaign points and gear costs credits.",()=>{sealWarband();closeModal();},{danger:false,yesLabel:"Seal it"});
-  };
-  body.querySelectorAll("[data-injury]").forEach(b=>b.onclick=()=>{
-    const c=activeWB().characters.find(x=>x.id===b.dataset.injury);
-    if(c&&c.pendingInjury)openInjuryRoll(c);
-  });
-  const hl=$("#mHealAll");if(hl)hl.onclick=()=>{
-    (activeWB().characters||[]).forEach(c=>{delete c.curHP;});
-    if(save())toast("Rested — everyone back to full health");
-    render();openLibrary();
-  };
-  const cn=$("#mCampName");if(cn)cn.oninput=e=>setCampName(e.target.value);
-  const cs=$("#mCampSave");if(cs)cs.onclick=backupCamp;
-  const cl=$("#mCampLoad");if(cl)cl.onclick=restoreCamp;
-  const mE=$("#mExport"); if(mE)mE.onclick=exportCurrent;
-  const mI=$("#mImport"); if(mI)mI.onclick=importDialog;
+  $("#mNew").onclick=()=>{const w=newWarband("New Warband");store.warbands.push(w);store.activeId=w.id;save();render();closeModal();openDossierNewHint()};
+  $("#mImport").onclick=importDialog;
   $("#mClose").onclick=closeModal;
   showModal();
 }
@@ -3886,7 +4001,7 @@ function rememberQuestState(scn){
    the warband is first built — after that it costs CREDITS, and CP convert to credits at 2:1. */
 const CP_COSTS={skill:20,hp:20,hpStep:5,recruit:10,heal:10};
 /* gate on the way out: sealed → go; unsealed → seal here, or go back to camp */
-function ensureSealedForQuest(then){
+function ensureSealedForQuest(then,btnLabel){
   const w=activeWB();
   if(wbSealed(w)){then();return;}
   const spent=wbSpent(w), over=spent-w.budget;
@@ -3898,7 +4013,7 @@ function ensureSealedForQuest(then){
       <div class="none-note" style="font-style:normal">${over>0?"Trim the build before it can seal.":(w.budget-spent>0?"The "+(w.budget-spent)+" unspent points become credits, one for one.":"Nothing left over.")}</div>
     </div>
     <div class="modal-actions">
-      <button class="btn primary sm" id="sqSeal"${over>0?" disabled":""}>🔒 Seal and embark</button>
+      <button class="btn primary sm" id="sqSeal"${over>0?" disabled":""}>${btnLabel||"🔒 Seal and embark"}</button>
       <button class="btn ghost sm" id="sqBack" style="margin-left:auto">Return to camp</button>
     </div>`;
   $("#sqSeal").onclick=()=>{
@@ -6505,6 +6620,7 @@ document.addEventListener("paste",e=>{
   }
 });
 $("#btnLibrary").onclick=openLibrary;
+$("#btnMenu").onclick=openMenu;
 $("#btnRef").onclick=openReference;
 $("#btnPrint").onclick=openSummary;
 $("#btnShareWB").onclick=()=>exportCurrent(false);
