@@ -638,6 +638,28 @@ body.sealed .manifest{grid-template-columns:1fr;align-items:start}
 /* battlefield map */
 .scn-map-wrap{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px}
 .scn-briefing{border-left:3px solid var(--amber);padding:6px 0 6px 16px;margin:2px 0 18px;font-size:15px;line-height:1.7;color:var(--ink);font-style:italic;max-width:64ch;background:linear-gradient(90deg,var(--amber-glow),transparent)}
+/* S2: sections + pinned turn bar */
+.scn-accs{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+details.scn-acc{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+details.scn-acc[open]{border-color:color-mix(in srgb,var(--amber) 45%,var(--line))}
+details.scn-acc summary{list-style:none;display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;font-family:var(--disp);font-weight:600;font-size:14px;color:var(--ink);user-select:none}
+details.scn-acc summary::-webkit-details-marker{display:none}
+details.scn-acc .acc-s{margin-left:auto;font-family:var(--body);font-weight:400;font-size:12px;color:var(--ink-mute);text-align:right}
+details.scn-acc .acc-c{color:var(--ink-mute);transition:.16s;font-size:18px;line-height:1}
+details.scn-acc[open] .acc-c{transform:rotate(90deg)}
+details.scn-acc .acc-body{padding:2px 14px 14px;border-top:1px solid var(--line-soft)}
+details.scn-acc .acc-body .scn-tracker,details.scn-acc .acc-body .scn-collect,details.scn-acc .acc-body .scn-battle{border:none;padding:0;margin-top:10px;background:transparent}
+details.scn-acc .acc-body .scn-prep{margin-top:10px;margin-bottom:0}
+details.scn-acc .acc-body > .scn-battle > .mh,details.scn-acc .acc-body > .scn-collect > .mh,details.scn-acc .acc-body > .scn-tracker > .mh{display:none}
+details.scn-acc .acc-body .scn-block:first-child{margin-top:10px}
+.turnbar{position:fixed;left:50%;transform:translateX(-50%);bottom:12px;z-index:88;display:flex;align-items:center;gap:8px;width:min(560px,calc(100vw - 96px));background:var(--panel);border:1px solid color-mix(in srgb,var(--amber) 55%,var(--line));border-radius:14px;padding:8px 10px;box-shadow:var(--shadow)}
+.turnbar .tb-cur{font-family:var(--disp);font-weight:600;font-size:13px;white-space:nowrap}
+.turnbar .tb-cur b{font-family:var(--mono);font-size:20px;color:var(--amber)}
+.turnbar .tb-cur span{color:var(--ink-mute);font-weight:400}
+.turnbar .tb-jumps{margin-left:auto;display:flex;gap:5px}
+.turnbar .tb-jumps button{width:34px;height:34px;border-radius:8px;border:1px solid var(--line);background:var(--panel-2);font-size:15px;line-height:1}
+body.has-turnbar main{padding-bottom:120px}
+@media(max-width:520px){.turnbar{left:10px;transform:none;width:calc(100vw - 86px)}}
 .scn-tracker,.scn-collect{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-top:14px}
 .scn-tracker .mh,.scn-collect .mh{font-family:var(--disp);text-transform:uppercase;letter-spacing:.12em;font-size:11px;font-weight:600;color:var(--ink-mute);margin-bottom:10px}
 .round-row{display:flex;align-items:center;gap:10px;justify-content:space-between;background:var(--sunk);border:1px solid var(--line);border-radius:9px;padding:6px 8px}
@@ -3598,6 +3620,7 @@ function buildVehicleDossier(){
 /* ============================ VIEW NAV ============================ */
 let currentView="warband";
 function switchView(v){
+  if(v!=="scenarios"){const tb=$("#turnBar");if(tb)tb.remove();document.body.classList.remove("has-turnbar");}
   currentView=v;
   $("#warbandView").hidden=(v!=="warband");
   $("#scenarioView").hidden=(v!=="scenarios");
@@ -3871,7 +3894,7 @@ function renderScenarioView(){
   syncQuestGlow(); syncQuestTab();
   if(liveRole==="guest"&&liveScenario){scnReadOnly=true;renderScenarioDetail(liveScenario);scnReadOnly=false;return;}
   scnReadOnly=false;
-  if(scnScreen==="detail")renderScenarioDetail(); else renderScenarioList();
+  if(scnScreen==="detail")renderScenarioDetail(); else {renderScenarioList();const tb=$("#turnBar");if(tb)tb.remove();document.body.classList.remove("has-turnbar");}
 }
 
 /* ---- name prompt (sandbox blocks prompt(); use a modal) ---- */
@@ -6044,6 +6067,25 @@ function showTurnPopup(s,turn,evs){
   $("#teClose").onclick=closeModal;
   showModal();
 }
+/* the turn counter, pinned to the bottom of the scenario page with jumps to the sections used mid-game */
+function renderTurnBar(s){
+  let bar=$("#turnBar");
+  if(!s||currentView!=="scenarios"||scnScreen!=="detail"&&!(liveRole==="guest"&&liveScenario)){if(bar)bar.remove();document.body.classList.remove("has-turnbar");return;}
+  if(!bar){bar=document.createElement("div");bar.id="turnBar";bar.className="turnbar";document.body.appendChild(bar);}
+  document.body.classList.add("has-turnbar");
+  const cur=curRound(s), tot=s.rounds, over=tot&&cur>=tot;
+  bar.innerHTML=`${scnReadOnly?"":`<button class="rbtn" id="tbPrev" aria-label="Previous turn"${cur<=1?" disabled":""}>−</button>`}
+    <div class="tb-cur">Turn <b>${cur}</b>${tot?` <span>/ ${tot}</span>`:""}</div>
+    ${scnReadOnly?"":`<button class="rbtn" id="tbNext" aria-label="Next turn"${over?" disabled":""}>+</button>`}
+    <div class="tb-jumps"><button data-jump="roster" title="Battle roster">⚔</button><button data-jump="pick" title="Search points &amp; pick-ups">🔦</button><button data-jump="map" title="Battlefield">🗺</button><button data-jump="turn" title="Turn &amp; events">⏱</button></div>`;
+  const tp=$("#tbPrev");if(tp)tp.onclick=()=>setRound(s,curRound(s)-1);
+  const tn=$("#tbNext");if(tn)tn.onclick=()=>nextTurn(s);
+  bar.querySelectorAll("[data-jump]").forEach(b=>b.onclick=()=>{
+    const d=document.querySelector(`details.scn-acc[data-acc="${b.dataset.jump}"]`); if(!d)return;
+    if(!d.open){d.open=true;accSet(b.dataset.jump,true);}
+    d.scrollIntoView({behavior:"smooth",block:"start"});
+  });
+}
 function trackerHTML(s){
   const cur=curRound(s), tot=s.rounds;
   const evs=(s.events||[]);
@@ -6409,6 +6451,16 @@ function removePickup(c,p){
   else go();
 }
 
+/* which sections are open — remembered per device */
+function accState(){try{return JSON.parse(localStorage.getItem("p28_scnacc")||"{}")||{};}catch(e){return {};}}
+function accSet(k,v){const st=accState();st[k]=!!v;try{localStorage.setItem("p28_scnacc",JSON.stringify(st));}catch(e){}}
+function accOpen(k,dflt){const st=accState();return (k in st)?!!st[k]:!!dflt;}
+function accSection(key,icon,title,summary,inner,dflt){
+  if(!inner)return "";
+  return `<details class="scn-acc" data-acc="${key}"${accOpen(key,dflt)?" open":""}>
+    <summary><span class="acc-t">${icon} ${title}</span><span class="acc-s">${summary||""}</span><span class="acc-c">›</span></summary>
+    <div class="acc-body">${inner}</div></details>`;
+}
 function renderScenarioDetail(scnOverride){
   const w=activeWB(), el=$("#scenarioView");
   const s=scnOverride||scnsOf(w).find(x=>x.id===scnCurrentId);
@@ -6455,25 +6507,24 @@ function renderScenarioDetail(scnOverride){
       <div class="scn-dmode" style="color:${s.mode==="coop"?"var(--teal)":"var(--amber)"}">${s.mode==="coop"?"Co-operative":"PvP"} · ${s.players} players · ${s.points} pts · ${esc(diffOf(s).label)}</div>
       <h2>${esc(s.title)}</h2>
       <p class="scn-premise">${esc(s.premise)}</p>
-      ${s.briefing?`<div class="scn-briefing">${esc(s.briefing)}</div>`:""}
       <div class="scn-facts">
         <div class="scn-fact"><b>Board</b> 90 × 90cm</div>
         <div class="scn-fact"><b>Length</b> ${s.rounds?s.rounds+" turns":esc(s.gameLength)}</div>
         <div class="scn-fact"><b>Scenery</b> ≥ 60% cover</div>
         ${s.mode==="coop"?`<div class="scn-fact"><b>Enemy</b> ${enemyTargetFor(s)} pts</div>`:""}
+        ${liveRole==="host"&&s.id===hostScenarioId?`<div class="scn-fact live"><b>📡 ${esc(hostCode)}</b> ${livePlayers.length} joined</div>`:""}
       </div>
-      <div class="scn-cols">
-        <div>
-          ${prepBox}
-          ${(s.objectives||[]).length?`<div class="scn-block"><div class="bh">Objectives &amp; victory</div><ul class="scn-list">${li(s.objectives)}</ul></div>`:""}
-          ${s.deployment?`<div class="scn-block"><div class="bh">Deployment</div><p>${esc(s.deployment)}</p></div>`:""}
-          ${s.scenery?`<div class="scn-block"><div class="bh">Scenery</div><p>${esc(s.scenery)}</p></div>`:""}
-          ${(s.specialRules||[]).length?`<div class="scn-block"><div class="bh">Special rules</div><ul class="scn-list">${li(s.specialRules)}</ul></div>`:""}
-          ${s.twist?`<div class="scn-block"><div class="bh">Twist</div><p>${esc(s.twist)}</p></div>`:""}
-          ${s.mode==="coop"?enemyBlock(s):""}
-        </div>
-        <div>
-          <div class="scn-map-wrap">
+      ${(()=>{
+        const started=!!(s.battle&&s.battle.started);
+        const pieces=(s.terrain||[]).length+(s.markers||[]).length+(s.npcs||[]).length+(s.items||[]).length;
+        const rulesInner=[
+          (s.objectives||[]).length?`<div class="scn-block"><div class="bh">Objectives &amp; victory</div><ul class="scn-list">${li(s.objectives)}</ul></div>`:"",
+          s.deployment?`<div class="scn-block"><div class="bh">Deployment</div><p>${esc(s.deployment)}</p></div>`:"",
+          (s.specialRules||[]).length?`<div class="scn-block"><div class="bh">Special rules</div><ul class="scn-list">${li(s.specialRules)}</ul></div>`:"",
+          s.twist?`<div class="scn-block"><div class="bh">Twist</div><p>${esc(s.twist)}</p></div>`:""].join("");
+        const briefInner=[s.briefing?`<div class="scn-briefing">${esc(s.briefing)}</div>`:"",s.scenery?`<div class="scn-block"><div class="bh">Scenery</div><p>${esc(s.scenery)}</p></div>`:""].join("");
+        const ea=s.mode==="coop"?enemyAll(s):[], ePts=ea.reduce((a,c)=>a+(c.isVehicle?vehicleCost(c):unitCost(c)),0);
+        const mapInner=`<div class="scn-map-wrap">
             <div class="mh">Battlefield · 90 × 90cm <span style="color:var(--ink-mute);font-weight:400;text-transform:none;letter-spacing:0">· tap to enlarge</span></div>
             ${scenarioMapSVG(s.map,false)}
             ${s.map&&s.map.note?`<div class="scn-mapnote">${esc(s.map.note)}</div>`:""}
@@ -6485,12 +6536,20 @@ function renderScenarioDetail(scnOverride){
               <span><i style="background:var(--danger)"></i>Hazard</span>
             </div>
             ${mapLegendHTML(s.map)}
-          </div>
-          ${trackerHTML(s)}
-          ${battleHTML(s)}
-          ${collectHTML(s)}
-        </div>
-      </div>
+          </div>`;
+        const rows=(s.battle&&s.battle.combatants)||[], down=rows.filter(m=>(m.curHP|0)<=0).length;
+        const hidden=(s.items||[]).filter(it=>it&&!it.found&&!it.heldBy).length;
+        const cur=curRound(s), evN=(s.events||[]).filter(e=>e.kind!=="deadline").length;
+        return `<div class="scn-accs">
+          ${accSection("brief","📜","Briefing","",briefInner,!started)}
+          ${accSection("build","▣","Build &amp; print",pieces?pieces+" piece"+(pieces===1?"":"s"):"",prepBox,!started)}
+          ${accSection("rules","📐","Rules of this game",[(s.objectives||[]).length?"objectives":"",s.deployment?"deployment":"",(s.specialRules||[]).length?"special":"",s.twist?"twist":""].filter(Boolean).join(" · "),rulesInner,!started)}
+          ${s.mode==="coop"?accSection("enemy","☠","Enemy force",ea.length?ea.length+" unit"+(ea.length===1?"":"s")+" · "+ePts+" pts":"not mustered",enemyBlock(s),!started):""}
+          ${accSection("map","🗺","Battlefield","",mapInner,false)}
+          ${accSection("turn","⏱","Turn &amp; events","turn "+cur+(s.rounds?" / "+s.rounds:"")+(evN?" · "+evN+" event"+(evN===1?"":"s"):""),trackerHTML(s),started)}
+          ${accSection("roster","⚔","Battle roster",started?rows.length+(down?" · "+down+" down":""):"not started",battleHTML(s),started)}
+          ${accSection("pick","🔦","Search points &amp; pick-ups",hidden?hidden+" hidden":"",collectHTML(s),started)}
+        </div>`;})()}
       <div style="margin-top:22px;display:flex;gap:10px;flex-wrap:wrap">
         ${scnReadOnly?`<button class="btn ghost sm" id="scnCopy">Copy as text</button><button class="btn primary sm" id="scnLeave" style="margin-left:auto">🏕 Return to camp</button>`:`
         <button class="btn" id="scnRegen">✦ Regenerate</button>
@@ -6500,6 +6559,10 @@ function renderScenarioDetail(scnOverride){
         <button class="btn danger ghost" id="scnDelete" style="margin-left:auto">Delete</button>`}
       </div>
     </div>`;
+  // sections remember whether you left them open
+  // only a tap counts — the toggle event also fires for the initial "open" attribute, which would freeze the defaults
+  el.querySelectorAll("details.scn-acc > summary").forEach(sm=>sm.addEventListener("click",()=>{const d=sm.parentElement;setTimeout(()=>accSet(d.dataset.acc,d.open),0);}));
+  renderTurnBar(s);
   const eGen=$("#enemyGen");if(eGen)eGen.onclick=()=>generateEnemyWarband(s,$("#enemyStatus"));
   const eReg=$("#enemyRegen");if(eReg)eReg.onclick=()=>generateEnemyWarband(s,$("#enemyStatus"));
   const eFW=$("#enemyFirstWave");if(eFW)eFW.onclick=()=>{
