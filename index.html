@@ -140,6 +140,8 @@ main{max-width:1120px;margin:0 auto;padding:22px clamp(12px,3vw,26px) 90px}
 .stat b{display:block;font-family:var(--mono);font-weight:700;font-size:16px;line-height:1}
 .stat span{display:block;font-family:var(--disp);font-size:9px;letter-spacing:.08em;color:var(--ink-mute);margin-top:3px;text-transform:uppercase}
 .card-foot{display:flex;justify-content:space-between;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;color:var(--ink-dim)}
+.roster-div{grid-column:1/-1;display:flex;align-items:center;gap:10px;font-family:var(--disp);font-size:10.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-mute);margin:6px 0 -4px}
+.roster-div::before,.roster-div::after{content:"";flex:1;height:1px;background:var(--line)}
 .card.benched{opacity:.55;filter:saturate(.5)}
 .card.benched:hover{opacity:.85}
 .card.benched::before{background:var(--ink-mute)}
@@ -1758,9 +1760,19 @@ function openAdjust(o,isVeh){
     if(cardCharId||cardVehId)rebuildOpenCard();};
   draw();showModal();
 }
+/* fielded first, benched after a divider — the order in the data is untouched */
+function byFielded(list){return list.slice().sort((a,b)=>(isFielded(b)?1:0)-(isFielded(a)?1:0));}
+function benchDivider(el,list,noun){
+  const n=list.filter(x=>!isFielded(x)).length;
+  if(!n||n===list.length)return;
+  const d=document.createElement("div");d.className="roster-div";d.innerHTML=`<span>○ Benched · ${n} ${noun}${n===1?"":"s"} staying at camp</span>`;
+  el.appendChild(d);
+}
 function renderRoster(){
   const w=activeWB(),el=$("#roster");el.innerHTML="";
-  w.characters.forEach(c=>{
+  let dividerDone=false;
+  byFielded(w.characters).forEach(c=>{
+    if(!isFielded(c)&&!dividerDone){benchDivider(el,w.characters,"character");dividerDone=true;}
     const n=memberCount(c), cost=unitCost(c);
     const nGear=c.weapons.length+c.armour.length+c.items.length;
     const nAbil=c.traits.length+c.abilities.length;
@@ -1807,7 +1819,9 @@ function renderRoster(){
 
 function renderVehicleRoster(){
   const w=activeWB(),el=$("#vehicleRoster");if(!el)return;el.innerHTML="";
-  vehsOf(w).forEach(v=>{
+  let vDivider=false;
+  byFielded(vehsOf(w)).forEach(v=>{
+    if(!isFielded(v)&&!vDivider){benchDivider(el,vehsOf(w),"vehicle");vDivider=true;}
     const cost=vehicleCost(v), fielded=isFielded(v);
     const ty=VEHICLE_TYPES[v.type]||VEHICLE_TYPES[0];
     const nSec=(v.sections||[]).reduce((s,e)=>s+e.qty,0), nW=(v.weapons||[]).reduce((s,e)=>s+e.qty,0);
