@@ -514,6 +514,22 @@ mark{background:color-mix(in srgb,var(--amber) 35%,transparent);color:inherit;bo
 .steprow .lbl[data-tip]{cursor:help}
 .steprow .lbl[data-tip] b{border-bottom:1px dotted var(--ink-mute)}
 .gc-vitals b{color:var(--teal);font-weight:700}
+.gc-layout.single{grid-template-columns:1fr}
+.gc-tabs{margin:8px 18px 0;width:auto;display:flex}.gc-tabs .topnav-btn{flex:1;justify-content:center;font-size:11px}
+.play{margin:10px 18px 4px;border:2px solid color-mix(in srgb,var(--amber) 55%,var(--line));background:var(--amber-glow);border-radius:var(--r-sm);padding:9px 12px}
+.play.hurt{border-color:var(--amber)}.play.down{border-color:var(--danger);background:var(--danger-bg)}
+.play-l1{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.play-hp{font-family:var(--mono);font-size:24px;font-weight:700;color:var(--ink);line-height:1}.play-hp small{font-size:12px;color:var(--ink-mute)}.play-hp.h{color:var(--amber)}.play-hp.d{color:var(--danger)}
+.play-btns{margin-left:auto;display:flex;gap:4px}
+.play-l2{font-size:12.5px;color:var(--ink-dim);margin-top:6px;line-height:1.5}.play-l2 b{color:var(--ink);font-family:var(--mono)}
+.play-l2 .tgt{cursor:pointer;color:var(--teal);border-bottom:1px dashed var(--teal)}
+.atk{padding:8px 10px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--panel-2);margin-bottom:6px}
+.atk-t{display:flex;align-items:center;gap:8px;font-family:var(--disp);font-weight:600;font-size:14px}
+.atk-roll{margin-left:auto;font-family:var(--mono);font-size:12px;font-weight:700;color:var(--teal);background:color-mix(in srgb,var(--teal) 14%,transparent);border-radius:20px;padding:2px 9px;cursor:pointer;white-space:nowrap}
+.atk-roll small{font-size:10px;color:var(--danger)}
+.atk-s{font-size:12.5px;color:var(--ink-dim);margin-top:3px;line-height:1.45}.atk-s b{color:var(--ink);font-family:var(--mono)}
+.kv{display:flex;justify-content:space-between;gap:10px;font-size:13.5px;padding:8px 18px;border-bottom:1px solid var(--line-soft)}.kv b{font-family:var(--mono);text-align:right}.kv small{color:var(--ink-mute);font-weight:400}
+.scar{padding:8px 10px;border-left:3px solid var(--danger);background:var(--danger-bg);border-radius:0 8px 8px 0;font-size:13px;margin-bottom:6px}.scar b{display:block}.scar small{display:block;color:var(--ink-dim);margin:2px 0 4px}
 .gc-sections{padding:4px 18px 12px}
 .gc-sec{padding:13px 0;border-bottom:1px solid var(--line-soft)}
 .gc-sec:last-child{border-bottom:none}
@@ -3093,80 +3109,135 @@ function rollArcana(c,n){
   save();buildCard();
   toast("Rolled: "+c.rolledSpells.map(i=>ARCANA[i][0]).join(", "));
 }
+/* ============================ THE CARD, K2: sheet · story · campaign ============================ */
+let cardFace=(()=>{try{return localStorage.getItem("p28_cardface")||"sheet";}catch(e){return "sheet";}})();
+function setCardFace(f){cardFace=f;try{localStorage.setItem("p28_cardface",f);}catch(e){}buildCard();}
+/* each weapon as the line you need when you roll: the number to roll under, range, damage, keywords */
+function attackLines(c){
+  const live=questUnitFor(c.id,false);
+  const half=live?(live.curHP>0&&live.curHP<=live.maxHP*0.5):(typeof c.curHP==="number"&&c.curHP>0&&c.curHP<=c.hp*memberCount(c)*0.5);
+  const pen=half?1:0;
+  return (c.weapons||[]).map(e=>({o:CAT.weapon[e.id],e})).filter(x=>x.o).map(({o,e})=>{
+    const ranged=o.type==="Ranged", k=ranged?"S":"F", v=c.skills[k]-pen;
+    const bits=[];
+    if(ranged&&o.range&&o.range!=="—")bits.push(`<b>${esc(o.range)}</b>`); else bits.push("melee");
+    if(o.dmg)bits.push(`<b>${esc(o.dmg)}</b>`);
+    if(o.size)bits.push(esc(o.size));
+    if(o.rules&&o.rules!=="—")bits.push(esc(o.rules));
+    if(!ranged)bits.push("+1D4 on a charge");
+    const at=ammoTypeOf(o);
+    const ammo=at?(c.items||[]).map(x=>({o:CAT.item[x.id],q:x.qty||1})).filter(x=>x.o&&/ammo/i.test(x.o.name)&&x.o.name.toLowerCase().includes(at)).reduce((a,x)=>a+x.q,0):null;
+    return `<div class="atk"><div class="atk-t"><span>${ranged?"🎯":"⚔"} ${esc(gearLabel(o,e,e.qty||1))}</span><span class="atk-roll" data-dtarget="${v}|${esc((c.name||"?").split(" ")[0])} · ${k}">under ${k} ${v}${pen?" <small>(−1)</small>":""}</span></div><div class="atk-s">${bits.join(" · ")}${ammo!==null?` <span class="chip ${ammo?"":"red"}">${ammo} ammo</span>`:""}${e.as?` <span class="none-note" style="font-style:normal">profile: ${esc(o.name)}</span>`:""}</div></div>`;
+  }).join("");
+}
+function armourLine(c){
+  const arm=(c.armour||[]).map(e=>CAT.armour[e.id]).filter(Boolean);
+  return arm.length?arm.map(o=>`<b>${esc(o.def)}</b> ${esc(o.name)}`).join(" · ")+" · +1D6 in cover":"no armour · <b>1D6</b> in cover only";
+}
+function playStripHTML(c){
+  const live=questUnitFor(c.id,false), n=memberCount(c), max=live?live.maxHP:c.hp*n;
+  const cur=live?Math.max(0,live.curHP|0):(typeof c.curHP==="number"?c.curHP:max);
+  const down=cur<=0, half=!down&&cur<=max*0.5, P=c.skills.P-(half?1:0);
+  const conds=(live&&live.conditions||[]).map(cd=>`<span class="chip amber">◈ ${esc(cd.label)}${cd.expireTurn?" →T"+cd.expireTurn:""}</span>`).join("");
+  const scars=(c.injuries||[]).map(x=>`<span class="chip red" title="${esc(x.effectNote||x.ruleName||"")}">⚠ ${esc(x.name)}</span>`).join("");
+  const canEdit=!(live&&liveRole==="guest");
+  return `<div class="play ${down?"down":half?"hurt":""}">
+    <div class="play-l1"><span class="play-hp ${down?"d":half?"h":""}">${down?"DOWN":cur+`<small>/${max}</small>`}</span>${live?`<span class="chip amber">⚔ deployed</span>`:isFielded(c)?`<span class="chip teal">◉ fielded</span>`:`<span class="chip">○ benched</span>`}${conds}${scars}${canEdit?`<span class="play-btns"><button class="hpb" data-chp="-1">−</button><button class="hpb" data-chp="1">+</button></span>`:""}</div>
+    <div class="play-l2">Speed ${RULES.speed}cm · break test: roll under <b class="tgt" data-dtarget="${P}|${esc((c.name||"?").split(" ")[0])} · P">P ${P}</b>${half?" <span class='chip red'>under half · −1 all skills</span>":""} · armour ${armourLine(c)}</div>
+  </div>`;
+}
+function cardHP(c,delta){
+  const {live,max}=adjustTargets(c,false);
+  const now=live?(live.curHP|0):(typeof c.curHP==="number"?c.curHP:max);
+  const v=Math.max(0,Math.min(max,now+delta));
+  if(live)live.curHP=v; else c.curHP=v;
+  save();renderRoster();syncQuestGlow();if(live&&liveRole==="host"){const s=activeQuestScn();if(s)scheduleHostSync(s);}buildCard();
+}
+function campaignFaceHTML(c){
+  const w=activeWB(), total=cpTotalOf(c), rank=rankOf(total), nx=nextRank(total);
+  const fought=(w.ledger||[]).filter(e=>(e.fought||[]).includes(c.name));
+  const won=fought.filter(e=>e.result==="victory").length;
+  const inj=(c.injuries||[]);
+  const adv=(c.advLog||[]);
+  const kept=(c.pickups||[]).filter(p=>p.applied&&p.effect);
+  return `<div class="gc-sections">
+    <div class="kv"><span>Rank</span><b>${esc(rank)} · ${total} earned${nx?` · ${nx.at-total} to ${esc(nx.name)}`:""}</b></div>
+    <div class="kv"><span>Campaign points to spend</span><b>${cpOf(c)} cp <small>· pool ${w.cp||0}</small></b></div>
+    <div class="kv"><span>Quests fought</span><b>${fought.length}${fought.length?` · ${won} won`:""}</b></div>
+    <div class="kv"><span>Kills</span><b>${c.killsTotal||0}</b></div>
+    <div class="gc-sec"><div class="sh">Wounds they carry</div>${inj.length?inj.map((x,i)=>`<div class="scar"><b>${esc(x.name)}</b><small>${esc(x.effectNote||x.ruleName||"")}${x.games?` · ${Math.max(0,x.games-(x.served||0))} more game${Math.max(0,x.games-(x.served||0))===1?"":"s"}`:x.permanent?" · permanent":""}${x.scnTitle?` · from ${esc(x.scnTitle)}`:""}</small>${canTreat(c,x)?`<button class="linkbtn" data-treat-i="${i}">Treat (D6) · ${CP_COSTS.heal} cp</button>`:x.dead?"":`<span class="none-note" style="font-style:normal">needs a game first</span>`}</div>`).join(""):`<div class="gc-empty">None — unmarked so far.</div>`}</div>
+    <div class="gc-sec"><div class="sh">Advancement</div>${adv.length?adv.slice(0,12).map(a=>`<div class="gc-entry"><div class="ed">${esc(a.text)}${a.at?` <span class="none-note" style="font-style:normal">· ${new Date(a.at).toLocaleDateString()}</span>`:""}</div></div>`).join(""):`<div class="gc-empty">Nothing bought with campaign points yet.</div>`}</div>
+    <div class="gc-sec"><div class="sh">Finds kept</div>${kept.length?kept.map(p=>`<div class="gc-entry"><div class="en"><span>${esc(p.name)}</span></div><div class="ed">${esc(p.effect.summary||"")}</div></div>`).join(""):`<div class="gc-empty">Nothing absorbed yet.</div>`}</div>
+  </div>`;
+}
 function buildCard(){
   const c=cardChar();if(!c)return;
   const n=memberCount(c), profile=charCost(c), cost=unitCost(c);
-  const traits=c.traits.map(id=>CAT.trait[id]).filter(Boolean)
-     .map(o=>({name:o.name,val:fmtSigned(o.cost)+" pts",desc:o.desc}));
-  const abils=c.abilities.map(id=>CAT.ability[id]).filter(Boolean)
-     .map(o=>({name:o.name,val:fmtSigned(o.cost)+" pts",desc:o.desc}));
-  const weaps=c.weapons.map(e=>({o:CAT.weapon[e.id],q:e.qty,e})).filter(x=>x.o)
-     .map(({o,q,e})=>({name:gearLabel(o,e,q),val:o.cost*q+" cr",desc:gearNote("weapon",o,e)}));
-  const arm=c.armour.map(e=>({o:CAT.armour[e.id],q:e.qty,e})).filter(x=>x.o)
-     .map(({o,e})=>({name:gearLabel(o,e,1),val:o.cost+" cr",desc:gearNote("armour",o,e)}));
-  const items=c.items.map(e=>({o:CAT.item[e.id],q:e.qty,e})).filter(x=>x.o)
-     .map(({o,q,e})=>({name:gearLabel(o,e,q),val:o.cost*q+" cr",desc:gearNote("item",o,e)}));
-
-  const anyGear=weaps.length+arm.length+items.length;
-  const anyPow=traits.length+abils.length;
+  const traits=c.traits.map(id=>CAT.trait[id]).filter(Boolean).map(o=>({name:o.name,desc:o.desc}));
+  const abils=c.abilities.map(id=>CAT.ability[id]).filter(Boolean).map(o=>({name:o.name,desc:o.desc}));
+  const items=c.items.map(e=>({o:CAT.item[e.id],q:e.qty,e})).filter(x=>x.o).map(({o,q,e})=>({name:gearLabel(o,e,q),desc:gearNote("item",o,e)}));
+  const carried=(c.pickups||[]).filter(p=>!p.applied).map(p=>({name:"🎒 "+p.name,desc:(p.note||"")+(p.when?" · "+p.when:"")}));
   const isMajor=c.traits.some(id=>CAT.trait[id]&&CAT.trait[id].name==="Major arcana");
   const isMinor=c.traits.some(id=>CAT.trait[id]&&CAT.trait[id].name==="Minor arcana");
   const hasPsyka=c.items.some(e=>CAT.item[e.id]&&CAT.item[e.id].name==="Psyka");
   const caster=isMajor||isMinor||hasPsyka;
-  const portrait=portraitHTML(c);
-  const gc=$("#gameCard");
-  gc.innerHTML=`
-    <div class="gc-layout">
-      <div class="gc-portrait" id="gcPortrait">${portrait}</div>
-      <div class="gc-body">
-        <div class="gc-top">
-          <div class="gc-cost">${cost}<small>PTS</small></div>
-          <div class="gc-id">
-            <div class="eyebrow"${cardIsEnemy?' style="color:var(--danger)"':''}>Planet 28 · ${cardIsEnemy?(n>1?"Enemy Squad":"Enemy Unit"):(n>1?"Squad":"Warband Character")}</div>
-            <h2 class="gc-name">${esc(c.name)||"Unnamed"}</h2>
-            ${c.role?`<div class="gc-role">${esc(c.role)}</div>`:""}
-            ${n>1?`<div class="gc-role" style="color:var(--teal);font-weight:600" data-tip="Every member shares this profile. Squad cost = profile × members.">⛊ Squad of ${n} · ${profile} pts each</div>`:""}
-          </div>
-        </div>
-        ${c.bg?`<p class="gc-bg">${esc(c.bg)}</p>`:""}
-        <div class="gc-stats">
-          ${SKILLS.map(([k,name])=>`<div class="gc-stat" tabindex="0" data-tip="${esc(SKILL_INFO[k]+" "+SKILL_ROLL)}"><b>${c.skills[k]}</b><span>${k}</span><small>${name}</small></div>`).join("")}
-        </div>
-        <div class="gc-vitals"><span tabindex="0" data-tip="${esc(VITAL_INFO.hp)}">HP <b>${c.hp}</b></span><span tabindex="0" data-tip="${esc(VITAL_INFO.speed)}">SPEED <b>${RULES.speed}cm</b></span></div>
-        <div class="gc-sections">
-          ${cardSection("Traits",traits)}
-          ${cardSection("Abilities",abils)}
-          ${caster?cardSpellbook(c,spellNote(isMajor,isMinor,hasPsyka),isMajor?3:1):""}
-          ${cardSection("Weapons",weaps)}
-          ${cardSection("Armour",arm)}
-          ${cardSection("Items",items)}
-          ${cardSection("Campaign changes",(c.pickups||[]).filter(p=>p.applied&&p.effect).map(p=>({name:p.name,desc:p.effect.summary})))}
-          ${cardIsEnemy?cardSoloAI(c):cardAgenda(c)}
-          ${(anyGear+anyPow)===0&&!(c.pickups||[]).some(p=>p.applied)?`<div class="gc-sec"><div class="gc-empty">No traits, abilities or equipment yet — hit Edit to kit this character out.</div></div>`:""}
-        </div>
+  const faces=!cardIsEnemy&&!isWorkshop();
+  const face=faces?cardFace:"sheet";
+  const total=cpTotalOf(c);
+  const head=`<div class="gc-top">
+      <div class="gc-cost">${cost}<small>PTS</small></div>
+      <div class="gc-id">
+        <div class="eyebrow"${cardIsEnemy?' style="color:var(--danger)"':''}>Planet 28 · ${cardIsEnemy?(n>1?"Enemy Squad":"Enemy Unit"):(n>1?"Squad":"Warband Character")}</div>
+        <h2 class="gc-name">${esc(c.name)||"Unnamed"}</h2>
+        <div class="gc-role">${esc(c.role||"")}${!cardIsEnemy&&total>0?`${c.role?" · ":""}${esc(rankOf(total))}`:""}${!cardIsEnemy&&cpOf(c)>0?` · ⭐ ${cpOf(c)} cp`:""}</div>
+        ${n>1?`<div class="gc-role" style="color:var(--teal);font-weight:600" data-tip="Every member shares this profile. Squad cost = profile × members.">⛊ Squad of ${n} · ${profile} pts each</div>`:""}
       </div>
     </div>
-    <div class="gc-actions">
-      ${cardIsEnemy?"":`<button class="btn ${isFielded(c)?"gc-fielded":""}" id="gcField">${isFielded(c)?"◉ Fielded":"○ Benched"}</button>`}
-      <button class="btn" id="gcArt">✦ Art prompt</button>
-      ${cardIsEnemy?"":`<button class="btn" id="gcAdjust">✎ Adjust</button>`}
-      ${cardIsEnemy?"":`<button class="btn" id="gcExport" title="Copy this character as a code for another warband or device">⇪ Move</button>`}
-      ${cardIsEnemy?"":`<button class="btn primary" id="gcEdit">Edit</button>`}
-      <button class="btn ${cardIsEnemy?"primary":"ghost"}" id="gcClose">Close</button>
-    </div>`;
+    ${faces?`<div class="topnav gc-tabs"><button class="topnav-btn ${face==="sheet"?"active":""}" data-face="sheet">⚔ Sheet</button><button class="topnav-btn ${face==="story"?"active":""}" data-face="story">📜 Story</button><button class="topnav-btn ${face==="campaign"?"active":""}" data-face="campaign">🏕 Campaign</button></div>`:""}`;
+  let body="", actions="";
+  if(face==="sheet"){
+    body=`${cardIsEnemy?`<div class="gc-vitals"><span>HP <b>${c.hp}</b></span><span>SPEED <b>${RULES.speed}cm</b></span><span>ARMOUR <b>${(c.armour||[]).map(e=>CAT.armour[e.id]).filter(Boolean).map(o=>o.def).join(" ")||"—"}</b></span></div>`:playStripHTML(c)}
+      <div class="gc-stats">${SKILLS.map(([k,name])=>`<div class="gc-stat" tabindex="0" data-tip="${esc(SKILL_INFO[k]+" "+SKILL_ROLL)}"><b>${c.skills[k]}</b><span>${k}</span><small>${name}</small></div>`).join("")}</div>
+      <div class="gc-sections">
+        ${(c.weapons||[]).length?`<div class="gc-sec"><div class="sh">Attacks</div>${attackLines(c)}</div>`:""}
+        ${cardSection("Traits & abilities",traits.concat(abils))}
+        ${caster?cardSpellbook(c,spellNote(isMajor,isMinor,hasPsyka),isMajor?3:1):""}
+        ${cardSection("Carrying",items.concat(carried))}
+        ${cardIsEnemy?cardSoloAI(c):""}
+        ${!c.weapons.length&&!traits.length&&!abils.length&&!items.length?`<div class="gc-sec"><div class="gc-empty">No traits, abilities or equipment yet — hit Edit to kit this character out.</div></div>`:""}
+      </div>`;
+    actions=cardIsEnemy?`<button class="btn" id="gcArt">✦ Art prompt</button><button class="btn primary" id="gcClose">Close</button>`
+      :`<button class="btn ${isFielded(c)?"gc-fielded":""}" id="gcField">${isFielded(c)?"◉ Fielded":"○ Benched"}</button><button class="btn" id="gcAdjust">✎ Adjust</button>${isWorkshop()?`<button class="btn" id="gcArt">✦ Art prompt</button><button class="btn" id="gcExport">⇪ Move</button>`:""}<button class="btn primary" id="gcEdit">Edit</button><button class="btn ghost" id="gcClose">Close</button>`;
+  } else if(face==="story"){
+    body=`<div class="gc-portrait" id="gcPortrait">${portraitHTML(c)}</div>
+      ${c.bg?`<p class="gc-bg">${esc(c.bg)}</p>`:`<p class="gc-bg">No background yet — Edit, or ask the DM for concepts in the workshop.</p>`}
+      <div class="gc-sections">${cardAgenda(c)}</div>`;
+    actions=`${isWorkshop()?`<button class="btn" id="gcArt">✦ Art prompt</button>`:""}<button class="btn" id="gcExport">⇪ Move</button><button class="btn primary" id="gcEdit">Edit</button><button class="btn ghost" id="gcClose">Close</button>`;
+  } else {
+    body=campaignFaceHTML(c);
+    actions=`<button class="btn" id="gcSpend"${(cpOf(c)+(activeWB().cp||0))>0?"":" disabled"}>⭐ Advance</button><button class="btn" id="gcShop">🛒 Shop</button><button class="btn ghost" id="gcClose">Close</button>`;
+  }
+  const gc=$("#gameCard");
+  gc.innerHTML=`<div class="gc-layout single"><div class="gc-body">${head}${body}</div></div><div class="gc-actions">${actions}</div>`;
   $("#gcClose").onclick=closeCard;
+  gc.querySelectorAll("[data-face]").forEach(b=>b.onclick=()=>setCardFace(b.dataset.face));
   const gEdit=$("#gcEdit");if(gEdit)gEdit.onclick=()=>{const id=cardCharId;closeCard();openDossier(id);};
   const gAdj=$("#gcAdjust");if(gAdj)gAdj.onclick=()=>openAdjust(c,false);
   const gEx=$("#gcExport");if(gEx)gEx.onclick=()=>{closeCard();exportCharacter(c);};
-  $("#gcArt").onclick=()=>openPrompt(cardChar(),false);
+  const gArt=$("#gcArt");if(gArt)gArt.onclick=()=>openPrompt(cardChar(),false);
   const gFld=$("#gcField");if(gFld)gFld.onclick=()=>toggleFielded(c);
+  const gSp=$("#gcSpend");if(gSp)gSp.onclick=()=>openSpendCP(c.id);
+  const gSh=$("#gcShop");if(gSh)gSh.onclick=()=>openBuyGear(c.id);
+  gc.querySelectorAll("[data-chp]").forEach(b=>b.onclick=()=>cardHP(c,+b.dataset.chp));
+  gc.querySelectorAll("[data-treat-i]").forEach(b=>b.onclick=()=>openTreatInjury(c.id,+b.dataset.treatI));
+  gc.querySelectorAll("[data-dtarget]").forEach(b=>b.onclick=()=>{const [v,label]=b.dataset.dtarget.split("|");diceTarget={v:+v,label};diceLast=null;guideTab="round";guideQuery="";openCheat();});
   const sr=$("#spRoll");if(sr)sr.onclick=()=>rollArcana(c,isMajor?3:1);
   const agT=$("#agTake");if(agT)agT.onclick=()=>takeAgenda(c);
   const agP=$("#agPeek");if(agP)agP.onclick=()=>{agendaOpen[c.id]=!agendaOpen[c.id];buildCard();};
-  const agD=$("#agDrop");if(agD)agD.onclick=()=>askConfirm("Give up this hidden agenda? It is gone and earns nothing.",()=>{delete c.agenda;delete agendaOpen[c.id];save();buildCard();render();toast("Agenda abandoned");},{danger:true,yesLabel:"Give it up"});
+  const agD=$("#agDrop");if(agD)agD.onclick=()=>askConfirm("Give up this hidden agenda? It is gone and earns nothing.",()=>{delete c.agenda;delete agendaOpen[c.id];save();buildCard();render();toast("Agenda abandoned");},{danger:true,yesLabel:"Abandon"});
   const scst=$("#spCast");if(scst)scst.onclick=()=>castArcana(c);
   const sc=$("#spClear");if(sc)sc.onclick=()=>{c.rolledSpells=[];c.pDrop=0;c.lastCast=null;save();buildCard();};
-  wirePortrait(c);
+  if(face==="story")wirePortrait(c);
 }
 
 /* ---- character portrait (paste / drop / browse) ---- */
@@ -4547,6 +4618,7 @@ function openCPAwards(snap,charIds,then){
         state.forEach(s=>{
           const amt=s.actions*1+s.kills*5+(s.survived?1:0)+(s.unwounded?5:0);
           if(amt>0)grantCP([s.c],amt);
+          if(s.kills)s.c.killsTotal=(s.c.killsTotal||0)+s.kills;
         });
         CP_WARBAND.forEach(a=>{const b=body.querySelector('[data-wcp="'+a.key+'"]');if(b&&b.checked)pool+=a.per;});
         if(pool){w.cp=(w.cp||0)+pool;}
@@ -4637,6 +4709,7 @@ function openSpendCP(charId){
       let owe=spent, own=Math.min(cpOf(orig),owe); owe-=own;
       orig.cp=cpOf(orig)-own; if(owe>0)w.cp=Math.max(0,(w.cp||0)-owe);
       ["skills","hp","traits","abilities"].forEach(k=>{orig[k]=draft[k];});
+      orig.advLog=Array.isArray(orig.advLog)?orig.advLog:[]; orig.advLog.unshift({at:Date.now(),text:added.join(", ")+" · "+spent+" cp"});
       save();closeModal();render();buildDossier();
       toast("Spent "+spent+" campaign points — now "+charCost(orig)+" pts");
       setTimeout(()=>openEarnedNames([{charId:orig.id,name:orig.name,
