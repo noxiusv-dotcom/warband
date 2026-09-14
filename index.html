@@ -530,6 +530,17 @@ mark{background:color-mix(in srgb,var(--amber) 35%,transparent);color:inherit;bo
 .atk-s{font-size:12.5px;color:var(--ink-dim);margin-top:3px;line-height:1.45}.atk-s b{color:var(--ink);font-family:var(--mono)}
 .kv{display:flex;justify-content:space-between;gap:10px;font-size:13.5px;padding:8px 18px;border-bottom:1px solid var(--line-soft)}.kv b{font-family:var(--mono);text-align:right}.kv small{color:var(--ink-mute);font-weight:400}
 .scar{padding:8px 10px;border-left:3px solid var(--danger);background:var(--danger-bg);border-radius:0 8px 8px 0;font-size:13px;margin-bottom:6px}.scar b{display:block}.scar small{display:block;color:var(--ink-dim);margin:2px 0 4px}
+.play.enemy{border-color:color-mix(in srgb,var(--danger) 55%,var(--line));background:var(--danger-bg)}
+.play.enemy .play-hp{color:var(--danger)}
+.mem{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}.mem span{font-family:var(--mono);font-size:11px;padding:2px 7px;border-radius:6px;border:1px solid var(--line);background:var(--panel)}.mem span.d{opacity:.45;text-decoration:line-through}
+.hint{margin:8px 18px 4px;padding:8px 11px;border-left:3px solid var(--amber);background:var(--amber-glow);border-radius:0 8px 8px 0;font-size:13px;line-height:1.45}.hint b{display:block;font-family:var(--disp);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--amber);margin-bottom:2px}
+.q{margin:8px 18px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--panel-2);padding:9px 11px}
+.q .qt{font-family:var(--disp);font-size:13px;font-weight:600;margin-bottom:6px}
+.qa{display:flex;gap:6px}.qa-b{flex:1;text-align:center;font-family:var(--disp);font-size:12px;font-weight:600;padding:8px 0;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink-dim)}
+.qa-b.on{background:var(--danger);border-color:var(--danger);color:#fff}
+.verdict{margin:8px 18px;border:2px solid var(--danger);border-radius:var(--r-sm);background:var(--danger-bg);padding:10px 12px}
+.verdict .vt{font-family:var(--disp);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--danger);font-weight:600}
+.verdict .vb{font-family:var(--disp);font-size:15px;font-weight:600;margin:3px 0}.verdict .vs{font-size:13px;color:var(--ink-dim);line-height:1.5}.verdict .vs b{font-family:var(--mono);color:var(--ink)}
 .gc-sections{padding:4px 18px 12px}
 .gc-sec{padding:13px 0;border-bottom:1px solid var(--line-soft)}
 .gc-sec:last-child{border-bottom:none}
@@ -2950,7 +2961,7 @@ function summaryText(w){
 
 /* ============================ CHARACTER CARD (tabletop view) ============================ */
 function openCard(id){cardCharObj=null;cardVehObj=null;cardIsEnemy=false;cardVehId=null;cardCharId=id;buildCard();$("#cardWrap").classList.add("show");syncScroll();$("#cardWrap").scrollTop=0;}
-function openEnemyCard(c){if(!c)return;cardCharObj=c;cardVehObj=null;cardIsEnemy=true;cardVehId=null;cardCharId=c.id;buildCard();$("#cardWrap").classList.add("show");syncScroll();$("#cardWrap").scrollTop=0;}
+function openEnemyCard(c){if(!c)return;aiState={combat:null,visible:null};cardCharObj=c;cardVehObj=null;cardIsEnemy=true;cardVehId=null;cardCharId=c.id;buildCard();$("#cardWrap").classList.add("show");syncScroll();$("#cardWrap").scrollTop=0;}
 function closeCard(){$("#cardWrap").classList.remove("show");cardCharId=null;cardVehId=null;cardCharObj=null;cardVehObj=null;cardIsEnemy=false;portraitEditing=false;syncScroll();}
 function cardChar(){return cardCharObj||activeWB().characters.find(c=>c.id===cardCharId)}
 function currentCardObj(){return cardCharId?cardChar():(cardVehId?vehCard():null);}
@@ -3113,9 +3124,14 @@ function rollArcana(c,n){
 let cardFace=(()=>{try{return localStorage.getItem("p28_cardface")||"sheet";}catch(e){return "sheet";}})();
 function setCardFace(f){cardFace=f;try{localStorage.setItem("p28_cardface",f);}catch(e){}buildCard();}
 /* each weapon as the line you need when you roll: the number to roll under, range, damage, keywords */
-function attackLines(c){
-  const live=questUnitFor(c.id,false);
-  const half=live?(live.curHP>0&&live.curHP<=live.maxHP*0.5):(typeof c.curHP==="number"&&c.curHP>0&&c.curHP<=c.hp*memberCount(c)*0.5);
+function enemyRowsOf(c){
+  const s=activeQuestScn(); if(!s||!s.battle)return [];
+  return (s.battle.combatants||[]).filter(m=>m&&m.side==="enemy"&&(m.id==="e_"+c.id||String(m.id).indexOf("e_"+c.id+"_")===0));
+}
+function attackLines(c,enemy){
+  let half;
+  if(enemy){const rows=enemyRowsOf(c);const cur=rows.reduce((a,m)=>a+Math.max(0,m.curHP|0),0),max=rows.reduce((a,m)=>a+(m.maxHP|0),0);half=rows.length===1&&cur>0&&cur<=max*0.5;}
+  else{const live=questUnitFor(c.id,false);half=live?(live.curHP>0&&live.curHP<=live.maxHP*0.5):(typeof c.curHP==="number"&&c.curHP>0&&c.curHP<=c.hp*memberCount(c)*0.5);}
   const pen=half?1:0;
   return (c.weapons||[]).map(e=>({o:CAT.weapon[e.id],e})).filter(x=>x.o).map(({o,e})=>{
     const ranged=o.type==="Ranged", k=ranged?"S":"F", v=c.skills[k]-pen;
@@ -3129,6 +3145,14 @@ function attackLines(c){
     const ammo=at?(c.items||[]).map(x=>({o:CAT.item[x.id],q:x.qty||1})).filter(x=>x.o&&/ammo/i.test(x.o.name)&&x.o.name.toLowerCase().includes(at)).reduce((a,x)=>a+x.q,0):null;
     return `<div class="atk"><div class="atk-t"><span>${ranged?"🎯":"⚔"} ${esc(gearLabel(o,e,e.qty||1))}</span><span class="atk-roll" data-dtarget="${v}|${esc((c.name||"?").split(" ")[0])} · ${k}">under ${k} ${v}${pen?" <small>(−1)</small>":""}</span></div><div class="atk-s">${bits.join(" · ")}${ammo!==null?` <span class="chip ${ammo?"":"red"}">${ammo} ammo</span>`:""}${e.as?` <span class="none-note" style="font-style:normal">profile: ${esc(o.name)}</span>`:""}</div></div>`;
   }).join("");
+}
+function spellLines(c,enemy){
+  const rolled=Array.isArray(c.rolledSpells)?c.rolledSpells:[];
+  if(!rolled.length)return "";
+  let half=false;
+  if(enemy){const rows=enemyRowsOf(c);const cur=rows.reduce((a,m)=>a+Math.max(0,m.curHP|0),0),max=rows.reduce((a,m)=>a+(m.maxHP|0),0);half=rows.length===1&&cur>0&&cur<=max*0.5;}
+  const P=c.skills.P-(half?1:0)-(c.pDrop||0);
+  return rolled.map(i=>ARCANA[i]).filter(Boolean).map(a=>`<div class="atk"><div class="atk-t"><span>⚝ ${esc(a[0])}</span><span class="atk-roll">under P ${P}${/Summon/.test(a[0])?" −2":""}</span></div><div class="atk-s">arcana · ${esc(a[1])} · a failed cast rends</div></div>`).join("");
 }
 function armourLine(c){
   const arm=(c.armour||[]).map(e=>CAT.armour[e.id]).filter(Boolean);
@@ -3152,6 +3176,61 @@ function cardHP(c,delta){
   const v=Math.max(0,Math.min(max,now+delta));
   if(live)live.curHP=v; else c.curHP=v;
   save();renderRoster();syncQuestGlow();if(live&&liveRole==="host"){const s=activeQuestScn();if(s)scheduleHostSync(s);}buildCard();
+}
+let aiState={combat:null,visible:null};
+function enemyStripHTML(c){
+  const rows=enemyRowsOf(c), n=memberCount(c);
+  const max=rows.length?rows.reduce((a,m)=>a+(m.maxHP|0),0):c.hp*n;
+  const cur=rows.length?rows.reduce((a,m)=>a+Math.max(0,m.curHP|0),0):max;
+  const squad=n>1, thr=squad?Math.floor(max*0.25):Math.floor(max/2);
+  const down=rows.length&&cur<=0, half=!squad&&!down&&cur<=max*0.5;
+  const P=c.skills.P-(half?1:0);
+  const conds=[].concat(...rows.map(m=>m.conditions||[])).map(cd=>`<span class="chip amber">◈ ${esc(cd.label)}${cd.expireTurn?" →T"+cd.expireTurn:""}</span>`).join("");
+  const arrive=enemyArrivalTurn(c);
+  const hidden=enemyHidden(c)||enemyTeased(c);
+  const mem=squad&&rows.length?`<div class="mem">${rows.map((m,i)=>`<span class="${(m.curHP|0)<=0?"d":""}">${i+1} · ${Math.max(0,m.curHP|0)}</span>`).join("")}</div>`:"";
+  return `<div class="play enemy ${down?"down":half?"hurt":""}">
+    <div class="play-l1"><span class="play-hp ${down?"d":half?"h":""}">${down?"DOWN":cur+`<small>/${max}</small>`}</span>${rows.length?`<span class="chip red">${squad?"squad tests at "+thr:"break test at "+thr}</span>`:c.atStart?`<span class="chip">on the table from the start</span>`:arrive?`<span class="chip amber">arrives turn ${arrive}</span>`:`<span class="chip amber">arrives on a trigger</span>`}${conds}</div>
+    ${mem}
+    <div class="play-l2">Speed ${RULES.speed}cm · armour ${armourLine(c)} · Psyche target <b>P ${P}</b>${half?" <span class='chip red'>under half · −1 all skills</span>":""}${hidden?` · <span class="chip">${esc(c.tease||"hidden until it shows itself")}</span>`:""}</div>
+  </div>`;
+}
+function deciderHTML(c){
+  const rows=enemyRowsOf(c), n=memberCount(c);
+  const max=rows.length?rows.reduce((a,m)=>a+(m.maxHP|0),0):c.hp*n, cur=rows.length?rows.reduce((a,m)=>a+Math.max(0,m.curHP|0),0):max;
+  const half=n===1&&rows.length&&cur>0&&cur<=max*0.5, pen=half?1:0;
+  const weaps=(c.weapons||[]).map(e=>({o:CAT.weapon[e.id],e})).filter(x=>x.o);
+  const melee=weaps.filter(x=>x.o.type!=="Ranged"), ranged=weaps.filter(x=>x.o.type==="Ranged");
+  const spells=(Array.isArray(c.rolledSpells)?c.rolledSpells:[]).map(i=>ARCANA[i]).filter(Boolean);
+  const abil=(c.abilities||[]).map(id=>CAT.ability[id]).filter(Boolean);
+  const wl=x=>`<b>${esc(gearLabel(x.o,x.e,1))}</b> — roll under <b>${x.o.type==="Ranged"?"S "+(c.skills.S-pen):"F "+(c.skills.F-pen)}</b>, <b>${esc(x.o.dmg||"?")}</b>${x.o.type==="Ranged"&&x.o.range&&x.o.range!=="—"?", "+esc(x.o.range):""}`;
+  let line=null, body="";
+  const st=aiState;
+  if(st.combat===true){
+    line=[1,"It fights on — it may not leave combat."];
+    body=(melee.length?`Fight action${n>1?" per member":""}: ${melee.map(wl).join(" or ")}. `:`No melee weapon — it fights unarmed: roll under <b>F ${c.skills.F-pen}</b>, <b>1D6</b>. `)+"It always counters when it can, and never pushes back after winning.";
+  } else if(st.combat===false&&st.visible===true){
+    if(ranged.length||spells.length||abil.length){
+      line=[2,"A player is in sight — it shoots, or uses an ability."];
+      const parts=[];
+      if(ranged.length)parts.push("Shoot: "+ranged.map(wl).join(" or "));
+      if(spells.length)parts.push("Cast: "+spells.map(a=>`<b>${esc(a[0])}</b> under <b>P ${c.skills.P-pen-(c.pDrop||0)}</b>`).join(" or "));
+      if(abil.length)parts.push("Ability: "+abil.map(a=>`<b>${esc(a.name)}</b>`).join(", "));
+      body=parts.join(". ")+". Two actions — use the better one twice if nothing changes.";
+    } else {
+      line=[3,"It cannot shoot — it moves straight at the nearest visible player."];
+      body=`Full speed, ${RULES.speed}cm, at the nearest visible player character (equally close? pick at random). If that reaches base contact it <b>charges</b>: one fight at <b>+1D4</b> Fighting${melee.length?" with "+melee.map(wl).join(" or "):""}.`;
+    }
+  } else if(st.combat===false&&st.visible===false){
+    line=[4,"No player in sight — it moves away."];
+    body=`Full speed, ${RULES.speed}cm, towards the board edge furthest from where it stands. Hits an obstacle? Roll the D4 below.`;
+  }
+  const brk=half?`<div class="vs" style="margin-top:6px">Under half: every skill −1 (already applied above); if it takes damage it tests: roll under <b>P ${c.skills.P-1}</b>${hasTrait(c,"Brave")?" — Brave: it rerolls one failed test a turn":""}.</div>`:"";
+  return `<div class="q"><div class="qt">What does it do? — its activation</div>
+    <div class="qa"><button class="qa-b ${st.combat===true?"on":""}" data-ai="combat|1">In combat</button><button class="qa-b ${st.combat===false?"on":""}" data-ai="combat|0">Not in combat</button></div>
+    ${st.combat===false?`<div class="qa" style="margin-top:6px"><button class="qa-b ${st.visible===true?"on":""}" data-ai="visible|1">Player visible</button><button class="qa-b ${st.visible===false?"on":""}" data-ai="visible|0">None visible</button></div>`:""}
+  </div>
+  ${line?`<div class="verdict"><div class="vt">Solo AI · line ${line[0]}</div><div class="vb">${line[1]}</div><div class="vs">${body}</div>${brk}<div class="vs" style="margin-top:6px"><button class="linkbtn" id="aiD4">🎲 obstacle D4</button> <span id="aiD4r"></span></div></div>`:`<div class="none-note" style="margin:4px 14px 8px;font-style:normal">Answer the two questions and the card names the line that applies, with this unit's numbers.</div>`}`;
 }
 function campaignFaceHTML(c){
   const w=activeWB(), total=cpTotalOf(c), rank=rankOf(total), nx=nextRank(total);
@@ -3196,17 +3275,28 @@ function buildCard(){
     ${faces?`<div class="topnav gc-tabs"><button class="topnav-btn ${face==="sheet"?"active":""}" data-face="sheet">⚔ Sheet</button><button class="topnav-btn ${face==="story"?"active":""}" data-face="story">📜 Story</button><button class="topnav-btn ${face==="campaign"?"active":""}" data-face="campaign">🏕 Campaign</button></div>`:""}`;
   let body="", actions="";
   if(face==="sheet"){
-    body=`${cardIsEnemy?`<div class="gc-vitals"><span>HP <b>${c.hp}</b></span><span>SPEED <b>${RULES.speed}cm</b></span><span>ARMOUR <b>${(c.armour||[]).map(e=>CAT.armour[e.id]).filter(Boolean).map(o=>o.def).join(" ")||"—"}</b></span></div>`:playStripHTML(c)}
+    body=cardIsEnemy?`${enemyStripHTML(c)}
+      ${c.hint?`<div class="hint"><b>How it fights</b>${esc(c.hint)}</div>`:""}
+      ${c.bg?`<p class="gc-bg" style="padding-top:6px">${esc(c.bg)}</p>`:""}
+      ${deciderHTML(c)}
+      <div class="gc-stats">${SKILLS.map(([k,name])=>`<div class="gc-stat" tabindex="0" data-tip="${esc(SKILL_INFO[k]+" "+SKILL_ROLL)}"><b>${c.skills[k]}</b><span>${k}</span><small>${name}</small></div>`).join("")}</div>
+      <div class="gc-sections">
+        ${(c.weapons||[]).length||(c.rolledSpells||[]).length?`<div class="gc-sec"><div class="sh">Attacks</div>${attackLines(c,true)}${spellLines(c,true)}</div>`:""}
+        ${cardSection("Traits & abilities",traits.concat(abils))}
+        ${caster?cardSpellbook(c,spellNote(isMajor,isMinor,hasPsyka),isMajor?3:1):""}
+        ${cardSection("Carrying",items)}
+        <details class="scn-acc" style="margin-top:8px"><summary><span class="acc-t">◉ The Solo AI ladder</span><span class="acc-s">the full rules</span><span class="acc-c">›</span></summary><div class="acc-body">${cardSoloAI(null)}</div></details>
+      </div>`
+    :`${playStripHTML(c)}
       <div class="gc-stats">${SKILLS.map(([k,name])=>`<div class="gc-stat" tabindex="0" data-tip="${esc(SKILL_INFO[k]+" "+SKILL_ROLL)}"><b>${c.skills[k]}</b><span>${k}</span><small>${name}</small></div>`).join("")}</div>
       <div class="gc-sections">
         ${(c.weapons||[]).length?`<div class="gc-sec"><div class="sh">Attacks</div>${attackLines(c)}</div>`:""}
         ${cardSection("Traits & abilities",traits.concat(abils))}
         ${caster?cardSpellbook(c,spellNote(isMajor,isMinor,hasPsyka),isMajor?3:1):""}
         ${cardSection("Carrying",items.concat(carried))}
-        ${cardIsEnemy?cardSoloAI(c):""}
         ${!c.weapons.length&&!traits.length&&!abils.length&&!items.length?`<div class="gc-sec"><div class="gc-empty">No traits, abilities or equipment yet — hit Edit to kit this character out.</div></div>`:""}
       </div>`;
-    actions=cardIsEnemy?`<button class="btn" id="gcArt">✦ Art prompt</button><button class="btn primary" id="gcClose">Close</button>`
+    actions=cardIsEnemy?`${isWorkshop()?`<button class="btn" id="gcArt">✦ Art prompt</button>`:""}<button class="btn primary" id="gcClose">Close</button>`
       :`<button class="btn ${isFielded(c)?"gc-fielded":""}" id="gcField">${isFielded(c)?"◉ Fielded":"○ Benched"}</button><button class="btn" id="gcAdjust">✎ Adjust</button>${isWorkshop()?`<button class="btn" id="gcArt">✦ Art prompt</button><button class="btn" id="gcExport">⇪ Move</button>`:""}<button class="btn primary" id="gcEdit">Edit</button><button class="btn ghost" id="gcClose">Close</button>`;
   } else if(face==="story"){
     body=`<div class="gc-portrait" id="gcPortrait">${portraitHTML(c)}</div>
@@ -3229,6 +3319,8 @@ function buildCard(){
   const gSp=$("#gcSpend");if(gSp)gSp.onclick=()=>openSpendCP(c.id);
   const gSh=$("#gcShop");if(gSh)gSh.onclick=()=>openBuyGear(c.id);
   gc.querySelectorAll("[data-chp]").forEach(b=>b.onclick=()=>cardHP(c,+b.dataset.chp));
+  gc.querySelectorAll("[data-ai]").forEach(b=>b.onclick=()=>{const [k,v]=b.dataset.ai.split("|");aiState[k]=v==="1";if(k==="combat"&&aiState.combat)aiState.visible=null;buildCard();});
+  const d4=$("#aiD4");if(d4)d4.onclick=()=>{const r=1+Math.floor(Math.random()*4);$("#aiD4r").innerHTML=`<b>${r}</b> — ${r<=2?"carries straight on, Agility to tackle it":r===3?"turns and moves back the way it came":"you decide how it spends the rest of its move"}`;};
   gc.querySelectorAll("[data-treat-i]").forEach(b=>b.onclick=()=>openTreatInjury(c.id,+b.dataset.treatI));
   gc.querySelectorAll("[data-dtarget]").forEach(b=>b.onclick=()=>{const [v,label]=b.dataset.dtarget.split("|");diceTarget={v:+v,label};diceLast=null;guideTab="round";guideQuery="";openCheat();});
   const sr=$("#spRoll");if(sr)sr.onclick=()=>rollArcana(c,isMajor?3:1);
