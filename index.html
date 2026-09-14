@@ -400,7 +400,7 @@ body.sealed .manifest{grid-template-columns:1fr;align-items:start}
   border:1px solid var(--amber);background:var(--panel);color:var(--amber);font-size:22px;line-height:0;
   box-shadow:var(--shadow);display:grid;place-items:center}
 .cheatfab:hover{background:var(--amber);color:#191308}
-.cheat{position:fixed;z-index:76;top:0;right:0;height:100%;width:min(420px,100%);background:var(--ground);
+.cheat{position:fixed;z-index:92;top:0;right:0;height:100%;width:min(420px,100%);background:var(--ground);
   border-left:1px solid var(--line);box-shadow:-24px 0 60px -30px rgba(0,0,0,.8);
   display:flex;flex-direction:column;transform:translateX(100%);transition:transform .24s cubic-bezier(.32,.72,0,1)}
 .cheat.show{transform:none}
@@ -410,6 +410,32 @@ body.sealed .manifest{grid-template-columns:1fr;align-items:start}
 .cheat-roll{font-size:12.5px;color:var(--ink-dim);background:var(--sunk);border:1px solid var(--line);
   border-radius:8px;padding:9px 11px;margin-bottom:12px;line-height:1.5}
 .cheat-roll b{color:var(--amber)}
+.cheat-tools{padding:10px 14px 0;background:var(--panel);border-bottom:1px solid var(--line)}
+.cheat-tools .input{width:100%;box-sizing:border-box;margin-bottom:8px}
+.gtabs{margin:0 0 10px;width:100%;display:flex}.gtabs .topnav-btn{flex:1;justify-content:center}
+.cq-n{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--ink-mute)}
+.cheat-q .cq-arrow{margin-left:6px}
+.ci-sec{font-family:var(--disp);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--amber);font-weight:600;margin-bottom:2px}
+mark{background:color-mix(in srgb,var(--amber) 35%,transparent);color:inherit;border-radius:2px;padding:0 1px}
+.flows{display:flex;flex-direction:column;gap:6px;margin:8px 0 10px}
+.flow{border:1px solid var(--line);border-radius:var(--r-sm);background:var(--panel)}
+.flow-t{width:100%;text-align:left;display:flex;align-items:center;gap:8px;padding:10px 12px;font-family:var(--disp);font-weight:600;font-size:13.5px;color:var(--ink);background:none;border:none}
+.flow-t small{font-family:var(--body);font-weight:400;font-size:11px;color:var(--ink-mute);flex:1}
+.flow-steps{display:none;margin:0;padding:0 14px 12px 30px;font-size:13px;line-height:1.5;color:var(--ink-dim)}
+.flow-steps li{margin-bottom:5px}.flow-steps b{color:var(--ink)}
+.flow.open .flow-steps{display:block}.flow.open .cq-arrow{transform:rotate(90deg)}
+.now{border:2px solid color-mix(in srgb,var(--amber) 55%,var(--line));background:var(--amber-glow);border-radius:var(--r-sm);padding:9px 12px;margin:0 0 10px}
+.now-h{font-family:var(--disp);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--amber);font-weight:600;margin-bottom:4px}
+.now-l{font-size:13px;line-height:1.5;padding:5px 0;border-top:1px solid color-mix(in srgb,var(--amber) 25%,transparent)}.now-l:first-of-type{border-top:0}
+.now-l .linkbtn{font-family:var(--mono);font-weight:700;color:var(--teal)}
+.dice{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--panel);padding:8px 10px;margin:8px 0 6px}
+.dice-d{width:48px;height:48px;border-radius:10px;background:var(--ink);color:var(--ground);display:grid;place-items:center;font-family:var(--mono);font-size:24px;font-weight:700;flex:none}
+.dice-d.ok{background:var(--teal);color:#fff}.dice-d.bad{background:var(--danger);color:#fff}
+.dice-tg{flex:1;font-size:12.5px;color:var(--ink-dim);line-height:1.4}.dice-tg b{color:var(--ink)}.dice-v{font-size:12px}.dice-v .ok{color:var(--teal)}.dice-v .bad{color:var(--danger)}
+.dice-row{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin-bottom:6px}
+.dice-who{font-family:var(--disp);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-mute);margin:0 2px 0 4px}
+.dchip{font-family:var(--mono);font-size:11px;font-weight:700;padding:3px 7px;border-radius:20px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink-dim)}
+.dchip.on{background:var(--teal);border-color:var(--teal);color:#fff}
 .cheat-sec{border-bottom:1px solid var(--line-soft)}
 .cheat-q{width:100%;text-align:left;display:flex;align-items:center;gap:9px;padding:12px 2px;
   font-family:var(--disp);font-weight:600;font-size:14px;color:var(--ink)}
@@ -642,13 +668,79 @@ body.sealed .manifest{grid-template-columns:1fr;align-items:start}
 body.view-scenarios:not(.host-device) .manifest,body.view-scenarios #actRow,body.view-scenarios #campBar{display:none}
 details.scn-acc.desk{margin-bottom:16px;border-color:color-mix(in srgb,var(--amber) 55%,var(--line));background:var(--amber-glow)}
 details.scn-acc.desk .acc-body{background:var(--panel);padding-top:10px}
-.qt-blurb{font-size:13px;color:var(--ink-dim);line-height:1.45;margin-top:6px}
+.qt-dd{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--sunk);border:1px solid var(--line);border-radius:9px;padding:10px 12px;color:var(--ink);cursor:pointer}
+.qt-dd:hover{border-color:var(--amber)}
+.qt-dd.mystery{border-color:color-mix(in srgb,var(--arcane) 55%,var(--line));background:color-mix(in srgb,var(--arcane) 8%,var(--sunk))}
+.qt-dd-main{flex:1;min-width:0}.qt-dd-main b{display:block;font-family:var(--disp);font-size:14px}
+.qt-dd-c{color:var(--ink-mute);font-size:14px}
+.qt-my{color:var(--arcane)!important}
+.qt-card.mystery{border-left:3px solid var(--arcane)}
+.qt-card.mystery.on{border-color:var(--arcane);background:color-mix(in srgb,var(--arcane) 10%,var(--panel))}
+.qt-groups{display:flex;flex-direction:column;gap:8px;margin-top:4px}
+.qt-gh{font-family:var(--disp);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-mute);font-weight:600;margin-bottom:4px}
+.qt-group.mystery .qt-gh{color:var(--arcane)}
+.qt-group.mystery .stylechip.on{background:var(--arcane);border-color:var(--arcane);color:#fff}
+.qt-pick{margin-top:10px;padding:10px 12px;border:1px solid var(--line);border-left:3px solid var(--amber);border-radius:0 8px 8px 0;background:var(--sunk)}
+.qt-pick.mystery{border-left-color:var(--arcane)}
+.qt-pick b{font-family:var(--disp);font-size:14px}
+.qt-blurb{font-size:13px;color:var(--ink-dim);line-height:1.45;margin-top:4px}
 .qt-card{display:block;width:100%;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:9px 11px;margin-bottom:6px;color:var(--ink)}
 .qt-card b{display:block;font-family:var(--disp);font-size:13.5px;margin-bottom:2px}
 .qt-card span{font-size:12.5px;color:var(--ink-dim);line-height:1.4}
 .qt-card.on{border-color:var(--amber);background:var(--amber-glow)}
 .scn-status{display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-top:8px}
 .scn-status .chip.mute{opacity:.6}
+.hostbar{border:2px solid color-mix(in srgb,var(--teal) 55%,var(--line));background:color-mix(in srgb,var(--teal) 8%,var(--panel));border-radius:12px;padding:10px 12px;margin:8px 0 12px}
+.hb-steps{display:flex;align-items:center;gap:6px;font-family:var(--disp);font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-mute);margin-bottom:8px}
+.hb-steps i{flex:1;height:1px;background:var(--line)}
+.hb-steps span.done{color:var(--teal)}.hb-steps span.now{color:var(--ink);border-bottom:2px solid var(--teal)}
+.hb-main{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.hb-main>div:first-child{flex:1;min-width:140px}
+.hb-code{font-family:var(--mono);font-size:28px;font-weight:700;letter-spacing:.18em;color:var(--teal);line-height:1}
+.hb-code.dim{color:var(--ink-mute);letter-spacing:.1em}
+.hb-st{font-size:12px;color:var(--ink-dim);margin-top:3px}
+.hb-btns{display:flex;gap:6px;flex-wrap:wrap}
+.hb-players{margin-top:8px;border-top:1px solid var(--line-soft);padding-top:6px}
+.hb-pl{display:flex;align-items:center;gap:8px;font-size:13px;padding:4px 0}.hb-pl small{color:var(--ink-mute)}
+.hb-dot{width:8px;height:8px;border-radius:50%;background:var(--teal);flex:none}.hb-dot.wait{background:var(--ink-mute)}
+.hb-foot{margin-top:6px;text-align:right}
+.scn-status .chip.live,.sc.live{color:var(--teal);border-color:color-mix(in srgb,var(--teal) 50%,var(--line));background:color-mix(in srgb,var(--teal) 12%,transparent)}
+.scn-detail.table .tbl-top{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.scn-detail.table .tbl-title{flex:1;font-family:var(--disp);font-weight:600;font-size:14px;color:var(--ink-dim);text-align:center}
+.tbl-turn{text-align:center;padding:8px 0 4px}
+.tbl-l{font-family:var(--disp);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-mute);font-weight:600}
+.tbl-n{font-family:var(--mono);font-size:64px;font-weight:700;color:var(--amber);line-height:1;margin:2px 0 8px}.tbl-n small{font-size:22px;color:var(--ink-mute)}
+.tbl-row{display:flex;justify-content:center;gap:14px}
+.rbtn.big{width:64px;height:48px;font-size:28px;border-radius:12px}
+.tbl-next{font-size:13.5px;padding:9px 12px;border-left:3px solid var(--amber);background:var(--amber-glow);border-radius:0 8px 8px 0;margin:6px 0 10px}
+.tbl-env{margin:6px 0 10px}
+.scn-detail.table .scn-battle,.scn-detail.table .scn-collect{margin-top:12px}
+.scn-detail.table .hpb{width:40px;height:40px;font-size:20px}
+.scn-detail.table .btl-row{padding:10px 0}
+.scn-detail.table .btl-name{font-size:15px}
+.questbar{border:2px solid color-mix(in srgb,var(--teal) 55%,var(--line));background:color-mix(in srgb,var(--teal) 8%,var(--panel));border-radius:12px;padding:9px 12px;margin:6px 0 4px;font-size:13px}
+.questbar .qb-l1{display:flex;align-items:center;gap:8px}.questbar .qb-l2{display:flex;align-items:center;gap:8px;color:var(--ink-dim);margin-top:4px;font-size:12.5px}
+.questbar .sp{flex:1}
+.me{border:1px solid var(--line);border-left:4px solid var(--teal);border-radius:var(--r);padding:10px 12px;margin-bottom:8px;background:var(--panel)}
+.me.hurt{border-left-color:var(--amber);background:linear-gradient(90deg,var(--amber-glow),var(--panel) 45%)}
+.me.down{border-left-color:var(--danger);background:linear-gradient(90deg,var(--danger-bg),var(--panel) 45%)}
+.me-t{display:flex;justify-content:space-between;align-items:baseline;gap:10px}.me-t b{font-family:var(--disp);font-size:15px}
+.me-hp{font-family:var(--mono);font-size:22px;font-weight:700}.me-hp small{font-size:12px;color:var(--ink-mute)}.me-hp.h{color:var(--amber)}.me-hp.d{color:var(--danger)}
+.me-s{font-size:12px;color:var(--ink-dim);margin:3px 0 6px}
+.me-strip{display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-top:6px}
+.me-line{font-family:var(--mono);font-size:11px;color:var(--ink-mute);margin-top:7px;line-height:1.4}
+.feed{display:flex;flex-direction:column;margin-top:8px}
+.feed-it{display:flex;gap:10px;padding:7px 0;border-top:1px solid var(--line-soft);font-size:13px}.feed-it:first-child{border-top:0}
+.feed-it small{font-family:var(--mono);color:var(--ink-mute);flex:none;width:28px;padding-top:2px}
+.feed-x{font-size:12.5px;color:var(--ink-dim);line-height:1.45;margin-top:2px}
+.feed-it.arc b{color:var(--arcane)}.feed-it.red b{color:var(--danger)}.feed-it.amber b{color:var(--amber)}.feed-it.teal b{color:var(--teal)}.feed-it.dim{opacity:.7}
+.alertstack{position:fixed;top:10px;left:50%;transform:translateX(-50%);width:min(560px,calc(100vw - 24px));z-index:160;display:flex;flex-direction:column;gap:6px;pointer-events:none}
+.alert{pointer-events:auto;text-align:left;width:100%;background:#2a2823;color:#fff;border:none;border-radius:12px;padding:10px 12px 8px;box-shadow:0 12px 28px rgba(0,0,0,.35);font-family:var(--body);animation:alin .22s ease-out}
+.alert b{display:block;font-family:var(--disp);font-size:14px}.alert small{display:block;font-size:12.5px;color:#d9d3c5;line-height:1.4;margin-top:2px}
+.alert .al-x{display:block;font-family:var(--disp);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:#a39c8b;margin-top:5px}
+.alert.arc{background:#3d2560}.alert.red{background:#7a1f1b}.alert.amber{background:#6b4a10}.alert.teal{background:#124f45}.alert.dim{background:#3a3833}
+.alert.out{opacity:0;transform:translateY(-6px);transition:.18s}
+@keyframes alin{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
 .scn-question{font-family:var(--disp);font-weight:600;font-size:16px;line-height:1.35;color:var(--ink);background:color-mix(in srgb,var(--arcane) 12%,var(--panel));border:1px solid color-mix(in srgb,var(--arcane) 45%,var(--line));border-radius:var(--r);padding:12px 14px;margin:6px 0 10px}
 .env-list{display:flex;flex-direction:column;gap:8px;margin-top:10px}
 .env{border:1px solid var(--line);border-radius:var(--r-sm);padding:10px 12px;background:var(--sunk)}
@@ -1625,7 +1717,7 @@ function renderHeader(){
   $("#gOf").textContent=" / "+w.budget+" pts fielded";
   const bar=$("#gBar");bar.style.width=pct+"%";
   bar.className=over?"over":(pct>85?"warn":"");
-  const bank=$("#gBank"); if(bank){const left=w.budget-wbSpent(w); bank.hidden=!(left>0); bank.textContent="Bank "+left+" → credits";}
+  const bank=$("#gBank"); if(bank){const left=w.budget-wbSpent(w); bank.hidden=isWorkshop()||!(left>0); bank.textContent="Bank "+left+" → credits";}
   const gr=$("#gRemain");
   gr.className="remain "+(over?"over":"ok");
   gr.innerHTML=wbSealed(w)?`🔒 sealed`:over?`Over by <b>${Math.abs(rem)}</b>`:`<b>${rem}</b> left`;
@@ -1945,6 +2037,7 @@ function applyRole(){
   else{ render(); if(currentView==="scenarios")renderScenarioView(); }
 }
 function syncQuestTab(){
+  const ct=document.querySelector('#topnav .topnav-btn[data-view="warband"]'); if(ct&&isWorkshop())ct.lastChild.textContent="Warbands";
   const tab=document.querySelector('#topnav .topnav-btn[data-view="scenarios"]');
   const lbl=$("#scnTabLabel");
   if(!tab)return;
@@ -1952,8 +2045,16 @@ function syncQuestTab(){
   const show=host||!fbAvailable()||onAQuest();     // the Claude app still writes scenarios here
   tab.hidden=!show;
   if(lbl)lbl.textContent=(fbAvailable()&&!host)?"Quest":"Scenarios";
-  const nav=$("#topnav"); if(nav)nav.hidden=host||!show;
+  const campClosed=campClosedForQuest();
+  if(ct)ct.hidden=host||campClosed;
+  const nav=$("#topnav"); if(nav)nav.hidden=host||!show||campClosed;
   if(!show&&currentView==="scenarios")switchView("warband");
+  if(campClosed&&currentView!=="scenarios")switchView("scenarios");
+}
+/* while the warband is in the field, camp is shut — everyone who went is fielded, everyone
+   benched stayed behind, and nothing at camp happens until they are home */
+function campClosedForQuest(){
+  return fbAvailable()&&!isHost()&&liveRole==="guest"&&!!(liveScenario&&liveScenario.battle&&liveScenario.battle.started);
 }
 /* Only camps that have been stashed at the table are listed — a camp living solely on
    someone's phone is invisible here, which is worth saying out loud rather than showing
@@ -2043,6 +2144,10 @@ function renderCampBar(){
   const quest=activeQuestScn();
   const joined=!!roomKey;
   const sealed=wbSealed();
+  if(isWorkshop()){
+    el.innerHTML=`<div class="statusstrip"><span class="sc static">🔧 <b>Workshop</b> — build warbands and scenarios here, then move them to your camp or realm</span></div>`;
+    syncQuestGlow(); syncQuestTab(); renderActRow(); return;
+  }
   el.innerHTML=`<div class="statusstrip">
     <button class="sc" id="cbName" title="Rename your camp">⛺ <b>${esc(nm||"Name your camp")}</b></button>
     ${live?(joined?`<button class="sc" id="cbPass" title="Change realm">🗝 <b>${esc(savedPass()||"set")}</b></button>`:`<button class="sc setup" id="cbPass">🔑 Name your realm</button>`):""}
@@ -2074,7 +2179,7 @@ function openMenu(){
     <button class="mp-i" data-m="switch">Switch warband…</button>
     <button class="mp-i" data-m="import">Import a warband or character…</button>`}
     <div class="mp-h">This device</div>
-    ${host?"":`<button class="mp-i" data-m="backup">Backup &amp; transfer…</button>`}
+    ${host?"":live?`<button class="mp-i" data-m="backup">Backup &amp; transfer…</button>`:`<button class="mp-i" data-m="export">⛺ Move this warband to a camp…</button><button class="mp-i danger" data-m="reset">Reset this device…</button>`}
     ${live?`<button class="mp-i" data-m="role">${host?"🏕 Switch to camp":"🗺 Switch to hosting"}</button>`:""}
     ${live?"":`<div class="mp-h">✦ DM tools</div>
     <button class="mp-i" data-m="wbname">✦ Name the warband</button>
@@ -2091,7 +2196,8 @@ function openMenu(){
     const k=b.dataset.m;
     if(k==="switch")openLibrary(); else if(k==="import")importDialog();
     else if(k==="backup")openBackup(); else if(k==="role")openRoleChooser();
-    else if(k==="rules")openReference(); else if(k==="theme")$("#btnTheme").click();
+    else if(k==="export")exportCurrent(false); else if(k==="reset")resetDevice();
+    else if(k==="rules"){guideTab="ref";openCheat();} else if(k==="theme")$("#btnTheme").click();
     else if(k==="wbname")openWarbandNameGen();
     else if(k==="concepts")pickCharacterThen("Concepts for whom?",c=>openNameGen(c,false));
     else if(k==="art")pickCharacterThen("An art prompt for whom?",c=>openPrompt(c,false));
@@ -2141,6 +2247,16 @@ function renderActRow(){
   const el=$("#actRow"); if(!el)return;
   const w=activeWB(), sealed=wbSealed(w), live=fbAvailable(), quest=activeQuestScn();
   const L=w.ledger||[];
+  if(isWorkshop()){
+    el.innerHTML=`
+      <button class="act primary" id="acChar"><i>+</i>Character</button>
+      <button class="act" id="acVeh"><i>▰</i>Vehicle</button>
+      <button class="act" id="acSummary"><i>📋</i>Summary</button>
+      <button class="act" id="acMove"><i>⛺</i>Move to camp</button>`;
+    $("#acChar").onclick=addCharacter; $("#acVeh").onclick=addVehicle;
+    $("#acSummary").onclick=openSummary; $("#acMove").onclick=()=>exportCurrent(false);
+    return;
+  }
   el.innerHTML=`
     <button class="act primary" id="acEmbark">${quest?`<i>⚔</i>On a quest`:live?`<i>⚔</i>Embark`:`<i>🗺</i>Scenarios`}</button>
     <button class="act" id="acRecruit"><i>+</i>Recruit</button>
@@ -2157,12 +2273,16 @@ function renderActRow(){
 function renderCampNotes(){
   const el=$("#campNotes"); if(!el)return;
   const w=activeWB(), chars=w.characters||[];
-  if(isHost()){el.innerHTML="";return;}
+  if(isHost()||isWorkshop()){el.innerHTML="";return;}
   const pend=chars.filter(c=>c.pendingInjury);
   const hurt=chars.filter(c=>typeof c.curHP==="number"&&c.curHP<c.hp*memberCount(c));
   const spoils=spoilsOf(w);
   const scarred=chars.filter(c=>(c.injuries||[]).length);
   let h="";
+  strandedQuests().forEach(q=>{h+=`<div class="camp-box campnote" style="border-color:color-mix(in srgb,var(--amber) 55%,var(--line));background:var(--amber-glow)">
+    <div class="prep-h" style="color:var(--amber)">⚔ Still out — ${esc(q.title||"a quest")}</div>
+    <div class="none-note" style="font-style:normal">The warband never came home from this quest (the host packed up, or the app was closed). Their wounds and finds from the last moment you saw are waiting.</div>
+    <div class="modal-actions" style="margin-top:8px"><button class="btn sm primary" data-claimq="${esc(q.scnId)}">🏕 Bring them home</button><button class="linkbtn" data-dropq="${esc(q.scnId)}" style="margin-left:auto">forget it</button></div></div>`;});
   if(pend.length)h+=`<div class="camp-box campnote" style="border-color:color-mix(in srgb,var(--danger) 55%,var(--line));background:var(--danger-bg)">
     <div class="prep-h" style="color:var(--danger)">🩸 Taken down — roll for what it cost them</div>
     ${pend.map(c=>`<div class="wb-item"><div class="wbi-main" style="cursor:default"><div class="wbi-name">${esc(c.name||"Unnamed")}</div>
@@ -2186,6 +2306,8 @@ function renderCampNotes(){
     <div class="none-note" style="font-style:normal;margin-top:6px">Treatment costs ${CP_COSTS.heal} campaign points for the attempt, win or lose — roll 4+ on a D6 to be mended.</div></div>`;
   el.innerHTML=h;
   el.querySelectorAll("[data-injury]").forEach(b=>b.onclick=()=>{const c=chars.find(x=>x.id===b.dataset.injury);if(c&&c.pendingInjury)openInjuryRoll(c);});
+  el.querySelectorAll("[data-claimq]").forEach(b=>b.onclick=()=>{const q=strandedQuests().find(x=>x.scnId===b.dataset.claimq);if(q)askConfirm("Bring your warband home from “"+(q.title||"the quest")+"”? Wounds and finds from the last moment you saw come back with them.",()=>claimQuest(q,()=>render()),{danger:false,yesLabel:"Return to camp"});});
+  el.querySelectorAll("[data-dropq]").forEach(b=>b.onclick=()=>askConfirm("Forget this quest? Nothing from it will be applied — no wounds, no finds, no points.",()=>{try{localStorage.removeItem("p28_quest_"+b.dataset.dropq);}catch(e){}render();},{danger:true,yesLabel:"Forget it"}));
   el.querySelectorAll("[data-treat]").forEach(b=>b.onclick=()=>{const[cid,i]=b.dataset.treat.split("|");openTreatInjury(cid,+i);});
   const hl=$("#cnHealAll");if(hl)hl.onclick=()=>{chars.forEach(c=>{delete c.curHP;});if(save())toast("Rested — everyone back to full health");render();};
   const st=$("#cnStash");if(st)st.onclick=openStash;
@@ -2193,7 +2315,7 @@ function renderCampNotes(){
 function renderLedgerBox(){
   const el=$("#ledgerBox"); if(!el)return;
   const w=activeWB(), L=w.ledger||[];
-  if(isHost()||!wbSealed(w)){el.innerHTML="";return;}
+  if(isHost()||isWorkshop()||!wbSealed(w)){el.innerHTML="";return;}
   const line=e=>{const o=OUTCOMES[e.result];const bits=[];if(e.downed)bits.push(e.downed+" down");if(e.wounded)bits.push(e.wounded+" hurt");if(e.found)bits.push(e.found+" find"+(e.found>1?"s":""));
     return `<div class="ledger-row ${o?o.cls:""}"><span class="lg-ico">${o?o.icon:"❔"}</span><div class="lg-main"><b>${esc(e.title)}</b> <span class="lg-res">${o?esc(o.short):"unrecorded"}</span>${e.round?` · turn ${e.round}`:""}
       <div class="none-note" style="font-style:normal">${new Date(e.at).toLocaleDateString()}${e.fought&&e.fought.length?" · "+esc(e.fought.join(", ")):""}${bits.length?" · "+bits.join(", "):""}</div></div></div>`;};
@@ -3813,36 +3935,133 @@ const CHEAT=[
  ]}
 ];
 let cheatOpen={0:true};
+/* ---- the four flows you run most, as numbered steps with the arithmetic in them ---- */
+const FLOWS=[
+ {key:"shoot",ico:"🎯",title:"Shoot",sub:"range · roll · armour · damage",steps:[
+   "Pick a target <b>in range</b> that you can <b>see</b> (head, torso, arms or legs — not weapon or base). Not while you are locked in combat, never at someone who is.",
+   "Roll 1D10 <b>under Shooting</b>. −1 for each move you or the target made this turn · −1 if they are 5cm+ above you · +1 if you are 5cm+ above them.",
+   "Hit? Roll the weapon's <b>damage dice</b>.",
+   "They roll <b>armour</b> — plus an extra <b>1D6 if in cover</b>. Each point rolled cancels a point of damage.",
+   "What is left comes off their hit-points. If that takes them <b>under half → break test</b>."]},
+ {key:"fight",ico:"⚔",title:"Fight",sub:"charge bonus · counter · pushback",steps:[
+   "Declare the target: someone you charged, are locked with, or within <b>5cm</b>. Move base to base (not a move action).",
+   "Roll 1D10 <b>under Fighting</b>. Charged this action? <b>+1D4</b> Fighting on this first fight only.",
+   "They may <b>counter</b> (if they have not acted, declared before you roll): both roll Fighting — both hit: both take damage and push back 3cm; both miss: stay locked; one hits: that one finishes the attack.",
+   "Hit? Damage dice, then their armour roll (no cover bonus in melee); the rest comes off hit-points.",
+   "Dealt damage? You may <b>push back 3cm</b> — it breaks you both out of combat."]},
+ {key:"break",ico:"⚠",title:"Break test",sub:"under half · run · re-test",steps:[
+   "Under half hit-points: <b>all skills −1</b> for the rest of the game (until healed back above half).",
+   "Roll 1D10 <b>under Psyche</b> (with the −1). Fail: run at full speed for the nearest board edge — free, not an action.",
+   "While under half, test again <b>every time you take damage</b>. Each further test in the same turn is at <b>−1 more</b>.",
+   "Reach the board edge before passing one and you are out of the game.",
+   "On exactly <b>1 hit-point</b> you never test again. <b>Squads</b> do not test per model — the squad tests when its total is at 25%."]},
+ {key:"cast",ico:"⚝",title:"Cast",sub:"under P · rent asunder",steps:[
+   "An <b>Ability</b> action. Only Minor (1 power) or Major (3 powers) arcana, rolled at muster.",
+   "Roll 1D10 <b>under Psyche</b>. Most powers need a target in line of sight; Shield reaches anywhere; Summon is at −2.",
+   "Success: apply the power.",
+   "<b>Failed?</b> Roll again. Under your current Psyche: nothing happens. Equal or over: <b>rent asunder</b> — take the failed cast roll minus your Psyche as damage, no armour, and Psyche drops by 1 for the game.",
+   "A Psy-hood cannot be targeted by arcana or Psychic weapons."]}
+];
+let guideTab="round", guideQuery="", diceTarget=null, diceLast=null;
+function guideEntries(){
+  const out=[];
+  CHEAT.forEach((s,si)=>{ if(s.build==="claude"&&fbAvailable())return;
+    s.items.forEach(it=>out.push({tab:(s.title==="Back at camp"||s.title==="The prop library")?"camp":"round",sec:s.title,n:it.n,d:(it.d||"")+" "+(it.steps||[]).join(" ")+" "+(it.mod||""),html:cheatItemHTML(it)}));});
+  WEAPON_RULES.forEach(r=>out.push({tab:"ref",sec:"Weapon keywords",n:r[0],d:r[1],html:`<div class="cheat-item"><div class="ci-n">${esc(r[0])}</div><div class="ci-d">${esc(r[1])}</div></div>`}));
+  ARCANA.forEach(a=>out.push({tab:"ref",sec:"Arcana powers",n:a[0],d:a[1],html:`<div class="cheat-item"><div class="ci-n">${esc(a[0])}</div><div class="ci-d">${esc(a[1])}</div></div>`}));
+  INJURY_TABLE.forEach(x=>out.push({tab:"ref",sec:"Injury table (1D8)",n:x.roll+" · "+x.name,d:x.note+" "+(x.effectNote||""),html:`<div class="cheat-item"><div class="ci-n"><span class="mono">${x.roll}</span> ${esc(x.name)}</div><div class="ci-d">${esc(x.note)}${x.effectNote?" — "+esc(x.effectNote):""}</div></div>`}));
+  VEH_DAMAGE.forEach(x=>out.push({tab:"ref",sec:"Vehicle damage (1D6)",n:x.roll+" · "+x.name,d:x.effect,html:`<div class="cheat-item"><div class="ci-n"><span class="mono">${x.roll}</span> ${esc(x.name)}</div><div class="ci-d">${esc(x.effect)}</div></div>`}));
+  return out;
+}
+function cheatItemHTML(it){
+  return `<div class="cheat-item">
+    <div class="ci-n">${esc(it.n)}</div>
+    ${it.d?`<div class="ci-d">${esc(it.d)}</div>`:""}
+    ${it.steps?`<ol>${it.steps.map(x=>`<li>${esc(x)}</li>`).join("")}</ol>`:""}
+    ${it.prop?(()=>{const c=propCounts()[it.prop],f=(propByCode(it.prop)||{}).full;
+      return `<div class="prop-own"><button class="rbtn sm" data-prop="${it.prop}|-1">−</button>
+        <b class="mono">${c}</b><span class="none-note" style="font-style:normal">of ${f} built</span>
+        <button class="rbtn sm" data-prop="${it.prop}|1">+</button></div>`;})():""}
+    ${it.mod?`<div class="ci-d ci-mod" style="margin-top:5px">${esc(it.mod)}</div>`:""}
+  </div>`;
+}
+/* what the live game says about right now — with THEIR numbers */
+function rightNowHTML(){
+  const s=activeQuestScn(); if(!s||!s.battle)return "";
+  const w=activeWB(), lines=[], cur=curRound(s);
+  const mine=myCombatantsIn(s), byChar={};
+  mine.forEach(m=>{if(m.charId)(byChar[m.charId]=byChar[m.charId]||[]).push(m);});
+  Object.entries(byChar).forEach(([id,ms])=>{
+    const c=w.characters.find(x=>x.id===id); if(!c)return;
+    const curHP=ms.reduce((a,m)=>a+Math.max(0,m.curHP|0),0), max=ms.reduce((a,m)=>a+(m.maxHP|0),0);
+    const nm=c.name||"Unnamed", P=c.skills.P;
+    if(curHP>0&&curHP<=max*0.5&&ms.length===1)lines.push(`<b>${esc(nm)} is under half</b> — every skill −1, and a break test on every hit: roll under <button class="linkbtn" data-dtarget="${P-1}|${esc(nm)} · Psyche (−1)">P ${P-1}</button>, −1 more for each test already this turn.`);
+    if(curHP<=0)lines.push(`<b>${esc(nm)} is down</b> — they roll on the injury table back at camp.`);
+    if(hasTrait(c,"Minor arcana")||hasTrait(c,"Major arcana")){const eff=P-(curHP>0&&curHP<=max*0.5?1:0);lines.push(`<b>${esc(nm)} can cast</b> — an Ability action: roll under <button class="linkbtn" data-dtarget="${eff}|${esc(nm)} · Psyche">P ${eff}</button>; a failed cast rends.`);}
+    if(ms.length>1){const alive=ms.filter(m=>(m.curHP|0)>0).length;lines.push(`<b>${esc(nm)} is a squad</b> — ${alive}/${ms.length} standing; no break test per model, the squad tests when its total is at 25%${curHP<=max*0.25?" — <b>it is</b>":""}.`);}
+  });
+  const enemySquads={};
+  (s.battle.combatants||[]).filter(m=>m.side==="enemy"&&/_\d+$/.test(String(m.id))).forEach(m=>{const k=String(m.id).replace(/_\d+$/,"");(enemySquads[k]=enemySquads[k]||[]).push(m);});
+  Object.values(enemySquads).forEach(ms=>{const nm=ms[0].name.replace(/ \d+\/\d+$/,"");const tot=ms.reduce((a,m)=>a+(m.maxHP|0),0),cur=ms.reduce((a,m)=>a+Math.max(0,m.curHP|0),0);lines.push(`<b>The ${esc(nm)} squad</b> — tests as one at 25% of ${tot} HP${cur<=tot*0.25?" — <b>they are there now</b>":" ("+cur+" left)"}.`);});
+  const next=(s.events||[]).filter(e=>e.round>cur).sort((a,b)=>a.round-b.round)[0];
+  if(next)lines.push(`<b>Next event, turn ${next.round}</b> — ${esc(next.title)}${next.effect&&next.effect.apply?": "+esc(effLabel(next.effect))+(next.effect.where?" · "+esc(next.effect.where):""):""}.`);
+  if(!lines.length)return "";
+  return `<div class="now"><div class="now-h">Right now · turn ${cur}${s.rounds?" / "+s.rounds:""}</div>${lines.map(l=>`<div class="now-l">${l}</div>`).join("")}</div>`;
+}
+function diceHTML(){
+  const w=activeWB();
+  const s=activeQuestScn();
+  const chars=(s?myCombatantsIn(s).map(m=>w.characters.find(c=>c.id===m.charId)).filter(Boolean):w.characters.filter(isFielded)).filter((c,i,a)=>a.indexOf(c)===i).slice(0,4);
+  const res=diceLast?`<div class="dice-d ${diceLast.ok===true?"ok":diceLast.ok===false?"bad":""}">${diceLast.v}</div>`:`<div class="dice-d">?</div>`;
+  const verdict=diceLast?(diceLast.d===10&&diceTarget?(diceLast.ok?"<b class='ok'>success</b>":"<b class='bad'>fail</b>")+(diceLast.v===1?" · a 1 always succeeds":diceLast.v===10?" · a 10 always fails":""):`rolled 1D${diceLast.d}`):"";
+  const short=c=>((c.name||"?").split(" ").filter(w=>!/\.$/.test(w))[0]||"?").slice(0,9);
+  return `<div class="dice">
+    ${res}
+    <div class="dice-tg">${diceTarget?`1D10 under <b>${esc(diceTarget.label)}</b> → needs <b>${diceTarget.v-1>0?"1–"+(diceTarget.v-1):"a 1"}</b>`:"1D10 — set a target below, or just roll"}${verdict?`<div class="dice-v">${verdict}</div>`:""}</div>
+    <button class="btn sm primary" id="dRoll10">🎲 D10</button>
+  </div>
+  <div class="dice-row">
+    ${chars.map(c=>`<span class="dice-who">${esc(short(c))}</span>${SKILLS.map(([k])=>`<button class="dchip ${diceTarget&&diceTarget.label===short(c)+" · "+k?"on":""}" data-dtarget="${c.skills[k]}|${esc(short(c))} · ${k}">${k}${c.skills[k]}</button>`).join("")}`).join("")}
+    <span class="dice-who">damage</span>${[4,6,8,10,12].map(d=>`<button class="dchip" data-droll="${d}">D${d}</button>`).join("")}
+  </div>`;
+}
 function renderCheat(){
   const d=$("#cheatDrawer"); if(!d)return;
-  d.innerHTML=`<div class="cheat-head"><h3>Round cheat sheet</h3>
-      <button class="iconbtn" id="cheatClose" aria-label="Close">✕</button></div>
-    <div class="cheat-body">
+  const q=guideQuery.trim().toLowerCase();
+  const hl=(txt)=>q?esc(txt).replace(new RegExp("("+q.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+")","ig"),"<mark>$1</mark>"):esc(txt);
+  let body="";
+  if(q){
+    const hits=guideEntries().filter(e=>(e.n+" "+e.d+" "+e.sec).toLowerCase().includes(q)).slice(0,40);
+    body=hits.length?hits.map(e=>`<div class="cheat-item"><div class="ci-sec">${esc(e.sec)}</div><div class="ci-n">${hl(e.n)}</div><div class="ci-d">${hl(e.d.replace(/\s+/g," ").trim())}</div></div>`).join(""):`<div class="none-note" style="margin-top:12px">Nothing matches “${esc(guideQuery)}”.</div>`;
+  } else if(guideTab==="round"){
+    const secs=CHEAT.map((s,i)=>[s,i]).filter(([s])=>!(s.build==="claude"&&fbAvailable())&&s.title!=="Back at camp"&&s.title!=="The prop library"&&s.title!=="Rolling dice");
+    body=`${diceHTML()}${rightNowHTML()}
+      <div class="flows">${FLOWS.map(f=>`<div class="flow${cheatOpen["f_"+f.key]?" open":""}"><button class="flow-t" data-flow="${f.key}"><span>${f.ico} ${f.title}</span><small>${f.sub}</small><span class="cq-arrow">›</span></button><ol class="flow-steps">${f.steps.map(x=>`<li>${x}</li>`).join("")}</ol></div>`).join("")}</div>
       <div class="cheat-roll"><b>Roll 1D10 under the skill.</b> Equal or over fails. A 1 always succeeds, a 10 always fails.</div>
-      ${CHEAT.map((s,i)=>[s,i]).filter(([s])=>!(s.build==="claude"&&fbAvailable())).map(([s,i])=>`<div class="cheat-sec${cheatOpen[i]?" open":""}">
-        <button class="cheat-q" data-cheat="${i}"><span class="cq-ico">${s.ico}</span>${esc(s.title)}<span class="cq-arrow">›</span></button>
-        <div class="cheat-a">${s.items.map(it=>`<div class="cheat-item">
-          <div class="ci-n">${esc(it.n)}</div>
-          ${it.d?`<div class="ci-d">${esc(it.d)}</div>`:""}
-          ${it.steps?`<ol>${it.steps.map(x=>`<li>${esc(x)}</li>`).join("")}</ol>`:""}
-          ${it.prop?(()=>{const c=propCounts()[it.prop],f=(propByCode(it.prop)||{}).full;
-            return `<div class="prop-own"><button class="rbtn sm" data-prop="${it.prop}|-1">−</button>
-              <b class="mono">${c}</b><span class="none-note" style="font-style:normal">of ${f} built</span>
-              <button class="rbtn sm" data-prop="${it.prop}|1">+</button></div>`;})():""}
-          ${it.mod?`<div class="ci-d ci-mod" style="margin-top:5px">${esc(it.mod)}</div>`:""}
-        </div>`).join("")}</div>
-      </div>`).join("")}
-    </div>`;
+      ${secs.map(([s,i])=>`<div class="cheat-sec${cheatOpen[i]?" open":""}"><button class="cheat-q" data-cheat="${i}"><span class="cq-ico">${s.ico}</span>${esc(s.title)}<span class="cq-n">${s.items.length}</span><span class="cq-arrow">›</span></button><div class="cheat-a">${s.items.map(cheatItemHTML).join("")}</div></div>`).join("")}`;
+  } else if(guideTab==="ref"){
+    const groups=[["Weapon keywords",WEAPON_RULES.map(r=>({n:r[0],d:r[1]}))],["Arcana powers",ARCANA.map(a=>({n:a[0],d:a[1]}))],["Injury table (1D8)",INJURY_TABLE.map(x=>({n:x.roll+" · "+x.name,d:x.note+(x.effectNote?" — "+x.effectNote:"")}))],["Vehicle damage (1D6)",VEH_DAMAGE.map(x=>({n:x.roll+" · "+x.name,d:x.effect}))]];
+    body=groups.map(([title,items],gi)=>`<div class="cheat-sec${cheatOpen["r"+gi]?" open":""}"><button class="cheat-q" data-cheat="r${gi}"><span class="cq-ico">📚</span>${esc(title)}<span class="cq-n">${items.length}</span><span class="cq-arrow">›</span></button><div class="cheat-a">${items.map(cheatItemHTML).join("")}</div></div>`).join("");
+  } else {
+    const secs=CHEAT.map((s,i)=>[s,i]).filter(([s])=>!(s.build==="claude"&&fbAvailable())&&(s.title==="Back at camp"||s.title==="The prop library"));
+    body=`<div class="cheat-roll">Between games: 20 cp buys a skill level or +${CP_COSTS.hpStep} HP · traits and abilities cost their points · a recruit is ${CP_COSTS.recruit} · treatment ${CP_COSTS.heal} · points → credits at 2:1.</div>`+
+      secs.map(([s,i])=>`<div class="cheat-sec${cheatOpen[i]?" open":""}"><button class="cheat-q" data-cheat="${i}"><span class="cq-ico">${s.ico}</span>${esc(s.title)}<span class="cq-n">${s.items.length}</span><span class="cq-arrow">›</span></button><div class="cheat-a">${s.items.map(cheatItemHTML).join("")}</div></div>`).join("");
+  }
+  d.innerHTML=`<div class="cheat-head"><h3>Guide</h3><button class="iconbtn" id="cheatClose" aria-label="Close">✕</button></div>
+    <div class="cheat-tools">
+      <input class="input" id="guideQ" placeholder="🔍 search the rules… charge, cover, ammo" value="${esc(guideQuery)}">
+      ${q?"":`<div class="topnav gtabs"><button class="topnav-btn ${guideTab==="round"?"active":""}" data-gtab="round">Round</button><button class="topnav-btn ${guideTab==="ref"?"active":""}" data-gtab="ref">Reference</button><button class="topnav-btn ${guideTab==="camp"?"active":""}" data-gtab="camp">Camp</button></div>`}
+    </div>
+    <div class="cheat-body">${body}</div>`;
   $("#cheatClose").onclick=closeCheat;
-  d.querySelectorAll("[data-prop]").forEach(b=>b.onclick=e=>{
-    e.stopPropagation();
-    const [code,delta]=b.dataset.prop.split("|");
-    setPropCount(code,(propCounts()[code]||0)+(+delta));
-  });
-  d.querySelectorAll("[data-cheat]").forEach(b=>b.onclick=()=>{
-    const i=+b.dataset.cheat; cheatOpen[i]=!cheatOpen[i];
-    b.parentElement.classList.toggle("open",!!cheatOpen[i]);
-  });
+  const qi=$("#guideQ");qi.oninput=()=>{const pos=qi.selectionStart;guideQuery=qi.value;renderCheat();const n=$("#guideQ");if(n){n.focus();try{n.setSelectionRange(pos,pos);}catch(e){}}};
+  d.querySelectorAll("[data-gtab]").forEach(b=>b.onclick=()=>{guideTab=b.dataset.gtab;renderCheat();});
+  d.querySelectorAll("[data-prop]").forEach(b=>b.onclick=e=>{e.stopPropagation();const [code,delta]=b.dataset.prop.split("|");setPropCount(code,(propCounts()[code]||0)+(+delta));});
+  d.querySelectorAll("[data-cheat]").forEach(b=>b.onclick=()=>{const i=b.dataset.cheat;cheatOpen[i]=!cheatOpen[i];b.parentElement.classList.toggle("open",!!cheatOpen[i]);});
+  d.querySelectorAll("[data-flow]").forEach(b=>b.onclick=()=>{const k="f_"+b.dataset.flow;cheatOpen[k]=!cheatOpen[k];b.parentElement.classList.toggle("open",!!cheatOpen[k]);});
+  d.querySelectorAll("[data-dtarget]").forEach(b=>b.onclick=()=>{const [v,label]=b.dataset.dtarget.split("|");diceTarget={v:+v,label};diceLast=null;renderCheat();});
+  const r10=$("#dRoll10");if(r10)r10.onclick=()=>{const v=1+Math.floor(Math.random()*10);diceLast={d:10,v,ok:diceTarget?(v===1?true:v===10?false:v<diceTarget.v):null};renderCheat();};
+  d.querySelectorAll("[data-droll]").forEach(b=>b.onclick=()=>{const n=+b.dataset.droll;diceLast={d:n,v:1+Math.floor(Math.random()*n),ok:null};renderCheat();});
 }
 function openCheat(){const d=$("#cheatDrawer");if(!d)return;renderCheat();d.hidden=false;requestAnimationFrame(()=>d.classList.add("show"));}
 function closeCheat(){const d=$("#cheatDrawer");if(!d)return;d.classList.remove("show");setTimeout(()=>{d.hidden=true;},240);}
@@ -4036,10 +4255,11 @@ async function joinGame(code,name){
   const ref=db.doc("sessions/"+code);
   let snap;try{snap=await ref.get();}catch(e){if(res)res.innerHTML=`<div class="ng-note">Couldn't reach the game — check your connection and try again.</div>`;toast("Couldn't reach the game");return;}
   if(!snap.exists){if(res)res.innerHTML=`<div class="ng-note">No live game with code ${esc(code)} in your realm. Double-check the code on the host's screen, and that you are both in the same realm.</div>`;toast("No game found with that code");return;}
-  clearLive();liveRole="guest";liveCode=code;liveScenario=fillScnArrayDefaults((snap.data()||{}).scenario||null);
+  clearLive();liveRole="guest";liveCode=code;liveScenario=fillScnArrayDefaults((snap.data()||{}).scenario||null);_prevLive=liveScenario?JSON.parse(JSON.stringify(liveScenario)):null;
   try{ _liveUnsub.push(ref.onSnapshot(sn=>{
     if(sn.exists){
       liveScenario=fillScnArrayDefaults((sn.data()||{}).scenario)||liveScenario;
+      try{diffLive(_prevLive,liveScenario);}catch(e){}
       rememberQuestState(liveScenario);      // keep our own copy so spoils survive the host leaving
       if(liveRole==="guest"){renderScenarioView();renderRoster();renderVehicleRoster();renderCampBar();}
     }else{toast("The host packed up — bring your warband home");returnToCamp();}
@@ -4048,6 +4268,54 @@ async function joinGame(code,name){
   guestPid=pid; guestPlayerRef=ref.collection("players").doc(pid);
   try{ await guestPlayerRef.set({name,warbandName:activeWB().name,combatants:myCombatants(name,"g"+pid+"_"),joinedAt:Date.now()}); }catch(e){}
   closeModal();syncQuestTab();switchView("scenarios");renderScenarioView();toast("Joined game "+code);
+}
+/* the phone notices what changed in the host's game and says so — a banner you tap away,
+   and a feed that keeps it */
+let _prevLive=null;
+function questFeedKey(s){return "p28_feed_"+(s&&s.id||"x");}
+function questFeed(s){try{return JSON.parse(localStorage.getItem(questFeedKey(s))||"[]")||[];}catch(e){return [];}}
+function pushFeed(s,e){const f=questFeed(s);f.unshift(Object.assign({at:Date.now(),turn:curRound(s)},e));try{localStorage.setItem(questFeedKey(s),JSON.stringify(f.slice(0,80)));}catch(err){}}
+function questFeedSummary(s){const f=questFeed(s);return f.length?f.length+" so far":"";}
+function questFeedHTML(s){
+  const f=questFeed(s);
+  if(!f.length)return `<div class="none-note" style="margin-top:8px">Nothing yet — envelopes, events, turns and wounds land here as the host's game moves.</div>`;
+  return `<div class="feed">${f.map(e=>`<div class="feed-it ${e.cls||""}"><small>T${e.turn}</small><div>${e.icon||""} <b>${esc(e.title)}</b>${e.text?`<div class="feed-x">${esc(e.text)}</div>`:""}</div></div>`).join("")}</div>`;
+}
+function showAlert(a){
+  let st=$("#alertStack");
+  if(!st){st=document.createElement("div");st.id="alertStack";st.className="alertstack";document.body.appendChild(st);}
+  const el=document.createElement("button");el.className="alert "+(a.cls||"");
+  el.innerHTML=`<b>${a.icon||""} ${esc(a.title)}</b>${a.text?`<small>${esc(a.text)}</small>`:""}<span class="al-x">tap to dismiss</span>`;
+  el.onclick=()=>{el.classList.add("out");setTimeout(()=>el.remove(),180);};
+  st.prepend(el);
+  while(st.children.length>3)st.lastChild.remove();
+  try{if(navigator.vibrate)navigator.vibrate(a.cls==="red"?[80,60,80]:40);}catch(e){}
+}
+function diffLive(prev,next){
+  if(!next)return;
+  if(!prev){_prevLive=JSON.parse(JSON.stringify(next));return;}
+  const say=(e)=>{pushFeed(next,e);showAlert(e);};
+  const pr=curRound(prev), nr=curRound(next);
+  if(nr>pr){
+    say({icon:"⏱",title:"Turn "+nr+(next.rounds?" of "+next.rounds:""),cls:"dim"});
+    (next.events||[]).filter(e=>e.kind!=="deadline"&&e.round>pr&&e.round<=nr).forEach(e=>say({icon:"⚡",title:e.title,text:(e.text||"")+(e.effect&&e.effect.where?" · "+e.effect.where:""),cls:"amber"}));
+  }
+  const pe=((prev.mystery||{}).envelopes||[]), ne=((next.mystery||{}).envelopes||[]);
+  ne.forEach((e,i)=>{if(e.opened&&!(pe[i]&&pe[i].opened))say({icon:"✉",title:"Envelope opened — "+e.title,text:e.text,cls:"arc"});});
+  if(next.mystery&&next.mystery.solved&&!(prev.mystery&&prev.mystery.solved))say({icon:"★",title:"The truth",text:next.mystery.truth,cls:"arc"});
+  const mineNow=myCombatantsIn(next), prevBy={};
+  ((prev.battle&&prev.battle.combatants)||[]).forEach(m=>{prevBy[m.id]=m;});
+  mineNow.forEach(m=>{
+    const o=prevBy[m.id]; if(!o)return;
+    const was=o.curHP|0, now=m.curHP|0, max=m.maxHP|0;
+    if(now<=0&&was>0)say({icon:"☠",title:m.name.replace(/ \d+\/\d+$/,"")+" taken down",text:"They roll on the injury table back at camp.",cls:"red"});
+    else if(now<=max*0.5&&was>max*0.5&&now>0)say({icon:"⚠",title:m.name.replace(/ \d+\/\d+$/,"")+" is under half",text:"−1 to all skills · break test on every hit.",cls:"amber"});
+    else if(now<was)say({icon:"🩸",title:m.name.replace(/ \d+\/\d+$/,"")+" −"+(was-now)+" HP",cls:"dim"});
+    const of=(o.finds||[]).length, nf=(m.finds||[]).length;
+    if(nf>of)say({icon:"🎒",title:m.name.replace(/ \d+\/\d+$/,"")+" picked up "+((m.finds[nf-1]||{}).name||"something"),cls:"teal"});
+  });
+  if(next.outcome&&!prev.outcome){const o=OUTCOMES[next.outcome.result];say({icon:o?o.icon:"⚑",title:"Quest over — "+(o?o.short:"ended"),text:"Bring your warband home from the Quest tab.",cls:"teal"});}
+  _prevLive=JSON.parse(JSON.stringify(next));
 }
 async function resendWarband(){
   if(!guestPlayerRef){toast("You're not in a game.");return;}
@@ -4113,7 +4381,8 @@ function ensureSealedForQuest(then,btnLabel){
   $("#sqBack").onclick=closeModal;
   showModal();
 }
-function wbSealed(w){w=w||activeWB();return !!(w&&w.sealed);}
+function isWorkshop(){return !fbAvailable();}
+function wbSealed(w){if(isWorkshop())return false;w=w||activeWB();return !!(w&&w.sealed);}
 function sealWarband(w,quiet){w=w||activeWB();if(w.sealed)return;w.sealed=Date.now();save();render();if(!quiet)toast("🔒 Warband sealed — it grows by campaign points and credits now");}
 function unsealWarband(w){w=w||activeWB();delete w.sealed;(w.characters||[]).forEach(c=>{delete c.recruit;delete c.recruitFee;});save();render();toast("Unsealed — free editing is back");}
 /* what a new recruit's build costs in campaign points: levels, hit-points, traits, abilities (gear is credits) */
@@ -4820,6 +5089,18 @@ function openEarnedNames(entries,kind,then){
 }
 function questClaims(){try{return JSON.parse(localStorage.getItem("p28_claimed")||"[]");}catch(e){return [];}}
 function markClaimed(id){try{const a=questClaims();if(!a.includes(id)){a.push(id);localStorage.setItem("p28_claimed",JSON.stringify(a.slice(-50)));}}catch(e){}}
+/* quests this device went on but never brought home — the host packed up, or the app was
+   closed before Return to camp. They wait at camp until claimed. */
+function strandedQuests(){
+  const out=[];
+  try{Object.keys(localStorage).filter(k=>k.indexOf("p28_quest_")===0).forEach(k=>{
+    const snap=JSON.parse(localStorage.getItem(k)||"null"); if(!snap||!snap.scnId)return;
+    if(questClaims().includes(snap.scnId))return;
+    if(liveRole==="guest"&&liveScenario&&liveScenario.id===snap.scnId)return;   // still live — not stranded
+    if((snap.combatants||[]).some(m=>m.charId&&activeWB().characters.some(c=>c.id===m.charId)))out.push(snap);
+  });}catch(e){}
+  return out.sort((a,b)=>(b.at||0)-(a.at||0));
+}
 function pendingQuest(scn){
   // prefer the live roster; fall back to the last copy this device kept
   let snap=null;
@@ -4962,6 +5243,7 @@ function renderScenarioList(){
         <div class="scn-sub">${esc(s.premise||"")}</div>
         ${fbAvailable()?(!s.room?`<div class="scn-meta">unfiled — joins the first realm you name</div>`
           :s.room!==roomKey?`<div class="scn-meta" style="color:var(--warn)">realm: ${esc(s.realmName||"unknown — made before realms were named")}</div>`:"")
+          +(isHost()?`<div class="scn-status">${liveRole==="host"&&s.id===hostScenarioId?`<span class="chip teal">📡 hosting · ${esc(hostCode)}</span>`:""}${s.outcome&&OUTCOMES[s.outcome.result]?`<span class="chip">${OUTCOMES[s.outcome.result].icon} ${esc(OUTCOMES[s.outcome.result].short)}</span>`:s.battle&&s.battle.started?`<span class="chip amber">in play · turn ${curRound(s)}</span>`:`<span class="chip">imported</span>`}${isMystery(s)?`<span class="chip" style="color:var(--arcane)">❓ mystery</span>`:""}</div>`:"")
           :`<div class="scn-status">${s.movedAt?`<span class="chip teal">✓ moved to realm</span>`:`<span class="chip amber">draft · not moved</span>`}${s.mode==="coop"?(enemyAll(s).length?`<span class="chip">enemy mustered</span>`:`<span class="chip mute">no enemy yet</span>`):""}${s.questType&&questTypeBrief(s.questType)?`<span class="chip">${esc(questTypeBrief(s.questType)[1])}</span>`:""}<span class="btn sm ghost" data-move="${s.id}">🌍 Move</span></div>`}
       </div>
     </button>`).join("");
@@ -4970,12 +5252,7 @@ function renderScenarioList(){
       <div class="lp-main"><b>Live game</b> <span class="none-note" style="font-style:normal">${isHost()?"Name your realm so your players can reach the games you host.":"Name your realm first so everyone lands in the same one."}</span></div>
       <button class="btn primary" id="lpTable">🔑 Name your realm</button>
     </div>`
-    :isHost()?`<div class="live-panel">
-      <div class="lp-main"><b>🗺 Realm: <span class="cb-pass">${esc(savedPass())}</span></b>
-        <button class="linkbtn" id="lpLeaveTable">change</button>
-        <div class="none-note" style="font-style:normal;margin-top:3px">You are hosting. Import a scenario and run it for your players — warband building is hidden on this device.</div></div>
-      <button class="btn sm ghost" id="lpRole">⛺ Switch to a camp</button>
-    </div>`
+    :isHost()?`<div class="statusstrip" style="margin:4px 0 10px"><span class="sc static">🗝 <b>${esc(savedPass())}</b> · hosting</span>${hostCode?`<span class="sc live">📡 ${esc(hostCode)} · ${livePlayers.length} joined</span>`:""}<button class="sc" id="lpLeaveTable">change realm</button></div>`
     :`<div class="live-panel">
       <div class="lp-main"><div class="lp-tablebadge">${campName()?`⛺ ${esc(campName())} · `:""}◉ Realm: <b class="cb-pass">${esc(savedPass())}</b>${hostCode?` · hosting <b class="cb-pass">${esc(hostCode)}</b>`:""}</div></div>
       <button class="linkbtn" id="lpLeaveTable">change realm</button>
@@ -5142,17 +5419,17 @@ const QUEST_TYPES=[
   ["hill","King of the hill","One high-value zone at the centre. Whoever holds it when the game ends wins. Put hard cover around it and hazards on the approaches so holding it hurts.","One patch of ground at the centre. Hold it when the last turn ends."],
   ["domination","Capture and hold","3-5 objective markers spread across the board, scored at the end of every turn. Spread them so no single position covers two, and make at least one sit in bad ground.","Several markers across the board, scored every turn. Spread out, or lose the count."],
   ["breakthrough","Breakthrough","The players must fight ACROSS the board and exit the far edge; each model that escapes scores. The enemy deploys between them and the exit and does not need to kill, only delay.","Fight across the table and off the far edge. Every model that gets out scores."]]],
- ["Retrieval & exploration",[
+ ["Retrieval & escort",[
   ["fetch","Fetch the prize","One specific object must be picked up and physically carried off the board. Say where it starts, who can carry it, and what carrying it costs — slower, cannot shoot, draws attention.","Find the prize, pick it up, and carry it home — slower, and everyone knows you have it."],
   ["scavenge","Scavenge the unknown","Several mystery markers; only searching reveals which holds the real prize. Use cache features and hide the true objective among decoys, so the search itself is the game.","Mystery markers; only searching reveals which holds the real prize. The search is the game."],
   ["escort","Escort","Something slow and vulnerable must reach a destination — a civilian, a wounded courier, a crawling vehicle. Give it a path, a speed, and no ability to defend itself. The enemy wins by stopping it.","Something slow and helpless must reach safety. Keep it alive and moving."]]],
  ["Stealth & sabotage",[
   ["heist","Infiltration / heist","Getting in unseen matters more than fighting. Sentries with patrol notes, consoles to reach, and an alarm state that makes everything worse once raised.","Get in unseen. Patrols, consoles, and an alarm that makes everything worse once it sounds."],
   ["sabotage","Sabotage","Named terrain pieces must be destroyed or rigged — a fuel stack, a generator, a ritual site. Say how long each takes and what the defender does about it.","Destroy or rig named pieces of the table before the defenders stop you."]]],
- ["Mystery & exploration",[
-  ["expedition","Into the unknown","PURE EXPLORATION, not a battle. The table is a place no one has returned from — a cave system, an ocean trench, a derelict hull, a pocket of wrong space — and the players are there to find out what it IS. Structure it as a sequence of discoveries: 4-6 search points ('cache' features) and secret NPCs/items whose reveals each answer part of the question, timed events that change the place as they go deeper, and a TRUTH you know from the start but only reveal in the final event or the last cache. Victory is leaving the table alive with the answer (an item or a reached marker), not killing anything. Keep the enemy force to a single guardian or a few creatures revealed late — the danger is the environment and the unknown.","Nobody has come back from this place. Go in, learn what it is, get out with the knowledge."],
-  ["anomaly","The anomaly","CONTAINMENT MYSTERY in the style of an SCP file or a Star Trek away mission. One thing on the table should not exist — an object, a zone, an entity — and it has RULES the players do not know: what wakes it, what it does to those nearby, what stops it. Write those rules into the special rules and events so the players can DISCOVER them by testing (a search that triggers it, an event when someone crosses a line, an item that dampens it). Let them win by understanding: contain it (reach markers in the right order, use the right item), or escape with proof. The enemy force, if any, is the anomaly's effect — a few turned creatures or one warped guardian, never a warband.","Something is here that should not exist. Work out its rules by testing them — then contain it, or run."],
-  ["signal","Answer the signal","FIRST CONTACT. A transmission, a beacon, a voice from somewhere it cannot come from, and the players go to see. Build in a real choice: what they find may be a survivor, a lure, a machine that wants something, or a mind that does not understand them. Give it a way to be talked to (Psyche tests, an item, reaching a console) and a way to go wrong. The enemy force is small and may not be hostile until the players make it so; the map should have a clear 'source' marker and the route to it should reveal clues.","A transmission from somewhere it can't come from. Answer it. It may not be hostile — or that may be the trick."]]],
+ ["Mystery — sealed, no objectives shown",[
+  ["expedition","Total mystery — into the unknown","AN UNUSUAL SITUATION TO INVESTIGATE, not a battle and not a random scenario. Start from ONE specific unexplained thing the warband has seen, heard or found — a blinking light at the bottom of a shaft, a two-legged creature that keeps its distance and watches, a hatch nobody remembers building, a sound from the sea floor, a room that is colder than it should be — and the whole scenario is the players going to find out what it is. The table is the place it lives in (a cave system, an ocean trench, a derelict hull, a pocket of wrong space). Structure it as a sequence of discoveries: 4-6 search points ('cache' features) and secret NPCs/items whose reveals each answer part of the question, timed events that change the place as they go deeper, and a TRUTH you know from the start but only reveal in the final envelope. Victory is leaving the table alive with the answer (an item or a reached marker), not killing anything. Keep any enemy to a single guardian or a few creatures revealed late — the danger is the environment and the unknown.","An unusual situation to go and investigate, not a fight: what's down there? What is that blinking thing? What is that two-legged creature that keeps its distance? The DM knows the answer; you dig it out clue by clue and try to get back."],
+  ["anomaly","The anomaly — SCP-style containment","CONTAINMENT MYSTERY in the style of an SCP file or a Star Trek away mission. One thing on the table should not exist — an object, a zone, an entity — and it has RULES the players do not know: what wakes it, what it does to those nearby, what stops it. Write those rules into the special rules and events so the players can DISCOVER them by testing (a search that triggers it, an event when someone crosses a line, an item that dampens it). Let them win by understanding: contain it (reach markers in the right order, use the right item), or escape with proof. The enemy force, if any, is the anomaly's effect — a few turned creatures or one warped guardian, never a warband.","Something is here that should not exist. Work out its rules by testing them — then contain it, or run."],
+  ["signal","Answer the signal — first contact","FIRST CONTACT. A transmission, a beacon, a voice from somewhere it cannot come from, and the players go to see. Build in a real choice: what they find may be a survivor, a lure, a machine that wants something, or a mind that does not understand them. Give it a way to be talked to (Psyche tests, an item, reaching a console) and a way to go wrong. The enemy force is small and may not be hostile until the players make it so; the map should have a clear 'source' marker and the route to it should reveal clues.","A transmission from somewhere it can't come from. Answer it. It may not be hostile — or that may be the trick."]]],
  ["Environmental & narrative",[
   ["gauntlet","The gauntlet","The battlefield itself is killing everyone. A collapse, a flood, a fire that spreads a set distance per turn, and exits to reach. Timed events should tighten the noose every few turns.","The battlefield itself is killing everyone — floods, collapse, fire. Reach the exits."],
   ["hunt","Monster hunt","One enormous creature is the scenario. Build the enemy force around it — it should be most of the points, with lesser things to distract. Give it a lair, a hunting pattern, and something the players can use against it.","One enormous creature. Track it, bait it, bring it down."],
@@ -5175,11 +5452,11 @@ function wizardHTML(inPage){
     ${inPage?"":"<h3>New scenario</h3>"}
     <p class="lead">Answer a few questions and the DM writes you a full Planet 28 scenario — battlefield map, objectives, deployment and special rules — grounded in the rulebook. In co-op it musters the enemy force to match, in the same go.</p>
     <div class="field" style="margin-bottom:12px"><label>Kind of quest</label>
-      <select class="input" id="scQType">
+      <select class="input" id="scQType" hidden>
         <option value="">Surprise me — the DM decides</option>
         ${QUEST_TYPES.map(([grp,list])=>`<optgroup label="${esc(grp)}">${list.map(q=>`<option value="${q[0]}"${scnQuestType===q[0]?" selected":""}>${esc(q[1])}</option>`).join("")}</optgroup>`).join("")}
       </select>
-      <div class="qt-blurb" id="scQNote"></div><button class="linkbtn" id="scQBrowse" style="margin-top:4px">Browse every kind of quest ›</button></div>
+      <button class="qt-dd" id="scQBrowse"><span class="qt-dd-main"><b id="scQTitle"></b><span class="qt-blurb" id="scQNote"></span></span><span class="qt-dd-c">▾</span></button></div>
     <div class="field" style="margin-bottom:12px"><label>Your idea (optional)</label>
       <textarea class="input" id="scSeed" style="min-height:64px" placeholder="Leave blank and the DM invents one — or seed it, e.g. “raid a derelict ship for a data-core before it self-destructs”."></textarea></div>
     <div style="display:flex;gap:18px;flex-wrap:wrap;margin-bottom:12px">
@@ -5218,7 +5495,10 @@ function wizardHTML(inPage){
 }
 function bindWizard(root){
   const qn=$("#scQNote"), qs=$("#scQType");
-  const updQ=()=>{const q=questTypeBrief(scnQuestType);qn.textContent=q?(q[3]||q[2]):"The DM picks a shape that suits whatever it invents.";};
+  const updQ=()=>{const q=questTypeBrief(scnQuestType);
+    const qtl=root.querySelector("#scQTitle");if(qtl)qtl.textContent=q?q[1]:"Surprise me";
+    qn.textContent=q?(q[3]||q[2]):"The DM picks a shape that suits whatever it invents — it may be any of the kinds below.";
+    const pk=root.querySelector(".qt-dd");if(pk)pk.classList.toggle("mystery",!!(q&&MYSTERY_TYPES.includes(q[0])));};
   const qb=root.querySelector("#scQBrowse");if(qb)qb.onclick=()=>openQuestTypeBrowser(k=>{scnQuestType=k;qs.value=k;updQ();});
   qs.onchange=()=>{scnQuestType=qs.value;updQ();};
   updQ();
@@ -5253,10 +5533,10 @@ function openScenarioWizard(){
 /* every kind of quest, with what it entails for the players — tap to choose */
 function openQuestTypeBrowser(onPick){
   const body=$("#modalBody");
-  body.innerHTML=`<h3>Kinds of quest</h3><p class="lead">What each shape means for the players at the table. The DM gets the fuller brief.</p>
-    <div style="max-height:60vh;overflow:auto;margin:0 -4px;padding:0 4px">
-    <button class="qt-card ${!scnQuestType?"on":""}" data-qt=""><b>Surprise me</b><span>The DM picks a shape that suits whatever it invents.</span></button>
-    ${QUEST_TYPES.map(([grp,list])=>`<div class="eyebrow" style="margin:12px 0 6px">${esc(grp)}</div>${list.map(q=>`<button class="qt-card ${scnQuestType===q[0]?"on":""}" data-qt="${q[0]}"><b>${esc(q[1])}</b><span>${esc(q[3]||"")}</span></button>`).join("")}`).join("")}
+  body.innerHTML=`<h3>Kind of quest</h3><p class="lead">Pick one. Each line says what it means for the players at the table; the DM gets the fuller brief.</p>
+    <div style="max-height:62vh;overflow:auto;margin:0 -4px;padding:0 4px">
+    <button class="qt-card ${!scnQuestType?"on":""}" data-qt=""><b>Surprise me</b><span>The DM picks a shape that suits whatever it invents — it may be any of the kinds below.</span></button>
+    ${QUEST_TYPES.map(([grp,list])=>{const my=/Mystery/.test(grp);return `<div class="eyebrow ${my?"qt-my":""}" style="margin:12px 0 6px">${esc(grp)}</div>${list.map(q=>`<button class="qt-card ${my?"mystery":""} ${scnQuestType===q[0]?"on":""}" data-qt="${q[0]}"><b>${esc(q[1])}</b><span>${esc(q[3]||"")}</span></button>`).join("")}`;}).join("")}
     </div>
     <div class="modal-actions"><button class="btn ghost sm" id="qtX" style="margin-left:auto">Close</button></div>`;
   body.querySelectorAll("[data-qt]").forEach(b=>b.onclick=()=>{closeModal();onPick(b.dataset.qt);});
@@ -6550,6 +6830,78 @@ function accSection(key,icon,title,summary,inner,dflt){
     <summary><span class="acc-t">${icon} ${title}</span><span class="acc-s">${summary||""}</span><span class="acc-c">›</span></summary>
     <div class="acc-body">${inner}</div></details>`;
 }
+/* the host's whole flow in one box: the code, who has joined, and the one next step */
+function hostStage(s){
+  const hosting=liveRole==="host"&&s.id===hostScenarioId;
+  if(!hosting)return "host";
+  if(!(s.battle&&s.battle.started))return "battle";
+  if(!s.outcome)return "end";
+  return "done";
+}
+function hostBarHTML(s){
+  if(!fbAvailable()||!isHost()||scnReadOnly)return "";
+  const st=hostStage(s), hosting=st!=="host";
+  const steps=["import","host","battle","end"];
+  const cur=st==="host"?1:st==="battle"?2:st==="end"?3:4;
+  const stepRow=`<div class="hb-steps">${["Import","Host","Battle","End"].map((n,i)=>`<span class="${i<cur?"done":i===cur?"now":""}">${n}</span>`).join("<i></i>")}</div>`;
+  const players=(livePlayers||[]);
+  const plist=hosting?`<div class="hb-players">${players.length?players.map(p=>`<div class="hb-pl"><span class="hb-dot"></span><b>${esc(p.name||"?")}</b><small>· ${esc(p.warbandName||"warband")} · ${(p.combatants||[]).length} model${(p.combatants||[]).length===1?"":"s"} ✓</small></div>`).join(""):""}
+      ${st==="battle"?`<div class="hb-pl wait"><span class="hb-dot wait"></span><small>${players.length?"waiting for more…":"waiting for players to join with the code…"}</small></div>`:""}</div>`:"";
+  const o=s.outcome&&OUTCOMES[s.outcome.result];
+  const main=st==="host"?`<div><div class="hb-code dim">— — — —</div><div class="hb-st">host it to get a game code</div></div><button class="btn primary sm" id="hbHost">📡 Host live</button>`
+    :st==="battle"?`<div><div class="hb-code">${esc(hostCode)}</div><div class="hb-st">players join with this code</div></div><button class="btn primary sm" id="hbStart">⚔ Start the battle</button>`
+    :st==="end"?`<div><div class="hb-code">${esc(hostCode)}</div><div class="hb-st">turn ${curRound(s)}${s.rounds?" of "+s.rounds:""} · running</div></div><div class="hb-btns"><button class="btn sm ${tableMode?"":"ghost"}" id="hbTable">${tableMode?"◉ Table mode":"○ Table mode"}</button><button class="btn primary sm" id="hbEnd">⚑ End the quest</button></div>`
+    :`<div><div class="hb-code">${esc(hostCode)}</div><div class="hb-st">${o?o.icon+" "+esc(o.short)+" on turn "+(s.outcome.round||"?"):"finished"} · players can return to camp</div></div><button class="btn primary sm" id="hbStop">Stop hosting</button>`;
+  return `<div class="hostbar">${stepRow}<div class="hb-main">${main}</div>${plist}${hosting&&st!=="done"?`<div class="hb-foot"><button class="linkbtn" id="hbStopSoft">stop hosting</button></div>`:""}</div>`;
+}
+let tableMode=(()=>{try{return localStorage.getItem("p28_table")==="1";}catch(e){return false;}})();
+function setTableMode(v){tableMode=!!v;try{localStorage.setItem("p28_table",v?"1":"0");}catch(e){}renderScenarioView();}
+/* H2 · the table: one screen for running the game, nothing else */
+function tableHTML(s){
+  const cur=curRound(s), tot=s.rounds, over=tot&&cur>=tot;
+  const next=(s.events||[]).filter(e=>e.round>cur).sort((a,b)=>a.round-b.round)[0];
+  const M=isMystery(s)?s.mystery:null;
+  const env=M?`<div class="tbl-env">${M.envelopes.filter(e=>!e.opened).slice(0,3).map(e=>`<div class="env sealed"><div class="env-h"><b>${esc(e.title)}</b><span class="env-trig">open when: ${esc(e.trigger)}</span></div><button class="btn sm" data-envopen="${e.id}">✉ Open</button></div>`).join("")||`<div class="none-note">Every envelope is open.</div>`}</div>`:"";
+  return `<div class="scn-detail table">
+    <div class="tbl-top"><button class="scn-back" id="tblBack">‹ Full page</button><span class="tbl-title">${esc(s.title)}</span><span class="chip live">📡 ${esc(hostCode)}</span></div>
+    <div class="tbl-turn"><div class="tbl-l">turn</div><div class="tbl-n">${cur}${tot?`<small>/${tot}</small>`:""}</div>
+      <div class="tbl-row"><button class="rbtn big" id="rndPrev"${cur<=1?" disabled":""}>−</button><button class="rbtn big" id="rndNext"${over?" disabled":""}>+</button></div></div>
+    ${next?`<div class="tbl-next">⚡ <b>${esc(next.title)}</b> · turn ${next.round}${next.effect&&next.effect.where?` · ${esc(next.effect.where)}`:""}</div>`:over?`<div class="tbl-next">Final turn — the game ends.</div>`:""}
+    ${env}
+    ${battleHTML(s)}
+    ${collectHTML(s)}
+    ${s.outcome?outcomeBanner(s):`<button class="btn sm" id="endQuest" style="margin-top:12px;width:100%;justify-content:center">⚑ End the quest — call the result</button>`}
+  </div>`;
+}
+/* the player's quest bar and their own warband, before anything else */
+function questBarHTML(s){
+  const w=activeWB(), n=w.characters.filter(isFielded).length;
+  return `<div class="questbar">
+    <div class="qb-l1">◉ Live · <b>${esc(s.title||"the host's game")}</b><span class="sp"></span><span class="chip live">${esc(liveCode)}</span></div>
+    <div class="qb-l2">🛡 ${esc(w.name)} · ${n} fielded ✓ with the host${s.battle&&s.battle.started?` · ${w.characters.filter(c=>!isFielded(c)).length} at camp`:""}<span class="sp"></span>${s.battle&&s.battle.started?"":`<button class="linkbtn" id="gResend">re-send</button>`}</div>
+  </div>`;
+}
+function myWarbandHTML(s){
+  const rows=myCombatantsIn(s); if(!rows.length)return "";
+  const w=activeWB(), byKey={};
+  rows.forEach(m=>{const k=m.charId||("v:"+m.vehId);(byKey[k]=byKey[k]||[]).push(m);});
+  const cards=Object.entries(byKey).map(([k,ms])=>{
+    const first=ms[0], c=first.charId?w.characters.find(x=>x.id===first.charId):null;
+    const cur=ms.reduce((a,m)=>a+Math.max(0,m.curHP|0),0), max=ms.reduce((a,m)=>a+(m.maxHP|0),0);
+    const down=cur<=0, half=!down&&cur<=max*0.5;
+    const name=(c&&c.name)||first.name.replace(/ \d+\/\d+$/,"");
+    const finds=[].concat(...ms.map(m=>m.finds||[])).map(f=>f.name).filter(Boolean);
+    const squad=ms.length>1?`<span class="chip">⛊ ${ms.filter(m=>(m.curHP|0)>0).length}/${ms.length} standing</span>`:"";
+    const conds=[].concat(...ms.map(m=>m.conditions||[])).map(cd=>`<span class="chip amber">◈ ${esc(cd.label)}</span>`).join("");
+    return `<div class="me ${down?"down":half?"hurt":""}">
+      <div class="me-t"><b>${esc(name)}</b><span class="me-hp ${down?"d":half?"h":""}">${down?"DOWN":cur+`<small>/${max}</small>`}</span></div>
+      ${down?`<div class="me-s">☠ taken down — they roll on the injury table back at camp</div>`:half?`<div class="me-s">⚠ under half — −1 to all skills, break test on every hit</div>`:""}
+      <div class="me-strip">${c&&!down?tallyHTML(c):""}${squad}${conds}${finds.map(f=>`<span class="chip">🎒 ${esc(f)}</span>`).join("")}</div>
+      ${c?`<div class="me-line">${SKILLS.map(([k])=>k+c.skills[k]).join(" ")} · ${[].concat((c.weapons||[]).map(e=>CAT.weapon[e.id]),(c.armour||[]).map(e=>CAT.armour[e.id])).filter(Boolean).map(o=>o.name).join(" · ")||"unarmed"}</div>`:""}
+    </div>`;
+  }).join("");
+  return `<div class="eyebrow" style="margin:12px 0 6px">Your warband</div>${cards}`;
+}
 function renderScenarioDetail(scnOverride){
   const w=activeWB(), el=$("#scenarioView");
   const s=scnOverride||scnsOf(w).find(x=>x.id===scnCurrentId);
@@ -6588,11 +6940,15 @@ function renderScenarioDetail(scnOverride){
         <div class="none-note" style="font-style:normal;margin-top:5px">The DM used the closest existing prop for this game.</div></div>`:""}
       ${(()=>{const g=scnReadOnly?[]:scenarioGaps(s);return g.length?`<div class="gap-box"><div class="prep-h">⚠ Needs a decision from you</div><ul class="scn-list">${g.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`:"";})()}
     </div>`:"";
-  el.innerHTML=`
+  const tableOn=tableMode&&!scnReadOnly&&isHost()&&hostStage(s)==="end";
+  window._tableOn=tableOn;
+  el.innerHTML=tableOn?tableHTML(s):`
     <div class="scn-detail">
-      <button class="scn-back" id="scnBack">${scnReadOnly?"🏕 Return to camp · "+esc(liveCode):"‹ All scenarios"}</button>
-      ${scnReadOnly?`<div class="live-badge guest">◉ Live · watching the host's game (read-only)</div>
-        <div class="guest-wb">🛡 <b>${esc(activeWB().name)}</b> — ${activeWB().characters.filter(isFielded).length} fielded sent to the host's roster. <button class="linkbtn" id="gResend">Re-send my warband</button><div class="none-note" style="font-style:normal;margin-top:4px">Change your fielded characters on the Warband tab, then re-send.</div></div>`:(liveRole==="host"&&s.id===hostScenarioId?`<div class="live-badge host">📡 Hosting · code <b>${esc(hostCode)}</b> · ${livePlayers.length} joined <button class="linkbtn" id="hostStop">Stop</button></div>`:"")}
+      ${scnReadOnly?questBarHTML(s):`<button class="scn-back" id="scnBack">‹ All scenarios</button>`}
+      ${hostBarHTML(s)}
+      ${scnReadOnly?myWarbandHTML(s):""}
+      ${scnReadOnly&&false?`<div class="live-badge guest">◉ Live · watching the host's game (read-only)</div>
+        <div class="guest-wb">🛡 <b>${esc(activeWB().name)}</b> — ${activeWB().characters.filter(isFielded).length} fielded sent to the host's roster. <button class="linkbtn" id="gResend">Re-send my warband</button><div class="none-note" style="font-style:normal;margin-top:4px">Change your fielded characters on the Warband tab, then re-send.</div></div>`:""}
       <div class="scn-dmode" style="color:${s.mode==="coop"?"var(--teal)":"var(--amber)"}">${s.mode==="coop"?"Co-operative":"PvP"} · ${s.players} players · ${s.points} pts · ${esc(diffOf(s).label)}</div>
       <h2>${esc(s.title)}</h2>
       <p class="scn-premise">${esc(s.premise)}</p>
@@ -6645,8 +7001,9 @@ function renderScenarioDetail(scnOverride){
           ${s.mode==="coop"&&!scnReadOnly?accSection("enemy","🕯","Behind the curtain — host only",ea.length?ea.length+" thing"+(ea.length===1?"":"s")+" waiting":"nothing mustered",enemyBlock(s),false):""}
           ${accSection("map","🗺","Battlefield","",mapInner,false)}
           ${accSection("turn","⏱","Turn &amp; events","turn "+cur+(s.rounds?" / "+s.rounds:""),trackerHTML(s),started)}
-          ${accSection("roster","⚔","Battle roster",started?rows.length+(down?" · "+down+" down":""):"not started",battleHTML(s),started)}
+          ${accSection("roster","⚔",scnReadOnly?"Everyone at the table":"Battle roster",started?rows.length+(down?" · "+down+" down":""):"not started",battleHTML(s),started)}
           ${accSection("pick","🔦","Search points &amp; pick-ups",hidden?hidden+" hidden":"",collectHTML(s),started)}
+          ${scnReadOnly?accSection("feed","📣","What happened",questFeedSummary(s),questFeedHTML(s),true):""}
         </div>`;
         }
         return `<div class="scn-accs">
@@ -6656,22 +7013,30 @@ function renderScenarioDetail(scnOverride){
           ${s.mode==="coop"?accSection("enemy","☠","Enemy force",ea.length?ea.length+" unit"+(ea.length===1?"":"s")+" · "+ePts+" pts":"not mustered",enemyBlock(s),!started):""}
           ${accSection("map","🗺","Battlefield","",mapInner,false)}
           ${accSection("turn","⏱","Turn &amp; events","turn "+cur+(s.rounds?" / "+s.rounds:"")+(evN?" · "+evN+" event"+(evN===1?"":"s"):""),trackerHTML(s),started)}
-          ${accSection("roster","⚔","Battle roster",started?rows.length+(down?" · "+down+" down":""):"not started",battleHTML(s),started)}
+          ${accSection("roster","⚔",scnReadOnly?"Everyone at the table":"Battle roster",started?rows.length+(down?" · "+down+" down":""):"not started",battleHTML(s),started)}
           ${accSection("pick","🔦","Search points &amp; pick-ups",hidden?hidden+" hidden":"",collectHTML(s),started)}
+          ${scnReadOnly?accSection("feed","📣","What happened",questFeedSummary(s),questFeedHTML(s),true):""}
         </div>`;})()}
       <div style="margin-top:22px;display:flex;gap:10px;flex-wrap:wrap">
-        ${scnReadOnly?`<button class="btn ghost sm" id="scnCopy">Copy as text</button><button class="btn primary sm" id="scnLeave" style="margin-left:auto">🏕 Return to camp</button>`:`
+        ${scnReadOnly?`<button class="btn ${s.outcome?"primary":"ghost"}" id="scnLeave" style="width:100%;justify-content:center">🏕 Return to camp${s.outcome?" — bring the warband home":""}</button>`:`
         <button class="btn" id="scnRegen">✦ Regenerate</button>
         <button class="btn ghost sm" id="scnCopy">Copy as text</button>
         <button class="btn ghost sm" id="scnShare" title="Copy a code to bring this scenario into the World App to host it live">🌍 Move to World App</button>
-        ${fbAvailable()?(liveRole==="host"&&s.id===hostScenarioId?`<button class="btn gc-fielded sm" id="hostStop2">Stop hosting</button>`:`<button class="btn sm" id="scnHost">📡 Host live</button>`):""}
+
         <button class="btn danger ghost" id="scnDelete" style="margin-left:auto">Delete</button>`}
       </div>
     </div>`;
   // sections remember whether you left them open
   // only a tap counts — the toggle event also fires for the initial "open" attribute, which would freeze the defaults
   el.querySelectorAll("details.scn-acc > summary").forEach(sm=>sm.addEventListener("click",()=>{const d=sm.parentElement;setTimeout(()=>accSet(d.dataset.acc,d.open),0);}));
-  renderTurnBar(s);
+  if(tableOn){const tb=$("#turnBar");if(tb)tb.remove();document.body.classList.remove("has-turnbar");} else renderTurnBar(s);
+  const hbH=$("#hbHost");if(hbH)hbH.onclick=()=>openHostDialog(s);
+  const hbS=$("#hbStart");if(hbS)hbS.onclick=()=>{buildBattle(s);renderScenarioView();};
+  const hbE=$("#hbEnd");if(hbE)hbE.onclick=()=>openEndQuest(s);
+  const hbT=$("#hbTable");if(hbT)hbT.onclick=()=>setTableMode(!tableMode);
+  const hbX=$("#hbStop");if(hbX)hbX.onclick=stopHosting;
+  const hbX2=$("#hbStopSoft");if(hbX2)hbX2.onclick=()=>askConfirm("Stop hosting? Players lose the live view; the scenario stays here.",stopHosting,{danger:true,yesLabel:"Stop"});
+  const tbB=$("#tblBack");if(tbB)tbB.onclick=()=>setTableMode(false);
   el.querySelectorAll("[data-envopen]").forEach(b=>b.onclick=()=>{
     const e=(s.mystery.envelopes||[]).find(x=>x.id===b.dataset.envopen); if(!e)return;
     askConfirm("Open “"+e.title+"”? Its trigger: "+e.trigger+". Read it aloud once it is open — the players' devices see it too.",()=>{
