@@ -833,6 +833,39 @@ details.scn-acc.desk .acc-body{background:var(--panel);padding-top:10px}
 .cs-dot.next{border-style:dashed;color:var(--ink-mute)}.cs-dot.next.live{border-style:solid;border-color:var(--amber);color:var(--amber)}
 .cs-more{font-family:var(--mono);font-size:11px;color:var(--ink-mute);margin-left:4px}
 .cs-line{font-size:11.5px;color:var(--ink-mute);margin-top:6px;line-height:1.4}.cs-line b{color:var(--amber)}
+/* battle order */
+.btl-band{display:flex;align-items:center;gap:8px;font-family:var(--disp);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-mute);font-weight:600;margin:10px 0 2px}
+.btl-band b{font-family:var(--mono);font-size:12.5px;color:var(--ink);letter-spacing:0}.btl-band span{flex:1;text-align:right;letter-spacing:.04em;text-transform:none;font-family:var(--body);font-weight:400;font-size:11px}
+.btl-unit{display:flex;align-items:center;gap:6px;border-left:3px solid transparent;margin:0 -6px;padding:0 6px;border-radius:6px}
+.btl-unit>.btl-row{flex:1}
+.btl-unit.now{border-left-color:var(--amber);background:var(--amber-glow)}
+.btl-unit.acted .btl-name{text-decoration:line-through;opacity:.6}.btl-unit.acted{opacity:.75}
+.tick{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--line);background:var(--panel);color:var(--teal);font-size:12px;line-height:1;flex:none;display:grid;place-items:center}
+.tick.on{background:var(--teal);border-color:var(--teal);color:#fff}
+.pips{display:inline-flex;gap:3px;flex:none;margin-left:4px}.pips i{width:8px;height:8px;border-radius:50%;background:var(--amber)}.pips i.off{background:var(--line)}
+.nowbar{display:flex;align-items:center;gap:10px;border:2px solid var(--amber);background:var(--amber-glow);border-radius:var(--r-sm);padding:8px 11px;margin:6px 0 10px}
+.nowbar.done{border-color:color-mix(in srgb,var(--teal) 55%,var(--line));background:color-mix(in srgb,var(--teal) 10%,transparent)}
+.nb-l{font-family:var(--disp);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--amber);font-weight:600}.nowbar.done .nb-l{color:var(--teal)}
+.nb-n{font-family:var(--disp);font-weight:600;font-size:15px}.nb-n small{font-weight:400;color:var(--ink-mute);font-size:12px}
+.nb-s{font-size:12px;color:var(--ink-dim)}
+.nb-btns{margin-left:auto;display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}
+.rfilters{display:flex;gap:5px;flex-wrap:wrap;margin:4px 0 6px}
+.rf{font-family:var(--disp);font-size:11px;font-weight:600;padding:5px 10px;border-radius:20px;border:1px solid var(--line);background:var(--panel);color:var(--ink-dim)}.rf.on{background:var(--amber);border-color:var(--amber);color:#1b1610}
+details.btl-squad{border:1px solid var(--line);border-left:3px solid var(--line);border-radius:8px;margin:4px 0;background:var(--sunk)}
+details.btl-squad.player{border-left-color:var(--teal)}details.btl-squad.enemy{border-left-color:var(--danger)}
+details.btl-squad.now{background:var(--amber-glow);border-color:color-mix(in srgb,var(--amber) 60%,var(--line))}
+details.btl-squad.acted summary .sq-name{text-decoration:line-through;opacity:.6}
+details.btl-squad.down{opacity:.5}
+details.btl-squad summary{list-style:none;display:flex;align-items:center;gap:8px;padding:8px 10px;cursor:pointer}
+details.btl-squad summary::-webkit-details-marker{display:none}
+details.btl-squad summary .btl-side{display:none}
+.sq-name{font-family:var(--disp);font-weight:600;font-size:14px}.sq-sub{font-size:11.5px;color:var(--ink-mute);flex:1}.sq-sub .brk{color:var(--danger)}
+.sq-body{padding:0 10px 6px;border-top:1px solid var(--line-soft)}
+.btl-row.member{padding:6px 0}.btl-row.member .btl-name{font-size:13px}
+.btl-row.marked{background:var(--danger-bg);margin:0 -10px;padding:6px 10px;border-radius:6px}
+.linkbtn.tiny{font-size:11px;padding:0 4px}
+.btl-unit.arriving{opacity:.6}
+.turnbar.ready{border-color:var(--teal);box-shadow:0 0 0 3px color-mix(in srgb,var(--teal) 25%,transparent),var(--shadow)}
 .scn-question{font-family:var(--disp);font-weight:600;font-size:16px;line-height:1.35;color:var(--ink);background:color-mix(in srgb,var(--arcane) 12%,var(--panel));border:1px solid color-mix(in srgb,var(--arcane) 45%,var(--line));border-radius:var(--r);padding:12px 14px;margin:6px 0 10px}
 .env-list{display:flex;flex-direction:column;gap:8px;margin-top:10px}
 .env{border:1px solid var(--line);border-radius:var(--r-sm);padding:10px 12px;background:var(--sunk)}
@@ -6725,7 +6758,7 @@ function myCombatants(owner,idPrefix){
     const max=vehicleHP(v);
     const cur=(typeof v.curHP==="number"&&v.curHP>0&&v.curHP<max)?v.curHP*1:max;
     const secs=vehSecsFor(v);
-    out.push({id:(idPrefix||"p_")+v.id,side:"player",owner:owner||"",campId:cid,vehId:v.id,isVeh:true,
+    out.push({id:(idPrefix||"p_")+v.id,side:"player",owner:owner||"",campId:cid,vehId:v.id,isVeh:true,A:v.skills.A,AW:0,
       name:"▰ "+(v.name||"Unnamed vehicle"),maxHP:max,curHP:Math.min(cur,secsTotal(secs)),conditions:[],neg:[],finds:[],secs,aboard:[]});
   });
   w.characters.filter(isFielded).forEach(c=>{
@@ -6735,7 +6768,7 @@ function myCombatants(owner,idPrefix){
     let left=(typeof c.curHP==="number"&&c.curHP>0&&c.curHP<max)?c.curHP*1:max;
     for(let k=0;k<n;k++){
       const share=Math.max(0,Math.min(c.hp,left)); left-=share;
-      out.push({id:(idPrefix||"p_")+c.id+(n>1?"_"+k:""),side:"player",owner:owner||"",campId:cid,charId:c.id,member:k,
+      out.push({id:(idPrefix||"p_")+c.id+(n>1?"_"+k:""),side:"player",owner:owner||"",campId:cid,charId:c.id,member:k,A:c.skills.A,AW:c.skills.AW,
         name:(c.name||"Unnamed")+(n>1?" "+(k+1)+"/"+n:""),maxHP:c.hp,curHP:share,conditions:[],neg:negListOf(c),
         scars:injuryNotes(c),finds:[]});
     }
@@ -6748,7 +6781,7 @@ function buildBattle(s){
   if(s.mode==="coop"){
     enemyChars(s).forEach(c=>{
       const n=memberCount(c), neg=negListOf(c);
-      for(let k=0;k<n;k++)combatants.push({id:"e_"+c.id+(n>1?"_"+k:""),side:"enemy",owner:"Enemy",
+      for(let k=0;k<n;k++)combatants.push({id:"e_"+c.id+(n>1?"_"+k:""),side:"enemy",owner:"Enemy",A:c.skills.A,AW:c.skills.AW,
         name:(c.name||"Enemy")+(n>1?" "+(k+1)+"/"+n:""),maxHP:c.hp,curHP:c.hp,conditions:[],neg:neg.slice()});
     });
     // a vehicle's hull is the sum of its sections; it is destroyed section by section
@@ -6794,36 +6827,122 @@ function outcomeBanner(s){
   return `<div class="outcome ${o.cls}"><span class="oc-ico">${o.icon}</span><div><b>Quest over — ${esc(o.short)}</b><div class="none-note" style="font-style:normal">${esc(o.label)} on turn ${s.outcome.round||"?"}.${scnReadOnly?" Bring your warband home from the roster below.":" Players can now return to camp."}</div></div>
     ${scnReadOnly?"":`<button class="linkbtn" id="eqUndo">undo</button>`}</div>`;
 }
+/* ---- activation order: Agility bands, both sides interleaved; ties by Awareness, then a roll ---- */
+let rosterFilter="all";
+function unitA(s,m){
+  if(typeof m.A==="number")return m.A;
+  if(m.side==="enemy"){const base=String(m.id).replace(/^e_/,"").replace(/_\d+$/,"");const c=enemyAll(s).find(x=>x.id===base);return c?(c.skills||{}).A|0:0;}
+  const c=m.charId?activeWB().characters.find(x=>x.id===m.charId):null; return c?c.skills.A:0;
+}
+function unitAW(s,m){
+  if(typeof m.AW==="number")return m.AW;
+  if(m.side==="enemy"){const base=String(m.id).replace(/^e_/,"").replace(/_\d+$/,"");const c=enemyAll(s).find(x=>x.id===base);return c?(c.skills||{}).AW|0:0;}
+  const c=m.charId?activeWB().characters.find(x=>x.id===m.charId):null; return c?c.skills.AW:0;
+}
+function squadBase(id){return /_\d+$/.test(String(id))?String(id).replace(/_\d+$/,""):null;}
+/* units = single rows, squads (members grouped), and out-of-unit members on their own */
+function battleUnits(s){
+  const rows=s.battle.combatants||[], units=[], seen={};
+  rows.forEach(m=>{
+    const base=squadBase(m.id);
+    if(base&&!m.solo){
+      if(!seen[base]){seen[base]={kind:"squad",id:base,side:m.side,owner:m.owner,members:[],A:unitA(s,m),AW:unitAW(s,m),name:m.name.replace(/ \d+\/\d+$/,"")};units.push(seen[base]);}
+      seen[base].members.push(m);
+    } else units.push({kind:"one",id:m.id,side:m.side,owner:m.owner,m,A:unitA(s,m),AW:unitAW(s,m),name:m.name,solo:!!m.solo});
+  });
+  units.forEach(u=>{
+    const ms=u.kind==="squad"?u.members:[u.m];
+    u.alive=ms.filter(x=>(x.curHP|0)>0).length;
+    u.acted=ms.every(x=>x.acted); u.held=ms.some(x=>x.held);
+    u.down=u.alive===0;
+  });
+  return units;
+}
+function orderedUnits(s){
+  const us=battleUnits(s);
+  return us.slice().sort((a,b)=>(a.down?1:0)-(b.down?1:0)||(b.A-a.A)||(b.AW-a.AW)||(a.side==="player"?-1:1));
+}
+function arrivingIdsOf(s){return enemyAll(s).filter(c=>enemyHidden(c)||(!c.atStart&&!c.revealed&&enemyArrivalTurn(c)>curRound(s))).map(c=>"e_"+c.id);}
+function unitBase(u){return u.kind==="squad"?u.id:String(u.id).replace(/_\d+$/,"");}
+function currentUnit(s){
+  const arr=arrivingIdsOf(s);
+  const us=orderedUnits(s).filter(u=>!u.down&&!arr.includes(unitBase(u)));
+  if(s.battle.cursor){const c=us.find(u=>u.id===s.battle.cursor);if(c&&!c.acted)return c;}
+  return us.find(u=>!u.acted&&!u.held)||us.find(u=>!u.acted)||null;
+}
+function unitRows(u){return u.kind==="squad"?u.members:[u.m];}
+function markActed(s,u){unitRows(u).forEach(m=>{m.acted=true;delete m.held;delete m.pips;});delete s.battle.cursor;}
+function bandLabel(us,i){
+  const u=us[i], same=us.filter(x=>!x.down&&x.A===u.A);
+  if(same.length<2)return "";
+  const aw=new Set(same.map(x=>x.AW)); const sides=new Set(same.map(x=>x.side));
+  if(sides.size===1)return "same side — any order";
+  if(aw.size>1)return "tie — higher AW chooses who goes";
+  return "tie — both roll 1D10, lowest decides";
+}
 function battleHTML(s){
   if(!s.battle||!s.battle.started){
     if(scnReadOnly)return "";
     return `<div class="scn-battle"><div class="mh">Battle roster</div><p class="none-note" style="font-style:normal;margin-bottom:10px">Track live hit-points &amp; conditions and auto-apply event effects. Loads your fielded warband${s.mode==="coop"?" and the enemy force":""}.</p><button class="btn primary sm" id="btlStart">Start battle roster</button></div>`;
   }
-  // The roster would otherwise name a hidden unit the moment the battle starts, spoiling the
-  // ambush for every player. The host still tracks it; guests don't even get a row to count.
-  const sealed=scnReadOnly?enemyAll(s).filter(enemyHidden).map(c=>"e_"+c.id):[];
+  const sealedIds=scnReadOnly?enemyAll(s).filter(enemyHidden).map(c=>"e_"+c.id):[];
+  // host: units that have not stepped onto the table yet wait under "Arriving"
+  const arrivingIds=!scnReadOnly?arrivingIdsOf(s):[];
+  const isArriving=u=>arrivingIds.includes(u.kind==="squad"?u.id:String(u.id).replace(/_\d+$/,""));
+  const mineCamp=campId();
+  const isMine=u=>u.side==="player"&&unitRows(u).some(m=>(m.charId&&activeWB().characters.some(c=>c.id===m.charId))||(mineCamp&&m.campId===mineCamp));
+  const hurt=u=>unitRows(u).some(m=>(m.curHP|0)>0&&m.curHP<m.maxHP);
+  const all=orderedUnits(s).filter(u=>!(u.kind==="squad"?sealedIds.includes(u.id):sealedIds.includes(String(u.id).replace(/_\d+$/,""))));
+  const filt=u=>rosterFilter==="mine"?isMine(u):rosterFilter==="enemy"?u.side==="enemy":rosterFilter==="hurt"?hurt(u):rosterFilter==="arriving"?isArriving(u):true;
+  const onTable=all.filter(u=>!isArriving(u)&&filt(u)), arriving=all.filter(u=>isArriving(u)&&(rosterFilter==="all"||rosterFilter==="arriving"||rosterFilter==="enemy"));
+  const cur=!scnReadOnly?currentUnit(s):null;
+  if(!scnReadOnly){const nowId=cur?cur.id:"";if((s.battle.now||"")!==nowId){s.battle.now=nowId;if(liveRole==="host"&&hostScenarioId===s.id)scheduleHostSync(s);}}
+  const actedN=all.filter(u=>!isArriving(u)&&!u.down&&u.acted).length, liveN=all.filter(u=>!isArriving(u)&&!u.down).length;
   const seenChar={};
-  const rows=s.battle.combatants.filter(m=>sealed.indexOf(m.id)<0).map(m=>{
+  const memberHTML=(m,u,marked)=>{
     const down=m.curHP<=0, low=m.curHP<=m.maxHP*0.25;
-    const ownC=m.side==="player"&&m.charId&&!seenChar[m.charId]&&(!m.campId||m.campId===campId())?activeWB().characters.find(x=>x.id===m.charId):null;
+    const ownC=m.side==="player"&&m.charId&&!seenChar[m.charId]&&(!m.campId||m.campId===mineCamp)?activeWB().characters.find(x=>x.id===m.charId):null;
     if(ownC)seenChar[m.charId]=1;
     const tally=ownC?tallyHTML(ownC):"";
     const maimed=m.maimedBy?`<span class="cond maim" title="Rolls on the injury table back at camp — ${esc(m.maimedBy)}">🩸 maimed</span>`:"";
     const carrier=m.charId?s.battle.combatants.find(x=>x.isVeh&&(x.aboard||[]).some(r=>r.charId===m.charId)):null;
     const aboardChip=carrier?`<span class="cond" title="Cannot be targeted or act until they spend an action to get off">🚌 aboard ${esc(carrier.name.replace(/^▰ /,""))}</span>`:"";
     const conds=(m.conditions||[]).map((cd,ci)=>`<span class="cond">${esc(cd.label)}${cd.expireTurn?` <small>→T${cd.expireTurn}</small>`:""}${scnReadOnly?"":` <button data-cond="${m.id}|${ci}" aria-label="remove">×</button>`}</span>`).join("");
-    // a squad member never tests on its own — the squad tests as one when its total is at 25%
-    const inSquad=/_\d+$/.test(String(m.id));
-    const squadRows=inSquad?s.battle.combatants.filter(x=>String(x.id).replace(/_\d+$/,"")===String(m.id).replace(/_\d+$/,"")):[];
-    const squadLow=inSquad&&squadRows.reduce((a,x)=>a+Math.max(0,x.curHP|0),0)<=squadRows.reduce((a,x)=>a+x.maxHP,0)*0.25;
+    const inSquad=u.kind==="squad";
     const half=!down&&!inSquad&&m.curHP<=m.maxHP*0.5, safe=m.curHP===1;
-    return `<div class="btl-row ${m.side} ${down?"down":""}">
-      <div class="btl-main"><span class="btl-side"></span><button class="btl-name btl-open" data-open-unit="${esc(m.id)}" title="Open this unit's card">${esc(m.name)}</button>${half?`<span class="chip brk" tabindex="0" data-tip="${esc(safe?"Down to a single hit-point — this one never tests again.":"Under half hit-points: roll under Psyche or run for the nearest board edge. Test again on every hit, at −1 Psyche for each test already taken this turn. All skills are −1 while under half.")}">${safe?"⚑ no more tests":"⚠ break test"}</span>`:""}${(inSquad&&squadLow&&!down)?`<span class="chip brk" tabindex="0" data-tip="The squad's total hit-points are at a quarter or less: every surviving member rolls under Psyche or runs. They roll again each time another member dies.">⚠ squad breaking</span>`:""}${m.owner&&m.side==="player"?`<span class="btl-owner">${esc(m.owner)}</span>`:""}${(conds||maimed||aboardChip)?`<div class="btl-conds">${maimed}${aboardChip}${conds}</div>`:""}${tally?`<div class="btl-tally">${tally}</div>`:""}</div>
-      <div class="btl-hp">${m.isVeh&&m.secs?`<button class="hpb wide" data-open-unit="${esc(m.id)}" title="Damage goes to a section — open the hull">▰ ${m.secs.filter(x=>(x.cur|0)>0).length}/${m.secs.length}</button>`:scnReadOnly?"":`<button class="hpb" data-hp="${m.id}|-1" aria-label="damage">−</button>`}<span class="hpv ${down?"down":low?"low":""}">${down?"DOWN":m.curHP+"/"+m.maxHP}</span>${(m.isVeh&&m.secs)||scnReadOnly?"":`<button class="hpb" data-hp="${m.id}|1" aria-label="heal">+</button>`}</div>
+    const canHit=!scnReadOnly&&!(inSquad&&marked&&marked!==m.id&&!down);
+    return `<div class="btl-row ${m.side} ${down?"down":""} ${inSquad?"member":""} ${marked===m.id?"marked":""}">
+      <div class="btl-main"><span class="btl-side"></span><button class="btl-name btl-open" data-open-unit="${esc(m.id)}" title="Open this unit's card">${esc(inSquad?m.name.replace(/^.* (\d+\/\d+)$/,"$1"):m.name)}</button>${half?`<span class="chip brk" tabindex="0" data-tip="${esc(safe?"Down to a single hit-point — this one never tests again.":"Under half hit-points: roll under Psyche or run for the nearest board edge. Test again on every hit, at −1 Psyche for each test already taken this turn. All skills are −1 while under half.")}">${safe?"⚑ no more tests":"⚠ break test"}</span>`:""}${marked===m.id?`<span class="chip brk" data-tip="Every further hit lands on this member until they fall.">◎ taking the hits</span>`:""}${m.solo?`<span class="cond" title="Out of unit — a separate character until back within 5cm">↗ out of unit</span>${scnReadOnly?"":`<button class="linkbtn tiny" data-rejoin="${esc(m.id)}">rejoin</button>`}`:""}${m.owner&&m.side==="player"&&!inSquad?`<span class="btl-owner">${esc(m.owner)}</span>`:""}${(conds||maimed||aboardChip)?`<div class="btl-conds">${maimed}${aboardChip}${conds}</div>`:""}${tally?`<div class="btl-tally">${tally}</div>`:""}</div>
+      <div class="btl-hp">${m.isVeh&&m.secs?`<button class="hpb wide" data-open-unit="${esc(m.id)}" title="Damage goes to a section — open the hull">▰ ${m.secs.filter(x=>(x.cur|0)>0).length}/${m.secs.length}</button>`:!canHit?"":`<button class="hpb" data-hp="${m.id}|-1" aria-label="damage">−</button>`}<span class="hpv ${down?"down":low?"low":""}">${down?"DOWN":m.curHP+"/"+m.maxHP}</span>${(m.isVeh&&m.secs)||scnReadOnly?"":`<button class="hpb" data-hp="${m.id}|1" aria-label="heal">+</button>`}${inSquad&&!scnReadOnly&&!down?`<button class="linkbtn tiny" data-solo="${esc(m.id)}" title="Out of unit — more than 5cm from the squad">↗</button>`:""}</div>
     </div>`;
-  }).join("");
-  return `<div class="scn-battle"><div class="mh">Battle roster${scnReadOnly?" · live":""}</div>${rows}
-    ${scnReadOnly?"":`<div class="round-actions" style="margin-top:8px"><span class="none-note" style="font-style:normal">${s.battle.combatants.length} combatants · ± adjusts HP</span>${pendingQuest(s)?`<button class="linkbtn" id="btlHome">🏕 Return to camp</button>`:""}<button class="linkbtn" id="btlReset">Rebuild</button></div>`}</div>`;
+  };
+  const unitHTML=(u,i,list)=>{
+    const now=cur&&cur.id===u.id;
+    const band=i===0||list[i-1].A!==u.A||list[i-1].down!==u.down;
+    const bandRow=band&&!u.down?`<div class="btl-band"><b>A ${u.A}</b>${i===0?" · first":""}<span>${bandLabel(list,i)}</span></div>`:(band&&u.down?`<div class="btl-band"><b>Down</b></div>`:"");
+    const pips=!scnReadOnly&&now?`<span class="pips"><i class="${(u.m||u.members[0]).pips>=1?"off":""}"></i><i class="${(u.m||u.members[0]).pips>=2?"off":""}"></i></span>`:"";
+    const tick=!scnReadOnly&&!u.down?`<button class="tick ${u.acted?"on":""}" data-tick="${esc(u.id)}" title="${u.acted?"Acted this turn — tap to undo":"Mark as acted"}">${u.acted?"✓":""}</button>`:"";
+    if(u.kind==="squad"){
+      const tot=u.members.reduce((a,m)=>a+m.maxHP,0), curHP=u.members.reduce((a,m)=>a+Math.max(0,m.curHP|0),0), thr=Math.floor(tot*0.25);
+      const marked=(s.battle.sqTarget||{})[u.id];
+      const openKey="sq_"+u.id, open=(accState()[openKey]!==undefined)?accState()[openKey]:(u.side==="player"?isMine(u):!!marked||curHP<tot);
+      return `${bandRow}<details class="btl-squad ${u.side} ${now?"now":""} ${u.acted?"acted":""} ${u.down?"down":""}" data-sq="${esc(u.id)}"${open?" open":""}>
+        <summary><span class="btl-side"></span>${tick}<span class="sq-name">⛊ ${esc(u.name)}</span><span class="sq-sub">${u.alive}/${u.members.length} standing · ${curHP}/${tot}${curHP<=thr&&!u.down?` · <b class="brk">breaking</b>`:` · tests at ${thr}`}${u.owner&&u.side==="player"?` · ${esc(u.owner)}`:""}</span>${pips}<span class="acc-c">›</span></summary>
+        <div class="sq-body">${u.members.map(m=>memberHTML(m,u,marked)).join("")}</div>
+      </details>`;
+    }
+    return `${bandRow}<div class="btl-unit ${now?"now":""} ${u.acted?"acted":""}">${tick}${memberHTML(u.m,u,null)}${pips}</div>`;
+  };
+  const nowBar=!scnReadOnly&&cur?`<div class="nowbar"><div><div class="nb-l">Now acting</div><div class="nb-n">${esc(cur.name)}${cur.kind==="squad"?` <small>· squad of ${cur.members.length}</small>`:""}</div><div class="nb-s">A ${cur.A} · AW ${cur.AW}${cur.owner&&cur.side==="player"?" · "+esc(cur.owner):""} · ${2-((cur.m||cur.members[0]).pips||0)} action${2-((cur.m||cur.members[0]).pips||0)===1?"":"s"} left</div></div><div class="nb-btns"><button class="btn sm ghost" id="nbAct" title="Spend one action">● −1</button><button class="btn sm ghost" id="nbHold" title="Hold — act later in the turn">hold</button><button class="btn sm primary" id="nbDone">Done ▸</button></div></div>`
+    :!scnReadOnly&&liveN?`<div class="nowbar done"><div><div class="nb-l">Everyone has acted</div><div class="nb-s">advance the turn with + below</div></div></div>`
+    :scnReadOnly&&liveScenario&&liveScenario.battle.cursor?"":"";
+  const guestNow=scnReadOnly?(()=>{const id=s.battle.now;if(!id)return "";const n=all.find(u=>u.id===id);if(!n)return `<div class="nowbar"><div><div class="nb-l">Now acting</div><div class="nb-n">an unseen enemy</div></div></div>`;return `<div class="nowbar"><div><div class="nb-l">Now acting</div><div class="nb-n">${esc(n.name)}</div><div class="nb-s">A ${n.A}${isMine(n)?" · <b>that's you</b>":""}</div></div></div>`;})():"";
+  const filters=`<div class="rfilters">${[["all","All"],["mine","Mine"],["enemy","Enemy"],["hurt","Hurt"]].concat(!scnReadOnly&&arrivingIds.length?[["arriving","Arriving"]]:[]).map(([k,l])=>`<button class="rf ${rosterFilter===k?"on":""}" data-rf="${k}">${l}</button>`).join("")}</div>`;
+  const listHTML=onTable.map((u,i)=>unitHTML(u,i,onTable)).join("");
+  const arrHTML=arriving.length?`<div class="btl-band"><b>Arriving</b><span>not on the table yet</span></div>${arriving.map(u=>{const base=u.kind==="squad"?u.id:String(u.id).replace(/_\d+$/,"");const c=enemyAll(s).find(x=>"e_"+x.id===base);const turn=c?enemyArrivalTurn(c):0;return `<div class="btl-unit arriving"><div class="btl-row enemy"><div class="btl-main"><span class="btl-side"></span><button class="btl-name btl-open" data-open-unit="${esc(u.kind==="squad"?u.members[0].id:u.id)}">${esc(u.name)}</button><span class="btl-owner">${turn?"turn "+turn:"on a trigger"}${c&&c.tease?" · "+esc(c.tease):""}</span></div><div class="btl-hp"><span class="hpv">${u.kind==="squad"?u.members.length+" ×":""}${u.kind==="squad"?u.members[0].maxHP:u.m.maxHP} HP</span></div></div></div>`;}).join("")}`:"";
+  return `<div class="scn-battle"><div class="mh">Battle order${scnReadOnly?" · live":""} <span class="none-note" style="font-style:normal;text-transform:none;letter-spacing:0">· by Agility${!scnReadOnly&&liveN?` · ${actedN} of ${liveN} acted`:""}</span></div>
+    ${nowBar}${guestNow}${filters}${listHTML||`<div class="none-note">Nothing to show for this filter.</div>`}${arrHTML}
+    ${scnReadOnly?"":`<div class="round-actions" style="margin-top:8px"><span class="none-note" style="font-style:normal">${s.battle.combatants.length} models · ± adjusts HP · ↗ takes a member out of unit</span>${pendingQuest(s)?`<button class="linkbtn" id="btlHome">🏕 Return to camp</button>`:""}<button class="linkbtn" id="btlReset">Rebuild</button></div>`}</div>`;
 }
 function rollDice(str){
   str=String(str||"").trim();
@@ -6856,7 +6975,7 @@ function nextTurn(s){
   const nv=curRound(s)+1;
   if(s.rounds&&curRound(s)>=s.rounds)return;
   s.round=nv;
-  if(s.battle&&s.battle.started)s.battle.combatants.forEach(m=>{m.conditions=(m.conditions||[]).filter(cd=>!cd.expireTurn||cd.expireTurn>nv);});
+  if(s.battle&&s.battle.started){s.battle.combatants.forEach(m=>{m.conditions=(m.conditions||[]).filter(cd=>!cd.expireTurn||cd.expireTurn>nv);delete m.acted;delete m.pips;delete m.held;});delete s.battle.cursor;}
   const arrived=revealDueEnemies(s);   // anything hidden that is due now steps into the light
   save();renderScenarioView();
   const evs=(s.events||[]).filter(e=>e.round===nv);
@@ -6918,6 +7037,8 @@ function renderTurnBar(s){
   if(!bar){bar=document.createElement("div");bar.id="turnBar";bar.className="turnbar";document.body.appendChild(bar);}
   document.body.classList.add("has-turnbar");
   const cur=curRound(s), tot=s.rounds, over=tot&&cur>=tot;
+  const allActed=!scnReadOnly&&s.battle&&s.battle.started&&!currentUnit(s);
+  bar.classList.toggle("ready",!!allActed);
   bar.innerHTML=`${scnReadOnly?"":`<button class="rbtn" id="tbPrev" aria-label="Previous turn"${cur<=1?" disabled":""}>−</button>`}
     <div class="tb-cur">Turn <b>${cur}</b>${tot?` <span>/ ${tot}</span>`:""}</div>
     ${scnReadOnly?"":`<button class="rbtn" id="tbNext" aria-label="Next turn"${over?" disabled":""}>+</button>`}
@@ -7566,7 +7687,22 @@ function renderScenarioDetail(scnOverride){
     else if(m.vehId&&vehsOf(activeWB()).some(v=>v.id===m.vehId))openVehicleCard(m.vehId);
     else toast("That one belongs to another player");
   });
-  el.querySelectorAll("[data-hp]").forEach(b=>b.onclick=()=>{const[id,d]=b.dataset.hp.split("|");const m=(s.battle.combatants||[]).find(x=>x.id===id);if(m){m.curHP=Math.max(0,Math.min(m.maxHP,m.curHP+ +d));save();renderScenarioView();renderRoster();renderVehicleRoster();}});
+  el.querySelectorAll("[data-hp]").forEach(b=>b.onclick=()=>{const[id,d]=b.dataset.hp.split("|");const m=(s.battle.combatants||[]).find(x=>x.id===id);if(!m)return;
+    const was=m.curHP; m.curHP=Math.max(0,Math.min(m.maxHP,m.curHP+ +d));
+    const base=squadBase(m.id);
+    if(base&&!m.solo){ s.battle.sqTarget=s.battle.sqTarget||{};
+      if(+d<0&&m.curHP>0)s.battle.sqTarget[base]=m.id;               // this one takes the hits from now on
+      if(m.curHP<=0&&s.battle.sqTarget[base]===m.id)delete s.battle.sqTarget[base];   // fallen — choose the next
+    }
+    save();renderScenarioView();renderRoster();renderVehicleRoster();if(liveRole==="host")scheduleHostSync(s);});
+  el.querySelectorAll("[data-tick]").forEach(b=>b.onclick=()=>{const u=battleUnits(s).find(x=>x.id===b.dataset.tick);if(!u)return;if(u.acted)unitRows(u).forEach(m=>{delete m.acted;});else markActed(s,u);save();renderScenarioView();if(liveRole==="host")scheduleHostSync(s);});
+  const nbD=$("#nbDone");if(nbD)nbD.onclick=()=>{const u=currentUnit(s);if(u)markActed(s,u);save();renderScenarioView();if(liveRole==="host")scheduleHostSync(s);};
+  const nbA=$("#nbAct");if(nbA)nbA.onclick=()=>{const u=currentUnit(s);if(!u)return;const r=u.m||u.members[0];r.pips=Math.min(2,(r.pips||0)+1);if(r.pips>=2){markActed(s,u);}else s.battle.cursor=u.id;save();renderScenarioView();if(liveRole==="host")scheduleHostSync(s);};
+  const nbH=$("#nbHold");if(nbH)nbH.onclick=()=>{const u=currentUnit(s);if(!u)return;unitRows(u).forEach(m=>{m.held=true;});delete s.battle.cursor;save();renderScenarioView();toast(u.name+" holds — acts later this turn");if(liveRole==="host")scheduleHostSync(s);};
+  el.querySelectorAll("[data-solo]").forEach(b=>b.onclick=()=>{const m=(s.battle.combatants||[]).find(x=>x.id===b.dataset.solo);if(!m)return;m.solo=true;save();renderScenarioView();toast(m.name+" is out of unit — a separate character until back within 5cm");if(liveRole==="host")scheduleHostSync(s);});
+  el.querySelectorAll("[data-rejoin]").forEach(b=>b.onclick=()=>{const m=(s.battle.combatants||[]).find(x=>x.id===b.dataset.rejoin);if(!m)return;delete m.solo;save();renderScenarioView();if(liveRole==="host")scheduleHostSync(s);});
+  el.querySelectorAll("[data-rf]").forEach(b=>b.onclick=()=>{rosterFilter=b.dataset.rf;renderScenarioView();});
+  el.querySelectorAll("details.btl-squad > summary").forEach(sm=>sm.addEventListener("click",()=>{const d=sm.parentElement;setTimeout(()=>accSet("sq_"+d.dataset.sq,d.open),0);}));
   el.querySelectorAll("[data-cond]").forEach(b=>b.onclick=()=>{const[id,ci]=b.dataset.cond.split("|");const m=(s.battle.combatants||[]).find(x=>x.id===id);if(m){m.conditions.splice(+ci,1);save();renderScenarioView();}});
   // pickups
   el.querySelectorAll("[data-pick]").forEach(b=>b.onclick=()=>{const it=(s.items||[]).find(x=>x.id===b.dataset.pick);if(it&&it.secret&&!it.revealed){it.revealed=true;save();}openFoundItem(s,it);});
