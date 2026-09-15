@@ -541,6 +541,40 @@ mark{background:color-mix(in srgb,var(--amber) 35%,transparent);color:inherit;bo
 .verdict{margin:8px 18px;border:2px solid var(--danger);border-radius:var(--r-sm);background:var(--danger-bg);padding:10px 12px}
 .verdict .vt{font-family:var(--disp);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--danger);font-weight:600}
 .verdict .vb{font-family:var(--disp);font-size:15px;font-weight:600;margin:3px 0}.verdict .vs{font-size:13px;color:var(--ink-dim);line-height:1.5}.verdict .vs b{font-family:var(--mono);color:var(--ink)}
+.vsec{display:flex;align-items:center;gap:8px;font-size:13px;padding:5px 0}
+.vsec .vs-n{width:104px;font-family:var(--disp);font-weight:600;flex:none}.vsec .vs-n small{color:var(--ink-mute);font-family:var(--mono);font-weight:400}
+.vsec.dead .vs-n{text-decoration:line-through;color:var(--ink-mute)}
+.vs-bar{flex:1;height:12px;border-radius:6px;background:var(--sunk);border:1px solid var(--line);overflow:hidden}.vs-bar i{display:block;height:100%;background:var(--teal)}.vs-bar i.h{background:var(--amber)}.vs-bar i.d{background:var(--danger)}
+.vs-v{font-family:var(--mono);font-size:11.5px;width:44px;text-align:right;flex:none}
+.vs-pm{display:flex;gap:3px;flex:none}
+.vs-eff{font-size:11.5px;color:var(--danger);margin:-2px 0 4px 112px}.vs-eff.amber{color:var(--amber)}
+.facing{margin:8px 0 6px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px;font-family:var(--disp);font-size:10px;text-align:center}
+.facing div{border:1px dashed var(--line);border-radius:6px;padding:5px 2px;color:var(--ink-mute);min-height:14px}.facing .c{background:var(--sunk);border-style:solid;font-weight:600;color:var(--ink)}.facing small{display:block;font-weight:400;color:var(--ink-dim);font-family:var(--body);font-size:10px}
+.vfac{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;font-size:13px}
+.rider{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:7px 10px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--panel-2);font-size:13px;margin-bottom:5px}.rider b{flex:1}
+.hpb.wide{width:auto;padding:0 8px;font-family:var(--mono);font-size:12px}
+/* print cards — monochrome, narrow, one per page */
+.print-preview{background:#e6e3da;padding:10px;border-radius:var(--r-sm);max-height:46vh;overflow:auto;display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start}
+.pcard{background:#fff;color:#111;font-family:"Barlow",Arial,sans-serif;font-size:11px;line-height:1.35;padding:6px 7px;box-sizing:border-box;border:1px solid #bbb;page-break-after:always;break-after:page}
+.paper-58 .pcard{width:52mm}.paper-80 .pcard{width:72mm}.paper-a4 .pcard{width:62mm}
+.pc-h{display:flex;justify-content:space-between;align-items:baseline;gap:6px;border-bottom:1.5px solid #111;padding-bottom:2px}
+.pc-h b{font-size:14px;font-family:"Chakra Petch",Arial,sans-serif}.pc-h span{font-family:"Space Mono",monospace;font-size:10px}
+.pc-sub{font-size:9.5px;color:#444;margin:2px 0 4px}
+.pc-stats{display:flex;justify-content:space-between;font-family:"Space Mono",monospace;margin:2px 0 4px}.pc-stats div{text-align:center}.pc-stats b{display:block;font-size:14px}.pc-stats span{font-size:8px;color:#555}
+.pc-sec{font-family:"Chakra Petch",Arial,sans-serif;font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;border-bottom:1px solid #999;margin:5px 0 2px;color:#222}
+.pc-atk{display:flex;flex-wrap:wrap;justify-content:space-between;padding:2px 0;border-bottom:1px dotted #bbb}.pc-an{font-weight:600}.pc-ar{font-family:"Space Mono",monospace;font-weight:700}.pc-as{width:100%;color:#333;font-size:10px}
+.pc-line{font-size:10px;margin:3px 0}.pc-t{font-size:10px;margin:2px 0}.pc-t b{font-weight:700}
+.pc-box{font-size:10.5px;letter-spacing:.5px;word-break:break-all;line-height:1.5}.pc-box small{font-size:9px;color:#555;letter-spacing:0}
+#printArea{display:none}
+body.printing #printArea{display:block!important}
+@media print{
+  body.printing > *:not(#printArea){display:none!important}
+  body.printing{background:#fff!important;margin:0!important;padding:0!important}
+  body.printing #printArea{display:block!important}
+  body.printing .pcard{border:none;width:auto;max-width:100%;padding:0 1mm}
+  body.printing #printArea.paper-a4{display:grid!important;grid-template-columns:repeat(3,1fr);gap:6mm}
+  body.printing #printArea.paper-a4 .pcard{width:auto;border:1px solid #999;page-break-after:auto;break-after:auto;break-inside:avoid;padding:3mm}
+}
 .gc-sections{padding:4px 18px 12px}
 .gc-sec{padding:13px 0;border-bottom:1px solid var(--line-soft)}
 .gc-sec:last-child{border-bottom:none}
@@ -768,6 +802,37 @@ details.scn-acc.desk .acc-body{background:var(--panel);padding-top:10px}
 .alert.arc{background:#3d2560}.alert.red{background:#7a1f1b}.alert.amber{background:#6b4a10}.alert.teal{background:#124f45}.alert.dim{background:#3a3833}
 .alert.out{opacity:0;transform:translateY(-6px);transition:.18s}
 @keyframes alin{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+/* scenario list: rows, shelves, the campaign strip */
+.srows{display:flex;flex-direction:column;gap:6px}
+.srow{display:flex;gap:10px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:8px 10px;cursor:pointer;text-align:left}
+.srow:hover{border-color:var(--amber)}
+.srow.next:first-child{border-color:color-mix(in srgb,var(--amber) 60%,var(--line));background:linear-gradient(90deg,var(--amber-glow),var(--panel) 45%)}
+.srow.inplay{border-color:color-mix(in srgb,var(--amber) 60%,var(--line))}
+.srow.played,.srow.elsewhere{opacity:.78}
+.srow-mini{width:54px;height:54px;border-radius:7px;overflow:hidden;border:1px solid var(--line);flex:none;background:var(--sunk)}
+.srow-mini svg{width:100%;height:100%;display:block}
+.srow-b{flex:1;min-width:0}
+.srow-m{font-family:var(--disp);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--teal)}.srow-m.pvp{color:var(--amber)}
+.srow-t{font-family:var(--disp);font-weight:600;font-size:14.5px;margin:1px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.srow-s{font-size:11.5px;color:var(--ink-mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.srow-chips{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}
+.srow-act{flex:none}
+.chip.arc{color:var(--arcane);border-color:color-mix(in srgb,var(--arcane) 45%,var(--line));background:color-mix(in srgb,var(--arcane) 10%,transparent)}
+.chip.red{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 45%,var(--line));background:var(--danger-bg)}
+.chip.amber{color:var(--amber);border-color:color-mix(in srgb,var(--amber) 50%,var(--line));background:var(--amber-glow)}
+.chip.teal{color:var(--teal);border-color:color-mix(in srgb,var(--teal) 50%,var(--line));background:color-mix(in srgb,var(--teal) 12%,transparent)}
+.camp-strip{border:1px solid var(--line);border-radius:var(--r);background:var(--panel);padding:9px 12px;margin:4px 0 10px}
+.cs-h{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--ink-dim);margin-bottom:8px;flex-wrap:wrap}.cs-h b{color:var(--ink)}
+.cs-dots{display:flex;align-items:center;gap:3px;overflow-x:auto;padding-bottom:4px}
+.cs-dots i{flex:0 0 14px;height:1px;background:var(--line)}
+.cs-dot{flex:none;width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:var(--panel-2);display:grid;place-items:center;font-size:13px;line-height:1;position:relative}
+.cs-dot small{position:absolute;top:-6px;right:-4px;font-family:var(--mono);font-size:8px;color:var(--ink-mute);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:0 3px;line-height:1.3}
+.cs-dot.victory{background:color-mix(in srgb,var(--teal) 16%,var(--panel));border-color:color-mix(in srgb,var(--teal) 55%,var(--line))}
+.cs-dot.defeat{background:var(--danger-bg);border-color:color-mix(in srgb,var(--danger) 50%,var(--line))}
+.cs-dot.retreat{background:var(--amber-glow);border-color:color-mix(in srgb,var(--amber) 50%,var(--line))}
+.cs-dot.next{border-style:dashed;color:var(--ink-mute)}.cs-dot.next.live{border-style:solid;border-color:var(--amber);color:var(--amber)}
+.cs-more{font-family:var(--mono);font-size:11px;color:var(--ink-mute);margin-left:4px}
+.cs-line{font-size:11.5px;color:var(--ink-mute);margin-top:6px;line-height:1.4}.cs-line b{color:var(--amber)}
 .scn-question{font-family:var(--disp);font-weight:600;font-size:16px;line-height:1.35;color:var(--ink);background:color-mix(in srgb,var(--arcane) 12%,var(--panel));border:1px solid color-mix(in srgb,var(--arcane) 45%,var(--line));border-radius:var(--r);padding:12px 14px;margin:6px 0 10px}
 .env-list{display:flex;flex-direction:column;gap:8px;margin-top:10px}
 .env{border:1px solid var(--line);border-radius:var(--r-sm);padding:10px 12px;background:var(--sunk)}
@@ -1619,6 +1684,31 @@ function memberCount(c){return Math.max(1,c.count||1)}
 function unitCost(c){return charCost(c)*memberCount(c)}   // squad = profile cost × members
 /* vehicle cost maths */
 function vSkillPts(v){return (v.skills.A-VRULES.aStart)*VRULES.skillStep+(v.skills.S-VRULES.sStart)*VRULES.skillStep}
+/* the hull as the rulebook sees it: two core sections and whatever was bought, each with its
+   own hit-points and a facing. Facings live on the bought entry (all copies share it). */
+function vehSections(v){
+  const out=[{key:"engine",name:"Engine",max:10,facing:"C",kind:"engine"},{key:"crew",name:"Crew",max:10,facing:"C",kind:"crew"}];
+  (v.sections||[]).forEach((e,i)=>{const o=CAT.vsection[e.id];if(!o)return;
+    for(let k=0;k<(e.qty||1);k++)out.push({key:"s"+i+"_"+k,name:o.name+((e.qty||1)>1?" "+(k+1):""),max:o.hp,facing:e.facing||"F",kind:/transport/i.test(o.name)?"transport":/crew/i.test(o.name)?"crew":/hard point/i.test(o.name)?"mount":"other"});});
+  return out;
+}
+/* a battle row's sections: built from the hull, carrying over lingering damage */
+function vehSecsFor(v){
+  const base=vehSections(v);
+  const prev=Array.isArray(v.secs)?v.secs:null;
+  return base.map(s=>{const p=prev&&prev.find(x=>x.key===s.key);return {key:s.key,name:s.name,max:s.max,facing:s.facing,kind:s.kind,cur:p&&typeof p.cur==="number"?Math.max(0,Math.min(s.max,p.cur)):s.max};});
+}
+function secsTotal(secs){return (secs||[]).reduce((a,s)=>a+Math.max(0,s.cur|0),0);}
+/* what a destroyed section takes with it */
+const SEC_LOSS={engine:"cannot move",crew:"one weapon fewer per shooting action",transport:"anyone aboard is thrown out and takes 1D10",mount:"its weapon is gone",other:"its rule no longer applies"};
+/* break test state: 75% of sections gone → test 1D10 UNDER the sections remaining, until only 3 remain */
+function vehBreak(secs){
+  const n=secs.length, dead=secs.filter(s=>(s.cur|0)<=0).length, left=n-dead;
+  if(left<=0)return {state:"wreck"};
+  if(dead>=n*0.75&&left>3)return {state:"test",target:left};
+  if(dead>=n*0.75)return {state:"steady"};
+  return {state:"ok"};
+}
 function vehicleHP(v){return VRULES.coreHP+(v.sections||[]).reduce((s,e)=>s+(CAT.vsection[e.id]?CAT.vsection[e.id].hp*e.qty:0),0)}
 function vehicleCost(v){
   return VRULES.baseCost + vSkillPts(v) + (VEHICLE_TYPES[v.type]?VEHICLE_TYPES[v.type][1]:0)
@@ -2204,7 +2294,8 @@ function openMenu(){
   m.innerHTML=`<div class="mp-scrim"></div><div class="mp-panel">
     ${host?"":`<div class="mp-h">Warbands</div>
     <button class="mp-i" data-m="switch">Switch warband…</button>
-    <button class="mp-i" data-m="import">Import a warband or character…</button>`}
+    <button class="mp-i" data-m="import">Import a warband or character…</button>
+    <button class="mp-i" data-m="print">🖨 Print cards…</button>`}
     <div class="mp-h">This device</div>
     ${host?"":live?`<button class="mp-i" data-m="backup">Backup &amp; transfer…</button>`:`<button class="mp-i" data-m="export">⛺ Move this warband to a camp…</button><button class="mp-i danger" data-m="reset">Reset this device…</button>`}
     ${live?`<button class="mp-i" data-m="role">${host?"🏕 Switch to camp":"🗺 Switch to hosting"}</button>`:""}
@@ -2224,6 +2315,7 @@ function openMenu(){
     if(k==="switch")openLibrary(); else if(k==="import")importDialog();
     else if(k==="backup")openBackup(); else if(k==="role")openRoleChooser();
     else if(k==="export")exportCurrent(false); else if(k==="reset")resetDevice();
+    else if(k==="print")openPrintCards();
     else if(k==="rules"){guideTab="ref";openCheat();} else if(k==="theme")$("#btnTheme").click();
     else if(k==="wbname")openWarbandNameGen();
     else if(k==="concepts")pickCharacterThen("Concepts for whom?",c=>openNameGen(c,false));
@@ -2278,23 +2370,23 @@ function renderActRow(){
     el.innerHTML=`
       <button class="act primary" id="acChar"><i>+</i>Character</button>
       <button class="act" id="acVeh"><i>▰</i>Vehicle</button>
-      <button class="act" id="acSummary"><i>📋</i>Summary</button>
+      <button class="act" id="acSummary"><i>🖨</i>Print cards</button>
       <button class="act" id="acMove"><i>⛺</i>Move to camp</button>`;
     $("#acChar").onclick=addCharacter; $("#acVeh").onclick=addVehicle;
-    $("#acSummary").onclick=openSummary; $("#acMove").onclick=()=>exportCurrent(false);
+    $("#acSummary").onclick=openPrintCards; $("#acMove").onclick=()=>exportCurrent(false);
     return;
   }
   el.innerHTML=`
     <button class="act primary" id="acEmbark">${quest?`<i>⚔</i>On a quest`:live?`<i>⚔</i>Embark`:`<i>🗺</i>Scenarios`}</button>
     <button class="act" id="acRecruit"><i>+</i>Recruit</button>
     ${sealed?`<button class="act" id="acShop"><i>🛒</i>Shop</button>`:`<button class="act" id="acSeal"><i>🔒</i>Seal</button>`}
-    ${sealed&&L.length?`<button class="act" id="acLedger"><i>📜</i>Ledger</button>`:`<button class="act" id="acSummary"><i>📋</i>Summary</button>`}`;
+    ${sealed&&L.length?`<button class="act" id="acLedger"><i>📜</i>Ledger</button>`:`<button class="act" id="acSummary"><i>🖨</i>Print cards</button>`}`;
   $("#acEmbark").onclick=()=>{ if(quest){scnCurrentId=quest.id;scnScreen="detail";switchView("scenarios");} else if(live)$("#btnQuest").click(); else switchView("scenarios"); };
   $("#acRecruit").onclick=openRecruitChooser;
   const sh=$("#acShop");if(sh)sh.onclick=openShopChooser;
   const se=$("#acSeal");if(se)se.onclick=()=>ensureSealedForQuest(()=>{},"🔒 Seal the warband");
   const lg=$("#acLedger");if(lg)lg.onclick=()=>{const b=$("#ledgerBox");if(b)b.scrollIntoView({behavior:"smooth",block:"start"});};
-  const sm=$("#acSummary");if(sm)sm.onclick=openSummary;
+  const sm=$("#acSummary");if(sm)sm.onclick=openPrintCards;
 }
 /* injuries to roll, the still-hurt, spoils, scars — above the roster, where they are acted on */
 function renderCampNotes(){
@@ -2336,7 +2428,7 @@ function renderCampNotes(){
   el.querySelectorAll("[data-claimq]").forEach(b=>b.onclick=()=>{const q=strandedQuests().find(x=>x.scnId===b.dataset.claimq);if(q)askConfirm("Bring your warband home from “"+(q.title||"the quest")+"”? Wounds and finds from the last moment you saw come back with them.",()=>claimQuest(q,()=>render()),{danger:false,yesLabel:"Return to camp"});});
   el.querySelectorAll("[data-dropq]").forEach(b=>b.onclick=()=>askConfirm("Forget this quest? Nothing from it will be applied — no wounds, no finds, no points.",()=>{try{localStorage.removeItem("p28_quest_"+b.dataset.dropq);}catch(e){}render();},{danger:true,yesLabel:"Forget it"}));
   el.querySelectorAll("[data-treat]").forEach(b=>b.onclick=()=>{const[cid,i]=b.dataset.treat.split("|");openTreatInjury(cid,+i);});
-  const hl=$("#cnHealAll");if(hl)hl.onclick=()=>{chars.forEach(c=>{delete c.curHP;});if(save())toast("Rested — everyone back to full health");render();};
+  const hl=$("#cnHealAll");if(hl)hl.onclick=()=>{chars.forEach(c=>{delete c.curHP;});vehsOf(w).forEach(v=>{delete v.curHP;delete v.secs;});if(save())toast("Rested — everyone back to full health");render();};
   const st=$("#cnStash");if(st)st.onclick=openStash;
 }
 function renderLedgerBox(){
@@ -2368,7 +2460,7 @@ function openBackup(){
     <div class="modal-actions" style="margin-top:0">
       <button class="btn sm" id="mExport">${fbAvailable()?"Export code":"⛺ Move to camp"}</button>
       <button class="btn sm" id="mImport">Import…</button>
-      <button class="btn sm ghost" id="mSummary">📋 Summary</button>
+      <button class="btn sm ghost" id="mSummary">🖨 Print cards</button>
     </div>
     ${visibleScns().length?`<div class="modal-actions" style="margin-top:8px">
       <button class="btn sm danger ghost" id="mWipeScns">Delete all ${visibleScns().length} scenario${visibleScns().length===1?"":"s"}</button>
@@ -2383,7 +2475,7 @@ function openBackup(){
   const cl=$("#mCampLoad");if(cl)cl.onclick=restoreCamp;
   $("#mExport").onclick=()=>exportCurrent(false);
   $("#mImport").onclick=importDialog;
-  $("#mSummary").onclick=openSummary;
+  $("#mSummary").onclick=openPrintCards;
   const ra=$("#mResetAll");if(ra)ra.onclick=resetDevice;
   const cw=$("#mWipeScns");if(cw)cw.onclick=()=>{
     const n=visibleScns().length;
@@ -2908,6 +3000,93 @@ function openReference(){
 }
 
 /* ============================ SUMMARY / PRINT VIEW ============================ */
+let printOpts=(()=>{try{return JSON.parse(localStorage.getItem("p28_print")||"{}")||{};}catch(e){return {};}})();
+function savePrintOpts(){try{localStorage.setItem("p28_print",JSON.stringify(printOpts));}catch(e){}}
+function printCardChar(c){
+  const n=memberCount(c), pen=0;
+  const atk=(c.weapons||[]).map(e=>({o:CAT.weapon[e.id],e})).filter(x=>x.o).map(({o,e})=>{const ranged=o.type==="Ranged",k=ranged?"S":"F";
+    return `<div class="pc-atk"><span class="pc-an">${ranged?"▸":"✕"} ${esc(gearLabel(o,e,e.qty||1))}</span><span class="pc-ar">${k} ${c.skills[k]}</span><div class="pc-as">${[ranged&&o.range&&o.range!=="—"?o.range:"melee",o.dmg||"",o.rules&&o.rules!=="—"?o.rules:""].filter(Boolean).map(esc).join(" · ")}</div></div>`;}).join("");
+  const arm=(c.armour||[]).map(e=>CAT.armour[e.id]).filter(Boolean).map(o=>o.def+" "+o.name).join(", ");
+  const ta=c.traits.map(id=>CAT.trait[id]).filter(Boolean).concat(c.abilities.map(id=>CAT.ability[id]).filter(Boolean));
+  const items=(c.items||[]).map(e=>({o:CAT.item[e.id],q:e.qty||1})).filter(x=>x.o);
+  const spells=(Array.isArray(c.rolledSpells)?c.rolledSpells:[]).map(i=>ARCANA[i]).filter(Boolean);
+  const boxes=n=>Array.from({length:Math.min(n,60)},()=>"☐").join("");
+  return `<div class="pcard">
+    <div class="pc-h"><b>${esc(c.name||"Unnamed")}</b><span>${unitCost(c)} pts</span></div>
+    <div class="pc-sub">${esc(c.role||"")}${n>1?` · squad ×${n}`:""}${activeWB().name?` · ${esc(activeWB().name)}`:""}</div>
+    <div class="pc-stats">${SKILLS.map(([k])=>`<div><b>${c.skills[k]}</b><span>${k}</span></div>`).join("")}<div><b>${c.hp}</b><span>HP</span></div><div><b>${RULES.speed}</b><span>cm</span></div></div>
+    ${atk?`<div class="pc-sec">Attacks</div>${atk}`:""}
+    <div class="pc-line"><b>Armour</b> ${esc(arm||"none")} · +1D6 in cover</div>
+    <div class="pc-line"><b>Break test</b> under P ${c.skills.P} (P ${Math.max(1,c.skills.P-1)} under half · all skills −1)</div>
+    ${ta.length?`<div class="pc-sec">Traits &amp; abilities</div>${ta.map(o=>`<div class="pc-t"><b>${esc(o.name)}</b> ${esc(o.desc)}</div>`).join("")}`:""}
+    ${spells.length?`<div class="pc-sec">Arcana (under P ${c.skills.P})</div>${spells.map(a=>`<div class="pc-t"><b>${esc(a[0])}</b> ${esc(a[1])}</div>`).join("")}`:""}
+    ${items.length?`<div class="pc-sec">Items</div>${items.map(x=>`<div class="pc-t"><b>${esc(x.o.name)}${x.q>1?" ×"+x.q:""}</b> ${esc(x.o.desc||"")}</div>`).join("")}`:""}
+    <div class="pc-sec">Hit-points${n>1?" · per member":""}</div>
+    ${Array.from({length:Math.min(n,10)},(_,i)=>`<div class="pc-box">${n>1?`<small>${i+1}</small> `:""}${boxes(c.hp)}</div>`).join("")}
+  </div>`;
+}
+function printCardVeh(v){
+  const secs=vehSections(v), ty=VEHICLE_TYPES[v.type]||VEHICLE_TYPES[0], size=VEHICLE_SIZES[v.size]||VEHICLE_SIZES[1];
+  const sizeName=size[0], meleeF=sizeName==="Small"?3:sizeName==="Medium"?5:7, meleeD=sizeName==="Small"?"1D6":sizeName==="Medium"?"1D10":"1D10+6";
+  const weaps=(v.weapons||[]).map(e=>({o:CAT.vweapon[e.id],e})).filter(x=>x.o);
+  const boxes=n=>Array.from({length:Math.min(n,60)},()=>"☐").join("");
+  return `<div class="pcard">
+    <div class="pc-h"><b>▰ ${esc(v.name||"Unnamed vehicle")}</b><span>${vehicleCost(v)} pts</span></div>
+    <div class="pc-sub">${sizeName} ${esc(ty[0].toLowerCase())} vehicle · ${secs.length} sections${activeWB().name?` · ${esc(activeWB().name)}`:""}</div>
+    <div class="pc-stats"><div><b>${v.skills.A}</b><span>A</span></div><div><b>${v.skills.S}</b><span>S</span></div><div><b>${vehicleHP(v)}</b><span>HULL</span></div><div><b>${esc(ty[2]).replace("cm","")}</b><span>cm</span></div></div>
+    ${weaps.map(({o,e})=>`<div class="pc-atk"><span class="pc-an">▸ ${esc(gearLabel(o,e,e.qty||1))}</span><span class="pc-ar">S ${v.skills.S}</span><div class="pc-as">${[o.range&&o.range!=="—"?o.range:"",o.dmg||"",o.rules&&o.rules!=="—"?o.rules:""].filter(Boolean).map(esc).join(" · ")}</div></div>`).join("")}
+    <div class="pc-atk"><span class="pc-an">✕ Ram / crush</span><span class="pc-ar">F ${meleeF}</span><div class="pc-as">${meleeD} · cover when ${sizeName==="Small"?"any part hidden":sizeName==="Medium"?"> 50% hidden":"> 75% hidden"}</div></div>
+    <div class="pc-sec">Sections · damage lands on one</div>
+    ${secs.map(s=>`<div class="pc-box"><small>${esc(s.name)}${s.facing&&s.facing!=="C"?" "+s.facing:""}</small> ${boxes(s.max)}</div>`).join("")}
+    <div class="pc-line"><b>Moves</b> ${esc(ty[3])}</div>
+    ${(v.traits||[]).map(id=>CAT.vtrait[id]).filter(Boolean).concat((v.abilities||[]).map(id=>CAT.vability[id]).filter(Boolean)).map(o=>`<div class="pc-t"><b>${esc(o.name)}</b> ${esc(o.desc)}</div>`).join("")}
+  </div>`;
+}
+function openPrintCards(){
+  const w=activeWB();
+  const opts=Object.assign({paper:"58",chars:null,vehs:null},printOpts);
+  const chars=w.characters, vehs=vehsOf(w);
+  const selC=opts.chars&&Array.isArray(opts.chars)?opts.chars.filter(id=>chars.some(c=>c.id===id)):chars.filter(isFielded).map(c=>c.id);
+  const selV=opts.vehs&&Array.isArray(opts.vehs)?opts.vehs.filter(id=>vehs.some(v=>v.id===id)):vehs.filter(isFielded).map(v=>v.id);
+  const body=$("#modalBody");
+  const draw=()=>{
+    body.innerHTML=`<h3>Print cards</h3>
+      <p class="lead">One card per character, each on its own page — a receipt printer cuts between them, a desk printer stacks them on A4. Any printer your phone or computer can see (Bluetooth or cable) shows up in the print dialog.</p>
+      <div class="eyebrow" style="margin-bottom:6px">Paper</div>
+      <div class="chips-row">${[["58","58 mm thermal"],["80","80 mm thermal"],["a4","A4 · 3 across"]].map(([k,l])=>`<button class="stylechip ${opts.paper===k?"on":""}" data-paper="${k}">${l}</button>`).join("")}</div>
+      <div class="eyebrow" style="margin:12px 0 6px">Cards · ${selC.length+selV.length}</div>
+      <div class="chips-row">${chars.map(c=>`<button class="stylechip ${selC.includes(c.id)?"on":""}" data-pc="${c.id}">${esc(c.name||"Unnamed")}${isFielded(c)?"":" ·"}</button>`).join("")}${vehs.map(v=>`<button class="stylechip ${selV.includes(v.id)?"on":""}" data-pv="${v.id}">▰ ${esc(v.name||"vehicle")}</button>`).join("")}</div>
+      <div class="none-note" style="font-style:normal;margin-top:5px">Fielded are ticked by default.</div>
+      <div class="eyebrow" style="margin:12px 0 6px">Preview</div>
+      <div class="print-preview paper-${opts.paper}" id="printPreview">${selC.map(id=>chars.find(c=>c.id===id)).filter(Boolean).map(printCardChar).join("")}${selV.map(id=>vehs.find(v=>v.id===id)).filter(Boolean).map(printCardVeh).join("")}</div>
+      <div class="modal-actions">
+        <button class="btn primary sm" id="prGo">🖨 Print ${selC.length+selV.length} card${selC.length+selV.length===1?"":"s"}</button>
+        <button class="btn sm ghost" id="prCopy">Copy as text</button>
+        <button class="btn ghost sm" id="prX" style="margin-left:auto">Close</button>
+      </div>`;
+    body.querySelectorAll("[data-paper]").forEach(b=>b.onclick=()=>{opts.paper=b.dataset.paper;printOpts.paper=opts.paper;savePrintOpts();draw();});
+    body.querySelectorAll("[data-pc]").forEach(b=>b.onclick=()=>{const id=b.dataset.pc;const i=selC.indexOf(id);if(i>=0)selC.splice(i,1);else selC.push(id);printOpts.chars=selC.slice();savePrintOpts();draw();});
+    body.querySelectorAll("[data-pv]").forEach(b=>b.onclick=()=>{const id=b.dataset.pv;const i=selV.indexOf(id);if(i>=0)selV.splice(i,1);else selV.push(id);printOpts.vehs=selV.slice();savePrintOpts();draw();});
+    $("#prX").onclick=closeModal;
+    $("#prCopy").onclick=()=>{navigator.clipboard.writeText(summaryText(w)).then(()=>toast("Copied")).catch(()=>toast("Copy failed"));};
+    $("#prGo").onclick=()=>printCardsNow(opts.paper,$("#printPreview").innerHTML);
+  };
+  draw(); showModal();
+}
+/* the print surface: a sheet only the printer sees, sized to the paper, one card per page */
+function printCardsNow(paper,html){
+  let area=$("#printArea");
+  if(!area){area=document.createElement("div");area.id="printArea";document.body.appendChild(area);}
+  area.className="paper-"+paper;
+  area.innerHTML=html;
+  let st=$("#printPageStyle");
+  if(!st){st=document.createElement("style");st.id="printPageStyle";document.head.appendChild(st);}
+  st.textContent=paper==="a4"?"@page{size:A4;margin:8mm}":`@page{size:${paper}mm auto;margin:2mm}`;
+  const done=()=>{document.body.classList.remove("printing");};
+  document.body.classList.add("printing");
+  window.addEventListener("afterprint",done,{once:true});
+  setTimeout(()=>{try{window.print();}catch(e){toast("Printing is not available here — use your browser's print/share menu");done();}},60);
+}
 function openSummary(){
   const w=activeWB();
   const body=$("#modalBody");
@@ -3780,66 +3959,139 @@ function openVehicleCard(id){cardVehId=id;cardVehObj=null;cardCharId=null;cardCh
    the object itself rather than looking it up by id. */
 function openEnemyVehicleCard(v){if(!v)return;cardVehObj=v;cardVehId=v.id;cardCharId=null;cardCharObj=null;cardIsEnemy=true;buildVehicleCard();$("#cardWrap").classList.add("show");syncScroll();$("#cardWrap").scrollTop=0;}
 
+function vehRowFor(v){
+  const s=activeQuestScn(); if(!s||!s.battle)return null;
+  return (s.battle.combatants||[]).find(m=>m&&m.isVeh&&(cardIsEnemy?m.id==="e_"+v.id:(m.vehId===v.id&&(!m.campId||!campId()||m.campId===campId()))))||null;
+}
+function vehCanEdit(row){return !!row&&!(liveRole==="guest");}
+function vehSecChange(v,row,key,delta){
+  const sec=row.secs.find(x=>x.key===key); if(!sec)return;
+  const was=sec.cur|0; sec.cur=Math.max(0,Math.min(sec.max,was+delta));
+  row.curHP=secsTotal(row.secs);
+  if(was>0&&sec.cur<=0){
+    if(sec.kind==="transport"&&(row.aboard||[]).some(r=>r.facing===sec.facing||!r.facing)){
+      const out=(row.aboard||[]).filter(r=>r.facing===sec.facing||!r.facing);
+      row.aboard=(row.aboard||[]).filter(r=>!out.includes(r));
+      toast("Transport destroyed — "+out.map(r=>r.name).join(", ")+" thrown out: 1D10 damage each");
+    } else toast(sec.name+" destroyed — "+SEC_LOSS[sec.kind]);
+    const b=vehBreak(row.secs); if(b.state==="test")toast("Break test: roll 1D10 under "+b.target);
+  }
+  save(); if(liveRole==="host"){const s=activeQuestScn();if(s)scheduleHostSync(s);} renderScenarioView(); renderVehicleRoster(); buildVehicleCard();
+}
+function vehBoard(v,row){
+  const s=activeQuestScn(); if(!s)return;
+  const cap=3*row.secs.filter(x=>x.kind==="transport"&&(x.cur|0)>0).length;
+  const seats=(row.aboard||[]).reduce((a,r)=>a+(r.n||1),0);
+  if(!cap){toast("No working transport section");return;}
+  const chars=(s.battle.combatants||[]).filter(m=>m.side==="player"&&m.charId&&(m.curHP|0)>0&&!(m.id.match(/_\d+$/)&&!/_0$/.test(m.id)));
+  const aboardAll=[].concat(...(s.battle.combatants||[]).filter(m=>m.isVeh).map(m=>(m.aboard||[]).map(r=>r.charId)));
+  const cands=chars.filter(m=>!aboardAll.includes(m.charId));
+  if(!cands.length){toast("No one free to board");return;}
+  const facings=(VEHICLE_SIZES[v.size]||VEHICLE_SIZES[1])[0]==="Small"?["—"]:["F","L","R","B"];
+  const body=$("#modalBody");
+  body.innerHTML=`<h3>Board ${esc(v.name||"the vehicle")}</h3><p class="lead">${cap-seats} seat${cap-seats===1?"":"s"} free. Boarding is part of a move — base contact with the facing that holds the transport section. Aboard, they cannot be targeted and cannot act until they spend an action to get off.</p>
+    <div class="eyebrow" style="margin-bottom:6px">Who</div><div class="chips-row">${cands.map(m=>`<button class="stylechip" data-bc="${esc(m.id)}">${esc(m.name.replace(/ \d+\/\d+$/,""))}</button>`).join("")}</div>
+    ${facings.length>1?`<div class="eyebrow" style="margin:10px 0 6px">Through which facing</div><div class="chips-row" id="bFac">${facings.map((f,i)=>`<button class="stylechip ${i===0?"on":""}" data-bf="${f}">${f==="F"?"Front":f==="L"?"Left":f==="R"?"Right":"Rear"}</button>`).join("")}</div>`:""}
+    <div class="modal-actions"><button class="btn ghost sm" id="bX" style="margin-left:auto">Cancel</button></div>`;
+  let fac=facings[0];
+  body.querySelectorAll("[data-bf]").forEach(b=>b.onclick=()=>{fac=b.dataset.bf;body.querySelectorAll("[data-bf]").forEach(x=>x.classList.toggle("on",x===b));});
+  body.querySelectorAll("[data-bc]").forEach(b=>b.onclick=()=>{
+    const m=chars.find(x=>x.id===b.dataset.bc); if(!m)return;
+    const c=activeWB().characters.find(x=>x.id===m.charId); const n=c?memberCount(c):1;
+    if(seats+n>cap){toast("Not enough seats for "+n);return;}
+    row.aboard=row.aboard||[]; row.aboard.push({charId:m.charId,name:m.name.replace(/ \d+\/\d+$/,""),facing:fac==="—"?"":fac,n});
+    save(); if(liveRole==="host")scheduleHostSync(s); closeModal(); renderScenarioView(); buildVehicleCard(); toast(m.name.replace(/ \d+\/\d+$/,"")+" aboard");
+  });
+  $("#bX").onclick=closeModal; showModal();
+}
+function vehDisembark(v,row,charId){
+  row.aboard=(row.aboard||[]).filter(r=>charId?r.charId!==charId:false);
+  save(); const s=activeQuestScn(); if(liveRole==="host"&&s)scheduleHostSync(s); renderScenarioView(); buildVehicleCard();
+  toast(charId?"Off — one action, placed at the point they boarded":"Everyone off — one action each");
+}
 function buildVehicleCard(){
   const v=vehCard();if(!v)return;
   const cost=vehicleCost(v);
   const ty=VEHICLE_TYPES[v.type]||VEHICLE_TYPES[0];
   const size=VEHICLE_SIZES[v.size]||VEHICLE_SIZES[1];
-  const sections=[
-    {name:"Engine",val:"HP 10",desc:"Core section — the vehicle's power plant. Cannot be removed."},
-    {name:"Crew",val:"HP 10",desc:"Core section — lets the vehicle fire one weapon per shooting action. Cannot be removed."}
-  ].concat((v.sections||[]).map(e=>({o:CAT.vsection[e.id],q:e.qty})).filter(x=>x.o)
-      .map(({o,q})=>({name:o.name+(q>1?" ×"+q:""),val:"HP "+(o.hp*q)+" · "+(o.cost*q)+" pts",desc:o.desc})));
-  const vtraits=(v.traits||[]).map(id=>CAT.vtrait[id]).filter(Boolean).map(o=>({name:o.name,val:fmtSigned(o.cost)+" pts",desc:o.desc}));
-  const vabils=(v.abilities||[]).map(id=>CAT.vability[id]).filter(Boolean).map(o=>({name:o.name,val:fmtSigned(o.cost)+" pts",desc:o.desc}));
-  const vweaps=(v.weapons||[]).map(e=>({o:CAT.vweapon[e.id],q:e.qty,e})).filter(x=>x.o)
-      .map(({o,q,e})=>({name:gearLabel(o,e,q),val:o.cost*q+" pts",desc:gearNote("vweapon",o,e)}));
+  const row=vehRowFor(v);
+  const secs=row&&row.secs?row.secs:vehSecsFor(v);
+  const total=secsTotal(secs), max=secs.reduce((a,s)=>a+s.max,0);
+  const brk=vehBreak(secs), alive=secs.filter(s=>(s.cur|0)>0).length;
+  const edit=vehCanEdit(row);
+  const sizeName=size[0], meleeF=sizeName==="Small"?3:sizeName==="Medium"?5:7, meleeD=sizeName==="Small"?"1D6":sizeName==="Medium"?"1D10":"1D10+6";
+  const cover=sizeName==="Small"?"any part hidden":sizeName==="Medium"?"> 50% hidden":"> 75% hidden";
+  const facings=sizeName==="Small"?null:["F","L","R","B"];
+  const crewN=secs.filter(s=>s.kind==="crew"&&(s.cur|0)>0).length;
+  const aboard=(row&&row.aboard)||[];
+  const w=activeWB();
+  const riderTraits=aboard.map(r=>{const c=w.characters.find(x=>x.id===r.charId);return c?{r,c,pilot:hasTrait(c,"Pilot"),eng:hasTrait(c,"Engineer"),gun:hasTrait(c,"Gunner")}:{r,c:null};});
+  const pilot=riderTraits.find(x=>x.pilot);
+  const hasLoop=(v.traits||[]).some(id=>CAT.vtrait[id]&&CAT.vtrait[id].name==="Loopholes");
+  const A=pilot?Math.max(v.skills.A,pilot.c.skills.A):v.skills.A, S=pilot?Math.max(v.skills.S,pilot.c.skills.S):v.skills.S;
+  const damagedFirst=secs.find(s=>(s.cur|0)>0&&s.cur<s.max);
+  const vweaps=(v.weapons||[]).map(e=>({o:CAT.vweapon[e.id],q:e.qty,e})).filter(x=>x.o);
+  const vtraits=(v.traits||[]).map(id=>CAT.vtrait[id]).filter(Boolean).map(o=>({name:o.name,desc:o.desc}));
+  const vabils=(v.abilities||[]).map(id=>CAT.vability[id]).filter(Boolean).map(o=>({name:o.name,desc:o.desc}));
+  const strip=`<div class="play ${cardIsEnemy?"enemy":""} ${brk.state==="wreck"?"down":brk.state==="test"?"hurt":""}">
+    <div class="play-l1"><span class="play-hp ${brk.state==="wreck"?"d":brk.state==="test"?"h":""}">${brk.state==="wreck"?"WRECK":total+`<small>/${max}</small>`}</span>
+      ${row?`<span class="chip amber">⚔ deployed</span>`:v.laidUp?`<span class="chip red">laid up</span>`:isFielded(v)?`<span class="chip teal">◉ fielded</span>`:`<span class="chip">○ benched</span>`}
+      ${brk.state==="test"?`<span class="chip red">⚠ break test · 1D10 under ${brk.target}</span>`:brk.state==="steady"?`<span class="chip">last 3 sections — no more tests</span>`:""}
+      ${pilot?`<span class="chip teal">pilot aboard · A ${A} / S ${S}</span>`:""}
+      ${(row&&row.conditions||[]).map(cd=>`<span class="chip amber">◈ ${esc(cd.label)}</span>`).join("")}</div>
+    <div class="play-l2">Speed <b>${esc(ty[2])}</b> · ${alive}/${secs.length} sections · no armour roll — damage lands on a section · in cover when <b>${cover}</b> · melee <b>F ${meleeF}</b>, <b>${meleeD}</b>${facings?" · 4 facings":" · no facings"}${brk.state==="test"?` · <span class="chip red">test every time a section is destroyed; 3 fails in a row → derelict</span>`:""}</div>
+  </div>`;
+  const secRows=secs.map(s=>{const dead=(s.cur|0)<=0, pct=Math.round(100*Math.max(0,s.cur)/s.max);
+    return `<div class="vsec ${dead?"dead":""}"><span class="vs-n">${esc(s.name)}${facings&&s.facing&&s.facing!=="C"?` <small>${s.facing}</small>`:""}</span><span class="vs-bar"><i class="${dead?"d":pct<=50?"h":""}" style="width:${pct}%"></i></span><span class="vs-v">${Math.max(0,s.cur)}/${s.max}</span>${edit?`<span class="vs-pm"><button class="hpb" data-vsec="${s.key}|-1">−</button><button class="hpb" data-vsec="${s.key}|1">+</button></span>`:""}</div>
+    ${dead?`<div class="vs-eff">destroyed — ${SEC_LOSS[s.kind]}</div>`:damagedFirst&&damagedFirst.key===s.key?`<div class="vs-eff amber">damaged — must take the next hit until destroyed</div>`:""}`;}).join("");
+  const facingBox=facings?`<div class="facing"><div></div><div class="c">FRONT<br><small>${esc(secs.filter(s=>s.facing==="F").map(s=>s.name).join(", ")||"—")}</small></div><div></div><div class="c">LEFT<br><small>${esc(secs.filter(s=>s.facing==="L").map(s=>s.name).join(", ")||"—")}</small></div><div class="c">${esc(secs.filter(s=>s.facing==="C").map(s=>s.name).join(" · "))}</div><div class="c">RIGHT<br><small>${esc(secs.filter(s=>s.facing==="R").map(s=>s.name).join(", ")||"—")}</small></div><div></div><div class="c">REAR<br><small>${esc(secs.filter(s=>s.facing==="B").map(s=>s.name).join(", ")||"—")}</small></div><div></div></div>
+    ${!row&&!cardIsEnemy?`<div class="none-note" style="font-style:normal;margin:0 18px 6px">Set where each bought section sits: tap a section's facing letter below.</div>`:""}`:"";
+  const facingPick=(!row&&!cardIsEnemy&&facings)?`<div class="gc-sec"><div class="sh">Facings</div>${(v.sections||[]).map((e,i)=>{const o=CAT.vsection[e.id];if(!o)return "";return `<div class="vfac"><span>${esc(o.name)}${(e.qty||1)>1?" ×"+e.qty:""}</span><span class="chips-row">${["F","L","R","B"].map(f=>`<button class="stylechip ${(e.facing||"F")===f?"on":""}" data-vfac="${i}|${f}">${f}</button>`).join("")}</span></div>`;}).join("")||`<div class="gc-empty">Only the core sections — nothing to place.</div>`}</div>`:"";
+  const attacks=vweaps.length?`<div class="gc-sec"><div class="sh">Attacks · ${crewN} weapon${crewN===1?"":"s"} per shooting action</div>${vweaps.map(({o,e})=>`<div class="atk"><div class="atk-t"><span>🎯 ${esc(gearLabel(o,e,e.qty||1))}</span><span class="atk-roll">under S ${S}</span></div><div class="atk-s">${o.range&&o.range!=="—"?`<b>${esc(o.range)}</b> · `:""}<b>${esc(o.dmg||"?")}</b>${o.rules&&o.rules!=="—"?" · "+esc(o.rules):""}${o.type?" · "+esc(o.type):""}</div></div>`).join("")}<div class="atk"><div class="atk-t"><span>⚔ Ram / crush</span><span class="atk-roll">under F ${meleeF}</span></div><div class="atk-s">${sizeName.toLowerCase()} hull · <b>${meleeD}</b></div></div></div>`
+    :`<div class="gc-sec"><div class="sh">Attacks</div><div class="atk"><div class="atk-t"><span>⚔ Ram / crush</span><span class="atk-roll">under F ${meleeF}</span></div><div class="atk-s">${sizeName.toLowerCase()} hull · <b>${meleeD}</b> · no mounted weapons</div></div></div>`;
+  const cap=3*secs.filter(x=>x.kind==="transport"&&(x.cur|0)>0).length;
+  const seats=aboard.reduce((a,r)=>a+(r.n||1),0);
+  const crewBox=row&&!cardIsEnemy&&(cap||aboard.length)?`<div class="gc-sec"><div class="sh">Aboard · ${seats}/${cap} seats</div>
+    ${aboard.map(r=>{const rt=riderTraits.find(x=>x.r===r)||{};return `<div class="rider"><b>${esc(r.name)}${(r.n||1)>1?" ×"+r.n:""}</b>${r.facing?`<span class="chip">${r.facing==="F"?"front":r.facing==="L"?"left":r.facing==="R"?"right":"rear"}</span>`:""}${rt.pilot?`<span class="chip teal">pilot</span>`:""}${rt.eng?`<span class="chip teal">engineer</span>`:""}${rt.gun?`<span class="chip teal">gunner</span>`:""}${hasLoop?`<span class="chip">🔫 loophole</span>`:""}${edit?`<button class="linkbtn" data-off="${esc(r.charId)}">off</button>`:""}</div>`;}).join("")||`<div class="gc-empty">No one aboard.</div>`}
+    ${edit&&seats<cap?`<button class="btn sm" id="vBoard" style="margin-top:6px">+ Board a character</button>`:""}
+    <div class="none-note" style="font-style:normal;margin-top:6px">Aboard: cannot be targeted, cannot act${hasLoop?" — except shooting through the loopholes at their facing":""}. Getting off costs an action.${riderTraits.some(x=>x.eng)?" Engineer aboard: +1D4 to damaged sections in their facing each turn.":""}${riderTraits.some(x=>x.gun)?" Gunner aboard: may fire a weapon on their facing with their own Shooting.":""}</div></div>`:"";
   const gc=$("#gameCard");
-  gc.innerHTML=`
-    <div class="gc-layout">
-      <div class="gc-portrait" id="gcPortrait">${portraitHTML(v)}</div>
-      <div class="gc-body">
-        <div class="gc-top">
-          <div class="gc-cost">${cost}<small>PTS</small></div>
-          <div class="gc-id">
-            <div class="eyebrow"${cardIsEnemy?' style="color:var(--danger)"':''}>Planet 28 · ${cardIsEnemy?"Enemy Vehicle":"Vehicle"}</div>
-            <h2 class="gc-name">${esc(v.name)||"Unnamed vehicle"}</h2>
-            <div class="gc-role">${esc(v.role)||size[0]+" "+ty[0].toLowerCase()+" vehicle"}</div>
-          </div>
-        </div>
-        ${v.bg?`<p class="gc-bg">${esc(v.bg)}</p>`:""}
-        <div class="gc-stats" style="grid-template-columns:repeat(4,1fr)">
-          <div class="gc-stat" tabindex="0" data-tip="Agility (A) — sets when the vehicle acts each turn (highest acts first) and how well it navigates terrain. Roll 1D10 under this value to succeed.">
-            <b>${v.skills.A}</b><span>A</span><small>Agility</small></div>
-          <div class="gc-stat" tabindex="0" data-tip="Shooting (S) — how well the vehicle performs shooting actions. Roll 1D10 under this value to succeed.">
-            <b>${v.skills.S}</b><span>S</span><small>Shooting</small></div>
-          <div class="gc-stat" tabindex="0" data-tip="Total hit-points across all sections. Each core section is 10 HP; every added section adds its own HP.">
-            <b>${vehicleHP(v)}</b><span>HP</span><small>Hull</small></div>
-          <div class="gc-stat" tabindex="0" data-tip="${esc(ty[3])}"><b>${ty[2]}</b><span>SPD</span><small>${ty[0]}</small></div>
-        </div>
-        <div class="gc-vitals"><span tabindex="0" data-tip="${esc(size[1])}">SIZE <b>${size[0]}</b></span><span tabindex="0" data-tip="${esc(ty[3])}">TYPE <b>${ty[0]}</b></span></div>
-        <div class="gc-sections">
-          ${cardSection("Sections ("+(2+(v.sections||[]).reduce((s,e)=>s+e.qty,0))+")",sections)}
-          ${cardSection("Traits",vtraits)}
-          ${cardSection("Abilities",vabils)}
-          ${cardSection("Weapons",vweaps)}
-          ${cardIsEnemy?cardSoloAI():""}
-        </div>
-      </div>
-    </div>
+  gc.innerHTML=`<div class="gc-layout single"><div class="gc-body">
+    <div class="gc-top"><div class="gc-cost">${cost}<small>PTS</small></div><div class="gc-id">
+      <div class="eyebrow"${cardIsEnemy?' style="color:var(--danger)"':''}>Planet 28 · ${cardIsEnemy?"Enemy Vehicle":"Vehicle"}</div>
+      <h2 class="gc-name">${esc(v.name)||"Unnamed vehicle"}</h2>
+      <div class="gc-role">${esc(v.role||"")}${v.role?" · ":""}${sizeName} ${ty[0].toLowerCase()} vehicle · ${alive}/${secs.length} sections</div></div></div>
+    ${strip}
+    ${v.hint?`<div class="hint"><b>How it fights</b>${esc(v.hint)}</div>`:""}
+    <div class="gc-stats" style="grid-template-columns:repeat(4,1fr)">
+      <div class="gc-stat"><b>${A}</b><span>A</span><small>Agility</small></div><div class="gc-stat"><b>${S}</b><span>S</span><small>Shooting</small></div>
+      <div class="gc-stat"><b>${total}</b><span>HULL</span><small>of ${max}</small></div><div class="gc-stat"><b>${esc(ty[2]).replace("cm","")}</b><span>CM</span><small>${esc(ty[0])}</small></div></div>
+    <div class="gc-sections">
+      <div class="gc-sec"><div class="sh">Hull · ${row&&edit?"tap − on the section that was hit":secs.length+" sections"}</div>${secRows}${facingBox}</div>
+      ${crewBox}${attacks}
+      ${cardSection("Traits & abilities",vtraits.concat(vabils))}
+      <div class="gc-sec"><div class="sh">Moves like</div><div class="gc-entry"><div class="en"><span>${esc(ty[0])}</span></div><div class="ed">${esc(ty[3])}</div></div><div class="gc-entry"><div class="ed">${esc(size[1])}</div></div></div>
+      ${facingPick}
+      ${cardIsEnemy?`<details class="scn-acc" style="margin-top:8px"><summary><span class="acc-t">◉ The Solo AI ladder</span><span class="acc-c">›</span></summary><div class="acc-body">${cardSoloAI(null)}</div></details>`:""}
+    </div></div></div>
     <div class="gc-actions">
       ${cardIsEnemy?"":`<button class="btn ${isFielded(v)?"gc-fielded":""}" id="gcvField">${isFielded(v)?"◉ Fielded":"○ Benched"}</button>`}
-      <button class="btn" id="gcvArt">✦ Art prompt</button>
-      ${cardIsEnemy?"":`<button class="btn" id="gcvAdjust">✎ Adjust</button>`}
+      ${row&&edit?`<button class="btn" id="vFall">🎲 Fall · D4 facing</button>`:""}
+      ${aboard.length&&edit?`<button class="btn" id="vAllOff">⬇ Everyone off</button>`:""}
+      ${cardIsEnemy||isWorkshop()?`<button class="btn" id="gcvArt">✦ Art prompt</button>`:""}
       ${cardIsEnemy?"":`<button class="btn primary" id="gcvEdit">Edit</button>`}
       <button class="btn ${cardIsEnemy?"primary":"ghost"}" id="gcvClose">Close</button>
     </div>`;
   $("#gcvClose").onclick=closeCard;
   const vEd=$("#gcvEdit");if(vEd)vEd.onclick=()=>{const id=cardVehId;closeCard();openVehicleDossier(id);};
-  const vAdj=$("#gcvAdjust");if(vAdj)vAdj.onclick=()=>openAdjust(v,true);
   const vFd=$("#gcvField");if(vFd)vFd.onclick=()=>toggleFielded(v);
-  $("#gcvArt").onclick=()=>openPrompt(vehCard(),true);
-  wirePortrait(v);
+  const vArt=$("#gcvArt");if(vArt)vArt.onclick=()=>openPrompt(vehCard(),true);
+  gc.querySelectorAll("[data-vsec]").forEach(b=>b.onclick=()=>{const [k,d]=b.dataset.vsec.split("|");vehSecChange(v,row,k,+d);});
+  gc.querySelectorAll("[data-vfac]").forEach(b=>b.onclick=()=>{const [i,f]=b.dataset.vfac.split("|");if(v.sections[+i]){v.sections[+i].facing=f;save();buildVehicleCard();}});
+  gc.querySelectorAll("[data-off]").forEach(b=>b.onclick=()=>vehDisembark(v,row,b.dataset.off));
+  const vb=$("#vBoard");if(vb)vb.onclick=()=>vehBoard(v,row);
+  const va=$("#vAllOff");if(va)va.onclick=()=>vehDisembark(v,row,null);
+  const vf=$("#vFall");if(vf)vf.onclick=()=>{const r=1+Math.floor(Math.random()*4);toast("Fell — damage to the "+(["front","rear","left","right"][r-1])+" facing: 1 per cm above 5. An action to right itself.");};
 }
 
 function openVehicleDossier(id){
@@ -5353,6 +5605,7 @@ function claimQuest(snap,then){
     const v=vehsOf(w).find(x=>x.id===m.vehId); if(!v)return;
     const max=vehicleHP(v);
     if(typeof m.curHP==="number"&&m.curHP<max)v.curHP=Math.max(0,m.curHP); else v.curHP=max;
+    if(Array.isArray(m.secs)&&m.curHP<max)v.secs=m.secs.map(s=>({key:s.key,cur:s.cur})); else delete v.secs;
     if(m.curHP<=0)wrecks.push(v);
   });
   // a vehicle that sat this quest out has served its lay-up and is ready again
@@ -5395,29 +5648,92 @@ function returnToCamp(){
 }
 function leaveGame(){returnToCamp();}
 
+/* who took part in a scenario — read off the battle roster the host ran */
+function participantsOf(s){
+  const rows=((s.battle&&s.battle.combatants)||[]).filter(m=>m&&m.side==="player");
+  const by={};
+  rows.forEach(m=>{const k=m.owner||"—";(by[k]=by[k]||{name:k,models:0,down:0,names:[]});by[k].models++;if((m.curHP|0)<=0)by[k].down++;const nm=m.name.replace(/ \d+\/\d+$/,"");if(!by[k].names.includes(nm))by[k].names.push(nm);});
+  return Object.values(by);
+}
+function scnStage(s){return s.outcome?"played":(s.battle&&s.battle.started)?"inplay":"next";}
+let scnQuery="";
+function scnRowHTML(s,ctx){
+  const o=s.outcome&&OUTCOMES[s.outcome.result];
+  const qt=s.questType&&questTypeBrief(s.questType);
+  const stage=scnStage(s);
+  const hosting=liveRole==="host"&&s.id===hostScenarioId;
+  const chips=[
+    hosting?`<span class="chip teal">📡 hosting · ${esc(hostCode)}</span>`:"",
+    stage==="played"?`<span class="chip ${s.outcome.result==="victory"?"teal":s.outcome.result==="defeat"?"red":"amber"}">${o?o.icon+" "+esc(o.short):"played"} · turn ${s.outcome.round||"?"}${s.outcome.at?" · "+new Date(s.outcome.at).toLocaleDateString(undefined,{day:"numeric",month:"short"}):""}</span>`:"",
+    stage==="inplay"?`<span class="chip amber">in play · turn ${curRound(s)}</span>`:"",
+    isMystery(s)?`<span class="chip arc">❓ mystery</span>`:(qt?`<span class="chip">${esc(qt[1].split(" — ")[0])}</span>`:""),
+    ctx==="workshop"?(s.movedAt?`<span class="chip teal">✓ moved</span>`:`<span class="chip amber">draft</span>`):"",
+    ctx==="workshop"&&s.mode==="coop"&&!enemyAll(s).length?`<span class="chip mute">no enemy yet</span>`:"",
+    ctx==="elsewhere"?`<span class="chip">realm: ${esc(s.realmName||"unknown")}</span>`:"",
+    stage==="played"&&participantsOf(s).length?`<span class="chip">${esc(participantsOf(s).map(x=>x.name).join(", "))}</span>`:""
+  ].filter(Boolean).join("");
+  const action=ctx==="workshop"?`<button class="btn sm ghost" data-move="${s.id}">🌍 Move</button>`
+    :ctx==="host"&&stage==="next"?`<button class="btn sm ${hosting?"":"primary"}" data-host="${s.id}">${hosting?"Open":"Host"}</button>`
+    :ctx==="host"&&stage==="played"?`<button class="btn sm ghost" data-again="${s.id}" title="Clear the result and roster so it can be run again">Again</button>`
+    :"";
+  return `<div class="srow ${stage} ${ctx==="elsewhere"?"elsewhere":""}" data-open="${s.id}">
+    <div class="srow-mini">${scenarioMapSVG(s.map,true)}</div>
+    <div class="srow-b">
+      <div class="srow-m ${s.mode==="coop"?"coop":"pvp"}">${s.mode==="coop"?"Co-op":"PvP"} · ${s.players} · ${s.points} pts</div>
+      <div class="srow-t">${esc(s.title||"Untitled scenario")}</div>
+      ${s.premise?`<div class="srow-s">${esc(s.premise)}</div>`:""}
+      <div class="srow-chips">${chips}</div>
+    </div>${action?`<div class="srow-act">${action}</div>`:""}
+  </div>`;
+}
+/* the realm's story so far: every played scenario as a dot, in the order they were played */
+function campaignStripHTML(list){
+  // only what was fought counts: a dot per played scenario, in the order they happened —
+  // plus the one on the table right now, if there is one. Nothing for what is merely available.
+  const played=list.filter(s=>s.outcome).sort((a,b)=>(a.outcome.at||0)-(b.outcome.at||0));
+  const live=list.filter(s=>scnStage(s)==="inplay");
+  if(!played.length&&!live.length)return "";
+  const won=played.filter(s=>s.outcome.result==="victory").length, lost=played.filter(s=>s.outcome.result==="defeat").length;
+  const who=new Set();played.forEach(s=>participantsOf(s).forEach(x=>who.add(x.name)));
+  return `<div class="camp-strip">
+    <div class="cs-h"><span>🗝 <b>${esc(savedPass()||"this realm")}</b> · the campaign so far</span><span>${played.length} played${played.length?` · ${won} won · ${lost} lost`:""}${who.size?` · ${who.size} player${who.size===1?"":"s"}`:""}</span></div>
+    <div class="cs-dots" id="csDots">${played.map((s,i)=>{const o=OUTCOMES[s.outcome.result];return `<button class="cs-dot ${s.outcome.result}" data-dot="${s.id}" title="${esc(s.title)}"><small>${i+1}</small>${o?o.icon:"?"}</button>${i<played.length-1||live.length?"<i></i>":""}`;}).join("")}${live.map(s=>`<button class="cs-dot next live" data-dot="${s.id}" title="${esc(s.title)}">⚔</button>`).join("")}</div>
+    <div class="cs-line">${played.slice(-3).map(s=>esc(s.title)).join(" → ")}${live.length?`${played.length?" → ":""}<b>now: ${esc(live[0].title)}</b>`:""}</div>
+  </div>`;
+}
+function openCampaignDot(s){
+  const o=s.outcome&&OUTCOMES[s.outcome.result];
+  const parts=participantsOf(s);
+  const body=$("#modalBody");
+  body.innerHTML=`<div class="eyebrow">${o?o.icon+" "+esc(o.short):scnStage(s)==="inplay"?"⚔ In play":"Up next"}${s.outcome?` · turn ${s.outcome.round||"?"} · ${new Date(s.outcome.at).toLocaleDateString()}`:""}</div>
+    <h3>${esc(s.title||"Untitled")}</h3>
+    ${s.premise?`<p class="lead">${esc(s.premise)}</p>`:""}
+    <div class="eyebrow" style="margin:10px 0 6px">Who was there</div>
+    ${parts.length?parts.map(x=>`<div class="wb-item"><div class="wbi-main" style="cursor:default"><div class="wbi-name">${esc(x.name)}</div><div class="wbi-sub">${esc(x.names.join(", "))}${x.down?` · ${x.down} taken down`:""}</div></div></div>`).join(""):`<div class="none-note">No battle roster was run for this one.</div>`}
+    ${s.mode==="coop"&&s.battle?`<div class="none-note" style="font-style:normal;margin-top:8px">Enemy: ${enemyAll(s).length} unit${enemyAll(s).length===1?"":"s"}${s.outcome?` · ${enemyRoutedIn(s)?"half or more destroyed":"held together"}`:""}</div>`:""}
+    <div class="modal-actions"><button class="btn sm" id="cdOpen">Open the scenario</button><button class="btn ghost sm" id="cdX" style="margin-left:auto">Close</button></div>`;
+  $("#cdOpen").onclick=()=>{closeModal();scnCurrentId=s.id;scnScreen="detail";renderScenarioView();};
+  $("#cdX").onclick=closeModal; showModal();
+}
 function renderScenarioList(){
   const w=activeWB(), el=$("#scenarioView");
   const others=allScns().filter(s=>s.room&&s.room!==roomKey);
-  const shown=scnShowAll?allScns():visibleScns();
-  const cards=shown.map(s=>`
-    <button class="scn-card${s.room&&s.room!==roomKey?" scn-elsewhere":""}" data-open="${s.id}">
-      <div class="scn-mini">${scenarioMapSVG(s.map,true)}</div>
-      <div class="scn-cbody">
-        <div class="scn-mode ${s.mode==="coop"?"coop":"pvp"}">${s.mode==="coop"?"Co-op":"PvP"} · ${s.players} players · ${s.points} pts</div>
-        <div class="scn-title">${esc(s.title||"Untitled scenario")}</div>
-        <div class="scn-sub">${esc(s.premise||"")}</div>
-        ${fbAvailable()?(!s.room?`<div class="scn-meta">unfiled — joins the first realm you name</div>`
-          :s.room!==roomKey?`<div class="scn-meta" style="color:var(--warn)">realm: ${esc(s.realmName||"unknown — made before realms were named")}</div>`:"")
-          +(isHost()?`<div class="scn-status">${liveRole==="host"&&s.id===hostScenarioId?`<span class="chip teal">📡 hosting · ${esc(hostCode)}</span>`:""}${s.outcome&&OUTCOMES[s.outcome.result]?`<span class="chip">${OUTCOMES[s.outcome.result].icon} ${esc(OUTCOMES[s.outcome.result].short)}</span>`:s.battle&&s.battle.started?`<span class="chip amber">in play · turn ${curRound(s)}</span>`:`<span class="chip">imported</span>`}${isMystery(s)?`<span class="chip" style="color:var(--arcane)">❓ mystery</span>`:""}</div>`:"")
-          :`<div class="scn-status">${s.movedAt?`<span class="chip teal">✓ moved to realm</span>`:`<span class="chip amber">draft · not moved</span>`}${s.mode==="coop"?(enemyAll(s).length?`<span class="chip">enemy mustered</span>`:`<span class="chip mute">no enemy yet</span>`):""}${s.questType&&questTypeBrief(s.questType)?`<span class="chip">${esc(questTypeBrief(s.questType)[1])}</span>`:""}<span class="btn sm ghost" data-move="${s.id}">🌍 Move</span></div>`}
-      </div>
-    </button>`).join("");
+  const mine=visibleScns();
+  const q=scnQuery.trim().toLowerCase();
+  const hit=s=>!q||[s.title,s.premise,s.mode,s.questType&&questTypeBrief(s.questType)?questTypeBrief(s.questType)[1]:"",isMystery(s)?"mystery":""].join(" ").toLowerCase().includes(q);
+  const ctx=fbAvailable()?"host":"workshop";
+  const byNew=(a,b)=>(b.createdAt||0)-(a.createdAt||0);
+  const next=mine.filter(s=>scnStage(s)==="next"&&hit(s)).sort(byNew);
+  const inplay=mine.filter(s=>scnStage(s)==="inplay"&&hit(s)).sort(byNew);
+  const played=mine.filter(s=>scnStage(s)==="played"&&hit(s)).sort((a,b)=>(b.outcome.at||0)-(a.outcome.at||0));
+  const elsewhere=others.filter(hit).sort(byNew);
+  const shelf=(title,sum,rows,cls)=>rows.length?`<div class="section-head" style="margin:18px 0 8px"><span class="eyebrow">${title}</span><span class="rule"></span><span class="none-note" style="font-style:normal">${sum}</span></div><div class="srows ${cls||""}">${rows.join("")}</div>`:"";
   el.innerHTML=`
     ${!fbAvailable()?"":!roomKey?`<div class="live-panel live-panel-gate">
       <div class="lp-main"><b>Live game</b> <span class="none-note" style="font-style:normal">${isHost()?"Name your realm so your players can reach the games you host.":"Name your realm first so everyone lands in the same one."}</span></div>
       <button class="btn primary" id="lpTable">🔑 Name your realm</button>
     </div>`
-    :isHost()?`<div class="statusstrip" style="margin:4px 0 10px"><span class="sc static">🗝 <b>${esc(savedPass())}</b> · hosting</span>${hostCode?`<span class="sc live">📡 ${esc(hostCode)} · ${livePlayers.length} joined</span>`:""}<button class="sc" id="lpLeaveTable">change realm</button></div>`
+    :isHost()?`<div class="statusstrip" style="margin:4px 0 10px"><span class="sc static">🗝 <b>${esc(savedPass())}</b> · hosting</span>${hostCode?`<span class="sc live">📡 ${esc(hostCode)} · ${livePlayers.length} joined</span>`:""}<button class="sc" id="lpLeaveTable">change realm</button><span class="sp" style="flex:1"></span><button class="btn sm primary" id="scnImport">⇩ Import</button></div>`
     :`<div class="live-panel">
       <div class="lp-main"><div class="lp-tablebadge">${campName()?`⛺ ${esc(campName())} · `:""}◉ Realm: <b class="cb-pass">${esc(savedPass())}</b>${hostCode?` · hosting <b class="cb-pass">${esc(hostCode)}</b>`:""}</div></div>
       <button class="linkbtn" id="lpLeaveTable">change realm</button>
@@ -5425,51 +5741,42 @@ function renderScenarioList(){
     ${fbAvailable()?"":(()=>{const w=activeWB();return `<div class="statusstrip" style="margin:4px 0 10px"><span class="sc static">🛡 <b>${esc(w.name||"Unnamed warband")}</b> · ${wbSpent(w)} pts · ${w.characters.filter(isFielded).length} fielded</span><span class="sc static ${wbSealed(w)?"sealed":""}">${wbSealed(w)?"🔒 sealed":"🔓 building"}</span></div>
       <details class="scn-acc desk" id="deskWizard"${(allScns().length&&!deskOpen)?"":" open"}><summary><span class="acc-t">✦ New scenario</span><span class="acc-s">the DM writes one from a few answers</span><span class="acc-c">›</span></summary>
         <div class="acc-body">${wizardHTML(true)}</div></details>`;})()}
-    <div class="section-head"><span class="eyebrow">${fbAvailable()?"Scenarios &amp; Campaigns":"Your scenarios"}</span><span class="rule"></span>
-      ${allScns().length?`<button class="btn sm ghost" id="scnAllToggle">${scnShowAll?"◉ All realms":"○ All realms"}${others.length?` <b class="mono">${others.length}</b>`:""}</button>`:""}
-      ${scnShowAll?(others.length?`<button class="btn sm danger ghost" id="scnPurge">Delete ${others.length} from other realms</button>`
-        :`<span class="none-note" style="font-style:normal">Everything on this device belongs to ${esc(savedPass()||"this realm")} — nothing stranded elsewhere.</span>`):""}
-    </div>
-    <div class="scn-grid">
-      ${cards}
-      ${fbAvailable()
-        ? `<button class="scn-card add" id="scnImport"><div class="plus">⇩</div><span>Import a scenario</span>
-             <span class="none-note" style="font-style:normal;max-width:22ch;text-align:center">Paste the code the DM wrote for you in the Claude app</span></button>`
-        : (allScns().length?"":`<div class="none-note" style="grid-column:1/-1">Nothing written yet — answer the questions above and ask the DM.</div>`)}
-    </div>
-    ${(()=>{ // scenarios are stored per warband — never let them vanish just because you switched
-      const others=[].flatMap(x=>(x.scenarios||[]).map(s=>({s,wb:x})));
+    ${ctx==="host"&&isHost()&&roomKey?campaignStripHTML(mine):""}
+    ${mine.length+others.length>3?`<input class="input" id="scnQ" placeholder="🔍 search titles, kinds… “mystery”, “cathedral”" value="${esc(scnQuery)}" style="margin:6px 0 2px">`:""}
+    ${shelf(ctx==="host"?"Up next":"Your scenarios",next.length+(inplay.length?"":""),inplay.map(s=>scnRowHTML(s,ctx)).concat(next.map(s=>scnRowHTML(s,ctx))))}
+    ${shelf("Played",played.length+(played.length?" · "+played.filter(s=>s.outcome.result==="victory").length+" won":""),played.map(s=>scnRowHTML(s,ctx)))}
+    ${elsewhere.length?`<details class="scn-acc" style="margin-top:18px"><summary><span class="acc-t">Elsewhere</span><span class="acc-s">${elsewhere.length} in other realms</span><span class="acc-c">›</span></summary><div class="acc-body"><div class="srows">${elsewhere.map(s=>scnRowHTML(s,"elsewhere")).join("")}</div><div class="modal-actions" style="margin-top:8px"><button class="btn sm danger ghost" id="scnPurge">Delete ${elsewhere.length} from other realms</button></div></div></details>`:""}
+    ${!mine.length&&!elsewhere.length?(fbAvailable()?`<div class="none-note" style="margin-top:14px">Nothing here yet — import the code the DM wrote for you in the Claude app.</div>`:`<div class="none-note" style="margin-top:14px">Nothing written yet — answer the questions above and ask the DM.</div>`):(q&&!next.length&&!inplay.length&&!played.length&&!elsewhere.length?`<div class="none-note" style="margin-top:14px">Nothing matches “${esc(scnQuery)}”.</div>`:"")}
+    ${(()=>{ const others=[].flatMap(x=>(x.scenarios||[]).map(s=>({s,wb:x})));
       if(!others.length)return "";
       return `<div class="section-head" style="margin-top:26px"><span class="eyebrow">In your other warbands</span><span class="rule"></span></div>
-      <div class="scn-grid">${others.map(({s,wb})=>`
-        <button class="scn-card" data-openother="${wb.id}|${s.id}">
-          <div class="scn-mini">${scenarioMapSVG(s.map,true)}</div>
-          <div class="scn-cbody">
-            <div class="scn-mode ${s.mode==="coop"?"coop":"pvp"}">${s.mode==="coop"?"Co-op":"PvP"} · ${s.players} players</div>
-            <div class="scn-title">${esc(s.title||"Untitled scenario")}</div>
-            <div class="scn-sub">🛡 ${esc(wb.name)}</div>
-          </div>
-        </button>`).join("")}</div>
-      <div class="none-note" style="font-style:normal;margin-top:8px">Opening one of these switches you to that warband.</div>`;})()}`;
-  el.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>{scnCurrentId=b.dataset.open;scnScreen="detail";renderScenarioView();});
+      <div class="srows">${others.map(({s,wb})=>`<div class="srow" data-openother="${wb.id}|${s.id}"><div class="srow-mini">${scenarioMapSVG(s.map,true)}</div><div class="srow-b"><div class="srow-m">${s.mode==="coop"?"Co-op":"PvP"} · ${s.players}</div><div class="srow-t">${esc(s.title||"Untitled scenario")}</div><div class="srow-s">🛡 ${esc(wb.name)}</div></div></div>`).join("")}</div>`;})()}`;
+  el.querySelectorAll("[data-open]").forEach(b=>b.onclick=ev=>{if(ev.target.closest("[data-move],[data-host],[data-again]"))return;scnCurrentId=b.dataset.open;scnScreen="detail";renderScenarioView();});
   el.querySelectorAll("[data-move]").forEach(b=>b.onclick=ev=>{ev.stopPropagation();const s=findScn(b.dataset.move);if(s)exportScenarioCode(s);});
+  el.querySelectorAll("[data-host]").forEach(b=>b.onclick=ev=>{ev.stopPropagation();const s=findScn(b.dataset.host);if(!s)return;if(liveRole==="host"&&s.id===hostScenarioId){scnCurrentId=s.id;scnScreen="detail";renderScenarioView();return;}if(liveRole==="host"){toast("Stop hosting the current game first");return;}openHostDialog(s);});
+  el.querySelectorAll("[data-again]").forEach(b=>b.onclick=ev=>{ev.stopPropagation();const s=findScn(b.dataset.again);if(!s)return;
+    askConfirm("Run “"+(s.title||"this scenario")+"” again? The result and the battle roster are cleared; searched caches, found items and opened envelopes are reset. The ledger keeps the first run.",()=>{
+      delete s.outcome;delete s.battle;s.round=1;s.searched=[];(s.items||[]).forEach(it=>{it.found=false;it.heldBy=null;});
+      if(s.mystery){(s.mystery.envelopes||[]).forEach(e=>e.opened=false);s.mystery.solved=false;}
+      enemyAll(s).forEach(c=>{if(c.secret)c.revealed=false;});
+      save();renderScenarioView();toast("Reset — ready to run again");},{danger:false,yesLabel:"Reset it"});});
+  el.querySelectorAll("[data-dot]").forEach(b=>b.onclick=()=>{const s=findScn(b.dataset.dot);if(s)openCampaignDot(s);});
+  const cd=$("#csDots");if(cd)cd.scrollLeft=cd.scrollWidth;
+  const sq=$("#scnQ");if(sq)sq.oninput=()=>{const pos=sq.selectionStart;scnQuery=sq.value;renderScenarioList();const n=$("#scnQ");if(n){n.focus();try{n.setSelectionRange(pos,pos);}catch(e){}}};
   const dw=$("#deskWizard"); if(dw){scnLengthBase=scnLengthBase||rollD10p6();bindWizard(dw);dw.querySelector("summary").addEventListener("click",()=>setTimeout(()=>{deskOpen=dw.open;},0));}
   el.querySelectorAll("[data-openother]").forEach(b=>b.onclick=()=>{
     const[wid,sid]=b.dataset.openother.split("|");
     store.activeId=wid;save();render();
     scnCurrentId=sid;scnScreen="detail";switchView("scenarios");renderScenarioView();
   });
-  const sat=$("#scnAllToggle");if(sat)sat.onclick=()=>{scnShowAll=!scnShowAll;renderScenarioView();};
   const sp=$("#scnPurge");if(sp)sp.onclick=()=>{
     const doomed=allScns().filter(s=>s.room&&s.room!==roomKey);
     askConfirm("Delete "+doomed.length+" scenario"+(doomed.length>1?"s":"")+" belonging to other realms? They go from this device and from those realms. Scenarios in "+(savedPass()||"this realm")+" are untouched.",
-      ()=>{doomed.forEach(s=>dropScn(s.id));scnShowAll=false;renderScenarioView();toast("Deleted "+doomed.length+" scenario"+(doomed.length>1?"s":""));},
+      ()=>{doomed.forEach(s=>dropScn(s.id));renderScenarioView();toast("Deleted "+doomed.length+" scenario"+(doomed.length>1?"s":""));},
       {danger:true,yesLabel:"Delete them"});
   };
-  const sn=$("#scnNew");if(sn)sn.onclick=openScenarioWizard;
   const si=$("#scnImport");if(si)si.onclick=openImportScenario;
   const lpr=$("#lpRole");if(lpr)lpr.onclick=openRoleChooser;
-  const lpi=$("#lpImport");if(lpi)lpi.onclick=openImportScenario;
   const lt=$("#lpTable");if(lt)lt.onclick=async()=>{if(await ensureRoom())renderScenarioView();};
   const ll=$("#lpLeaveTable");if(ll)ll.onclick=()=>{forgetRoom();clearLive();liveRole="solo";liveScenario=null;renderScenarioView();toast("Left the realm — name it again to return");};
 }
@@ -6417,8 +6724,9 @@ function myCombatants(owner,idPrefix){
   vehsOf(w).filter(v=>isFielded(v)&&!v.laidUp).forEach(v=>{
     const max=vehicleHP(v);
     const cur=(typeof v.curHP==="number"&&v.curHP>0&&v.curHP<max)?v.curHP*1:max;
+    const secs=vehSecsFor(v);
     out.push({id:(idPrefix||"p_")+v.id,side:"player",owner:owner||"",campId:cid,vehId:v.id,isVeh:true,
-      name:"▰ "+(v.name||"Unnamed vehicle"),maxHP:max,curHP:cur,conditions:[],neg:[],finds:[]});
+      name:"▰ "+(v.name||"Unnamed vehicle"),maxHP:max,curHP:Math.min(cur,secsTotal(secs)),conditions:[],neg:[],finds:[],secs,aboard:[]});
   });
   w.characters.filter(isFielded).forEach(c=>{
     const n=memberCount(c), max=c.hp*n;
@@ -6444,7 +6752,7 @@ function buildBattle(s){
         name:(c.name||"Enemy")+(n>1?" "+(k+1)+"/"+n:""),maxHP:c.hp,curHP:c.hp,conditions:[],neg:neg.slice()});
     });
     // a vehicle's hull is the sum of its sections; it is destroyed section by section
-    enemyVehs(s).forEach(v=>{const hp=vehicleHP(v);combatants.push({id:"e_"+v.id,side:"enemy",owner:"Enemy",name:"▰ "+(v.name||"Enemy vehicle"),maxHP:hp,curHP:hp,conditions:[],neg:[]});});
+    enemyVehs(s).forEach(v=>{const hp=vehicleHP(v);combatants.push({id:"e_"+v.id,side:"enemy",owner:"Enemy",name:"▰ "+(v.name||"Enemy vehicle"),maxHP:hp,curHP:hp,conditions:[],neg:[],isVeh:true,secs:vehSections(v).map(s=>Object.assign({},s,{cur:s.max})),aboard:[]});});
   }
   s.battle={started:true,combatants};save();
 }
@@ -6501,6 +6809,8 @@ function battleHTML(s){
     if(ownC)seenChar[m.charId]=1;
     const tally=ownC?tallyHTML(ownC):"";
     const maimed=m.maimedBy?`<span class="cond maim" title="Rolls on the injury table back at camp — ${esc(m.maimedBy)}">🩸 maimed</span>`:"";
+    const carrier=m.charId?s.battle.combatants.find(x=>x.isVeh&&(x.aboard||[]).some(r=>r.charId===m.charId)):null;
+    const aboardChip=carrier?`<span class="cond" title="Cannot be targeted or act until they spend an action to get off">🚌 aboard ${esc(carrier.name.replace(/^▰ /,""))}</span>`:"";
     const conds=(m.conditions||[]).map((cd,ci)=>`<span class="cond">${esc(cd.label)}${cd.expireTurn?` <small>→T${cd.expireTurn}</small>`:""}${scnReadOnly?"":` <button data-cond="${m.id}|${ci}" aria-label="remove">×</button>`}</span>`).join("");
     // a squad member never tests on its own — the squad tests as one when its total is at 25%
     const inSquad=/_\d+$/.test(String(m.id));
@@ -6508,8 +6818,8 @@ function battleHTML(s){
     const squadLow=inSquad&&squadRows.reduce((a,x)=>a+Math.max(0,x.curHP|0),0)<=squadRows.reduce((a,x)=>a+x.maxHP,0)*0.25;
     const half=!down&&!inSquad&&m.curHP<=m.maxHP*0.5, safe=m.curHP===1;
     return `<div class="btl-row ${m.side} ${down?"down":""}">
-      <div class="btl-main"><span class="btl-side"></span><button class="btl-name btl-open" data-open-unit="${esc(m.id)}" title="Open this unit's card">${esc(m.name)}</button>${half?`<span class="chip brk" tabindex="0" data-tip="${esc(safe?"Down to a single hit-point — this one never tests again.":"Under half hit-points: roll under Psyche or run for the nearest board edge. Test again on every hit, at −1 Psyche for each test already taken this turn. All skills are −1 while under half.")}">${safe?"⚑ no more tests":"⚠ break test"}</span>`:""}${(inSquad&&squadLow&&!down)?`<span class="chip brk" tabindex="0" data-tip="The squad's total hit-points are at a quarter or less: every surviving member rolls under Psyche or runs. They roll again each time another member dies.">⚠ squad breaking</span>`:""}${m.owner&&m.side==="player"?`<span class="btl-owner">${esc(m.owner)}</span>`:""}${(conds||maimed)?`<div class="btl-conds">${maimed}${conds}</div>`:""}${tally?`<div class="btl-tally">${tally}</div>`:""}</div>
-      <div class="btl-hp">${scnReadOnly?"":`<button class="hpb" data-hp="${m.id}|-1" aria-label="damage">−</button>`}<span class="hpv ${down?"down":low?"low":""}">${down?"DOWN":m.curHP+"/"+m.maxHP}</span>${scnReadOnly?"":`<button class="hpb" data-hp="${m.id}|1" aria-label="heal">+</button>`}</div>
+      <div class="btl-main"><span class="btl-side"></span><button class="btl-name btl-open" data-open-unit="${esc(m.id)}" title="Open this unit's card">${esc(m.name)}</button>${half?`<span class="chip brk" tabindex="0" data-tip="${esc(safe?"Down to a single hit-point — this one never tests again.":"Under half hit-points: roll under Psyche or run for the nearest board edge. Test again on every hit, at −1 Psyche for each test already taken this turn. All skills are −1 while under half.")}">${safe?"⚑ no more tests":"⚠ break test"}</span>`:""}${(inSquad&&squadLow&&!down)?`<span class="chip brk" tabindex="0" data-tip="The squad's total hit-points are at a quarter or less: every surviving member rolls under Psyche or runs. They roll again each time another member dies.">⚠ squad breaking</span>`:""}${m.owner&&m.side==="player"?`<span class="btl-owner">${esc(m.owner)}</span>`:""}${(conds||maimed||aboardChip)?`<div class="btl-conds">${maimed}${aboardChip}${conds}</div>`:""}${tally?`<div class="btl-tally">${tally}</div>`:""}</div>
+      <div class="btl-hp">${m.isVeh&&m.secs?`<button class="hpb wide" data-open-unit="${esc(m.id)}" title="Damage goes to a section — open the hull">▰ ${m.secs.filter(x=>(x.cur|0)>0).length}/${m.secs.length}</button>`:scnReadOnly?"":`<button class="hpb" data-hp="${m.id}|-1" aria-label="damage">−</button>`}<span class="hpv ${down?"down":low?"low":""}">${down?"DOWN":m.curHP+"/"+m.maxHP}</span>${(m.isVeh&&m.secs)||scnReadOnly?"":`<button class="hpb" data-hp="${m.id}|1" aria-label="heal">+</button>`}</div>
     </div>`;
   }).join("");
   return `<div class="scn-battle"><div class="mh">Battle roster${scnReadOnly?" · live":""}</div>${rows}
@@ -7356,7 +7666,7 @@ document.addEventListener("paste",e=>{
 $("#btnLibrary").onclick=openLibrary;
 $("#btnMenu").onclick=openMenu;
 $("#btnRef").onclick=openReference;
-$("#btnPrint").onclick=openSummary;
+$("#btnPrint").onclick=openPrintCards;
 $("#btnShareWB").onclick=()=>exportCurrent(false);
 $("#btnQuest").onclick=async()=>{if(!(await ensureRoom()))return;ensureSealedForQuest(openJoinDialog);};
 
