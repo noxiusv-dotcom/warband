@@ -25,6 +25,7 @@
 :root{
   --ground:#14161b; --panel:#1c1f27; --panel-2:#232733; --sunk:#101217;
   --line:#2c313d; --line-soft:#242832;
+  --map-solid:#8d95a6; --map-solid2:#c3c9d4; --map-wall:#b6bdc9; --map-badge:#4a5163; --map-shadow:rgba(0,0,0,.45);
   --ink:#e9e7e2; --ink-dim:#a7adba; --ink-mute:#727a8a;
   --amber:#ffb84d; --amber-deep:#e0932a; --amber-glow:rgba(255,184,77,.14);
   --teal:#3fb9a6; --teal-deep:#2f9d8c;
@@ -47,6 +48,7 @@
   :root:not([data-theme="dark"]){
     --ground:#eceae2; --panel:#fbfaf6; --panel-2:#f1efe7; --sunk:#e4e1d7;
     --line:#d6d2c6; --line-soft:#e0ddd2;
+    --map-solid:#3b4150; --map-solid2:#7b8393; --map-wall:#2c313d; --map-badge:#2c313d; --map-shadow:rgba(0,0,0,.22);
     --ink:#1c1e24; --ink-dim:#565b66; --ink-mute:#8a8f9b;
     --amber:#bd7c12; --amber-deep:#a86a08; --amber-glow:rgba(189,124,18,.12);
     --teal:#12857260; --teal:#177f6f; --teal-deep:#0f6d5f;
@@ -61,6 +63,7 @@
 [data-theme="light"]{
   --ground:#eceae2; --panel:#fbfaf6; --panel-2:#f1efe7; --sunk:#e4e1d7;
   --line:#d6d2c6; --line-soft:#e0ddd2;
+  --map-solid:#3b4150; --map-solid2:#7b8393; --map-wall:#2c313d; --map-badge:#2c313d; --map-shadow:rgba(0,0,0,.22);
   --ink:#1c1e24; --ink-dim:#565b66; --ink-mute:#8a8f9b;
   --amber:#bd7c12; --amber-deep:#a86a08; --amber-glow:rgba(189,124,18,.12);
   --teal:#177f6f; --teal-deep:#0f6d5f;
@@ -565,6 +568,23 @@ mark{background:color-mix(in srgb,var(--amber) 35%,transparent);color:inherit;bo
 .pc-atk{display:flex;flex-wrap:wrap;justify-content:space-between;padding:2px 0;border-bottom:1px dotted #bbb}.pc-an{font-weight:600}.pc-ar{font-family:"Space Mono",monospace;font-weight:700}.pc-as{width:100%;color:#333;font-size:10px}
 .pc-line{font-size:10px;margin:3px 0}.pc-t{font-size:10px;margin:2px 0}.pc-t b{font-weight:700}
 .pc-box{font-size:10.5px;letter-spacing:.5px;word-break:break-all;line-height:1.5}.pc-box small{font-size:9px;color:#555;letter-spacing:0}
+/* P3 play sheet: what you roll first, then what you own, then room for pen notes */
+.p3-h{display:flex;justify-content:space-between;align-items:baseline;gap:6px;border-bottom:2px solid #111;padding-bottom:2px}
+.p3-h b{font-size:14px;font-family:"Chakra Petch",Arial,sans-serif;font-weight:800;line-height:1.1}.p3-h span{font-size:9px;color:#444;white-space:nowrap}
+.p3-sub{font-size:9.5px;color:#444;margin:2px 0 4px;display:flex;justify-content:space-between;gap:6px}
+.p3-sub .st{font-family:"Space Mono",monospace;font-size:9px;color:#111;white-space:nowrap}
+.p3-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin:5px 0}
+.p3-box{border:1px solid #111;border-radius:4px;padding:4px 5px;font-size:9.5px;line-height:1.25;break-inside:avoid}
+.p3-box.wide{grid-column:1/-1}
+.p3-box h4{margin:0 0 2px;font-size:7.5px;letter-spacing:.12em;text-transform:uppercase;color:#555;font-family:"Chakra Petch",Arial,sans-serif;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.p3-box .big{font-size:16px;font-weight:700;font-family:"Space Mono",monospace;line-height:1;margin-bottom:2px}
+.p3-box .big small{font-size:8.5px;font-weight:400;font-family:"Barlow",Arial,sans-serif;color:#444}
+.p3-do{border-left:3px solid #111;padding:2px 6px;margin:4px 0;font-size:9.5px;line-height:1.3}.p3-do b{display:block;font-size:7.5px;letter-spacing:.1em;text-transform:uppercase;font-family:"Chakra Petch",Arial,sans-serif;color:#333}
+.p3-do i{font-style:normal;font-weight:700}
+.p3-lab{margin-top:6px;font-size:7.5px;letter-spacing:.1em;text-transform:uppercase;color:#555;font-family:"Chakra Petch",Arial,sans-serif;display:flex;justify-content:space-between}
+.p3-pips{display:flex;flex-wrap:wrap;gap:2.5px;margin:3px 0;align-items:center}.p3-pips i{width:9px;height:9px;border:1px solid #111;border-radius:50%;display:block;flex:none}.p3-pips i.f{border-width:2px}.p3-pips small{font-size:8px;color:#555;width:100%;margin-top:2px}.p3-pips small:first-child{margin-top:0}
+.p3-lines div{border-bottom:1px solid #999;height:12px}.p3-lines div:first-child{border-top:1px solid #999}
+.paper-a4 .p3-lines div{height:14px}
 #printArea{display:none}
 body.printing #printArea{display:block!important}
 @media print{
@@ -1008,13 +1028,18 @@ body.has-turnbar main{padding-bottom:120px}
 .scn-map-wrap .mh{font-family:var(--disp);text-transform:uppercase;letter-spacing:.12em;font-size:11px;font-weight:600;color:var(--ink-mute);margin-bottom:10px}
 .scn-map{width:100%;aspect-ratio:1/1;background:var(--sunk);border:1px solid var(--line);border-radius:8px;display:block}
 .scn-mini .scn-map{aspect-ratio:auto;height:100%;border:none;border-radius:0;background:var(--sunk)}
-.scn-map .grid{stroke:var(--line-soft);stroke-width:.3}
+.scn-map .grid{stroke:var(--line-soft);stroke-width:.35}
 .scn-map text{font-family:var(--body)}
 .scn-map .zlabel{font-family:var(--disp);font-weight:600}
 .scn-map .flabel{fill:var(--ink-dim)}
 .scn-map .obj{fill:var(--amber);stroke:rgba(0,0,0,.45);stroke-width:.4}
 .scn-map .haz{fill:var(--danger);opacity:.9}
-.scn-map .terr{fill:#6b7280;opacity:.7}
+.scn-map .terr{fill:var(--map-solid)}
+.scn-map .mshadow{fill:var(--map-shadow)}
+.scn-map .mwall{fill:var(--map-wall)}.scn-map .mwall-dash{stroke:var(--sunk)}
+.scn-map .mtall{fill:var(--map-solid)}.scn-map .mtall-line{stroke:var(--map-solid2)}
+.scn-map .mscale path{stroke:var(--ink-dim)}
+.scn-map .mscale text{fill:var(--ink-dim);font-family:var(--disp);letter-spacing:.06em}
 .scn-map-wrap .scn-map{cursor:zoom-in}
 .scn-mapnote{font-size:11.5px;color:var(--ink-mute);margin-top:9px;line-height:1.45}
 .maplb{position:fixed;inset:0;z-index:100;display:grid;place-items:center;background:rgba(6,7,10,.82);backdrop-filter:blur(5px);padding:16px;opacity:0;pointer-events:none;transition:.2s}
@@ -1025,7 +1050,8 @@ body.has-turnbar main{padding-bottom:120px}
 .maplb .mlb-cap{font-size:12px;color:var(--ink-mute);margin-top:10px;text-align:center;line-height:1.4}
 .scn-maplegend{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;font-size:11px;color:var(--ink-dim)}
 .scn-maplegend span{display:inline-flex;align-items:center;gap:5px}
-.scn-maplegend i{width:11px;height:11px;border-radius:3px;display:inline-block}
+.scn-maplegend i{width:11px;height:11px;border-radius:3px;display:inline-block;box-sizing:border-box;flex:none}
+.scn-maplegend+.scn-maplegend{margin-top:6px}
 .scn-map .mapnum{cursor:pointer}
 .scn-map .mapnum:hover circle,.scn-map .mapnum:active circle{stroke-width:1}
 .scn-maplegend-nums{display:flex;flex-direction:column;gap:5px;margin-top:12px;padding-top:10px;border-top:1px solid var(--line-soft)}
@@ -3049,43 +3075,57 @@ function openReference(){
 let printOpts=(()=>{try{return JSON.parse(localStorage.getItem("p28_print")||"{}")||{};}catch(e){return {};}})();
 function savePrintOpts(){try{localStorage.setItem("p28_print",JSON.stringify(printOpts));}catch(e){}}
 function printCardChar(c){
-  const n=memberCount(c), pen=0;
-  const atk=(c.weapons||[]).map(e=>({o:CAT.weapon[e.id],e})).filter(x=>x.o).map(({o,e})=>{const ranged=o.type==="Ranged",k=ranged?"S":"F";
-    return `<div class="pc-atk"><span class="pc-an">${ranged?"▸":"✕"} ${esc(gearLabel(o,e,e.qty||1))}</span><span class="pc-ar">${k} ${c.skills[k]}</span><div class="pc-as">${[ranged&&o.range&&o.range!=="—"?o.range:"melee",o.dmg||"",o.rules&&o.rules!=="—"?o.rules:""].filter(Boolean).map(esc).join(" · ")}</div></div>`;}).join("");
-  const arm=(c.armour||[]).map(e=>CAT.armour[e.id]).filter(Boolean).map(o=>o.def+" "+o.name).join(", ");
+  const n=memberCount(c), wb=activeWB().name||"";
+  const A=c.skills.A,F=c.skills.F,S=c.skills.S,AW=c.skills.AW,P=c.skills.P;
+  const boxes=[];
+  (c.weapons||[]).map(e=>({o:CAT.weapon[e.id],e})).filter(x=>x.o).forEach(({o,e})=>{
+    const ranged=o.type==="Ranged";
+    const bits=[ranged?(o.range&&o.range!=="—"?o.range:"ranged"):"melee",o.dmg||"",o.rules&&o.rules!=="—"?o.rules:""].filter(Boolean).map(esc);
+    const at=ammoTypeOf(o);
+    const ammo=at?(c.items||[]).map(x=>({o:CAT.item[x.id],q:x.qty||1})).filter(x=>x.o&&/ammo/i.test(x.o.name)&&x.o.name.toLowerCase().includes(at)).reduce((a,x)=>a+x.q,0):null;
+    if(ammo!==null)bits.push(`${ammo} ammo`);
+    boxes.push(`<div class="p3-box"><h4>${ranged?"▸ Shoot":"✕ Fight"} · ${esc(gearLabel(o,e,e.qty||1))}</h4><div class="big">${ranged?"S "+S:"F "+F} <small>under</small></div>${bits.join(" · ")}<br>${ranged?"−1 per move this turn":"+1D4 on a charge"}</div>`);
+  });
+  if(!boxes.length)boxes.push(`<div class="p3-box"><h4>✕ Fight · unarmed</h4><div class="big">F ${F} <small>under</small></div>melee · 1D4<br>+1D4 on a charge</div>`);
+  boxes.push(`<div class="p3-box"><h4>Move · Agility ${A}</h4><div class="big">${RULES.speed} <small>cm · 2 actions</small></div>rough: A ${A} or half speed</div>`);
+  boxes.push(`<div class="p3-box"><h4>Nerve · Psyche ${P}</h4><div class="big">P ${P} <small>under</small></div>under half HP: P ${Math.max(1,P-1)}, all skills −1</div>`);
+  const arm=(c.armour||[]).map(e=>CAT.armour[e.id]).filter(Boolean).map(o=>`<i>${esc(o.def)}</i> ${esc(o.name)}`).join(" · ");
   const ta=c.traits.map(id=>CAT.trait[id]).filter(Boolean).concat(c.abilities.map(id=>CAT.ability[id]).filter(Boolean));
-  const items=(c.items||[]).map(e=>({o:CAT.item[e.id],q:e.qty||1})).filter(x=>x.o);
+  const items=(c.items||[]).map(e=>({o:CAT.item[e.id],q:e.qty||1})).filter(x=>x.o&&!/ammo/i.test(x.o.name));
   const spells=(Array.isArray(c.rolledSpells)?c.rolledSpells:[]).map(i=>ARCANA[i]).filter(Boolean);
-  const boxes=n=>Array.from({length:Math.min(n,60)},()=>"☐").join("");
+  const pips=hp=>Array.from({length:Math.min(hp,60)},(_,i)=>`<i class="${(i+1)%10===0?"f":""}"></i>`).join("");
   return `<div class="pcard">
-    <div class="pc-h"><b>${esc(c.name||"Unnamed")}</b><span>${unitCost(c)} pts</span></div>
-    <div class="pc-sub">${esc(c.role||"")}${n>1?` · squad ×${n}`:""}${activeWB().name?` · ${esc(activeWB().name)}`:""}</div>
-    <div class="pc-stats">${SKILLS.map(([k])=>`<div><b>${c.skills[k]}</b><span>${k}</span></div>`).join("")}<div><b>${c.hp}</b><span>HP</span></div><div><b>${RULES.speed}</b><span>cm</span></div></div>
-    ${atk?`<div class="pc-sec">Attacks</div>${atk}`:""}
-    <div class="pc-line"><b>Armour</b> ${esc(arm||"none")} · +1D6 in cover</div>
-    <div class="pc-line"><b>Break test</b> under P ${c.skills.P} (P ${Math.max(1,c.skills.P-1)} under half · all skills −1)</div>
-    ${ta.length?`<div class="pc-sec">Traits &amp; abilities</div>${ta.map(o=>`<div class="pc-t"><b>${esc(o.name)}</b> ${esc(o.desc)}</div>`).join("")}`:""}
-    ${spells.length?`<div class="pc-sec">Arcana (under P ${c.skills.P})</div>${spells.map(a=>`<div class="pc-t"><b>${esc(a[0])}</b> ${esc(a[1])}</div>`).join("")}`:""}
-    ${items.length?`<div class="pc-sec">Items</div>${items.map(x=>`<div class="pc-t"><b>${esc(x.o.name)}${x.q>1?" ×"+x.q:""}</b> ${esc(x.o.desc||"")}</div>`).join("")}`:""}
-    <div class="pc-sec">Hit-points${n>1?" · per member":""}</div>
-    ${Array.from({length:Math.min(n,10)},(_,i)=>`<div class="pc-box">${n>1?`<small>${i+1}</small> `:""}${boxes(c.hp)}</div>`).join("")}
+    <div class="p3-h"><b>${esc(c.name||"Unnamed")}</b><span>${wb?esc(wb)+" · ":""}${unitCost(c)} pts</span></div>
+    <div class="p3-sub"><span>${esc(c.role||"")}${n>1?` · squad ×${n}`:""}</span><span class="st">A${A} F${F} S${S} AW${AW} P${P}</span></div>
+    <div class="p3-grid">${boxes.join("")}</div>
+    <div class="p3-do"><b>Armour</b>${arm||"none"} · +1D6 in cover · roll after every hit</div>
+    ${ta.length?`<div class="p3-do"><b>Special</b>${ta.map(o=>`<i>${esc(o.name)}:</i> ${esc(o.desc)}`).join(" · ")}</div>`:""}
+    ${spells.length?`<div class="p3-do"><b>Arcana · under P ${P}</b>${spells.map(a=>`<i>${esc(a[0])}:</i> ${esc(a[1])}`).join(" · ")} · a failed cast rends</div>`:""}
+    ${items.length?`<div class="p3-do"><b>Items</b>${items.map(x=>`<i>${esc(x.o.name)}${x.q>1?" ×"+x.q:""}:</i> ${esc(x.o.desc||"")}`).join(" · ")}</div>`:""}
+    <div class="p3-lab"><span>Hit-points · ${c.hp}${n>1?" each":""}</span><span>half = ${Math.ceil(c.hp/2)}</span></div>
+    <div class="p3-pips">${n>1?Array.from({length:Math.min(n,10)},(_,i)=>`<small>${i+1}</small>${pips(c.hp)}`).join(""):pips(c.hp)}</div>
+    <div class="p3-lab"><span>This game · ⚔ kills · ☠ injuries · loot</span></div>
+    <div class="p3-lines"><div></div><div></div><div></div></div>
   </div>`;
 }
 function printCardVeh(v){
-  const secs=vehSections(v), ty=VEHICLE_TYPES[v.type]||VEHICLE_TYPES[0], size=VEHICLE_SIZES[v.size]||VEHICLE_SIZES[1];
+  const secs=vehSections(v), ty=VEHICLE_TYPES[v.type]||VEHICLE_TYPES[0], size=VEHICLE_SIZES[v.size]||VEHICLE_SIZES[1], wb=activeWB().name||"";
   const sizeName=size[0], meleeF=sizeName==="Small"?3:sizeName==="Medium"?5:7, meleeD=sizeName==="Small"?"1D6":sizeName==="Medium"?"1D10":"1D10+6";
-  const weaps=(v.weapons||[]).map(e=>({o:CAT.vweapon[e.id],e})).filter(x=>x.o);
-  const boxes=n=>Array.from({length:Math.min(n,60)},()=>"☐").join("");
+  const boxes=(v.weapons||[]).map(e=>({o:CAT.vweapon[e.id],e})).filter(x=>x.o).map(({o,e})=>`<div class="p3-box"><h4>▸ Shoot · ${esc(gearLabel(o,e,e.qty||1))}</h4><div class="big">S ${v.skills.S} <small>under</small></div>${[o.range&&o.range!=="—"?o.range:"",o.dmg||"",o.rules&&o.rules!=="—"?o.rules:""].filter(Boolean).map(esc).join(" · ")}</div>`);
+  boxes.push(`<div class="p3-box"><h4>✕ Ram / crush</h4><div class="big">F ${meleeF} <small>under</small></div>${meleeD} · ${sizeName.toLowerCase()} vehicle</div>`);
+  boxes.push(`<div class="p3-box"><h4>Move · Agility ${v.skills.A}</h4><div class="big">${esc(ty[2]).replace("cm","")} <small>cm</small></div>${esc(ty[3])}</div>`);
+  boxes.push(`<div class="p3-box"><h4>Cover</h4><div class="big">+1D6</div>when ${sizeName==="Small"?"any part hidden":sizeName==="Medium"?"> 50% hidden":"> 75% hidden"}</div>`);
+  const ta=(v.traits||[]).map(id=>CAT.vtrait[id]).filter(Boolean).concat((v.abilities||[]).map(id=>CAT.vability[id]).filter(Boolean));
+  const pips=hp=>Array.from({length:Math.min(hp,60)},(_,i)=>`<i class="${(i+1)%10===0?"f":""}"></i>`).join("");
   return `<div class="pcard">
-    <div class="pc-h"><b>▰ ${esc(v.name||"Unnamed vehicle")}</b><span>${vehicleCost(v)} pts</span></div>
-    <div class="pc-sub">${sizeName} ${esc(ty[0].toLowerCase())} vehicle · ${secs.length} sections${activeWB().name?` · ${esc(activeWB().name)}`:""}</div>
-    <div class="pc-stats"><div><b>${v.skills.A}</b><span>A</span></div><div><b>${v.skills.S}</b><span>S</span></div><div><b>${vehicleHP(v)}</b><span>HULL</span></div><div><b>${esc(ty[2]).replace("cm","")}</b><span>cm</span></div></div>
-    ${weaps.map(({o,e})=>`<div class="pc-atk"><span class="pc-an">▸ ${esc(gearLabel(o,e,e.qty||1))}</span><span class="pc-ar">S ${v.skills.S}</span><div class="pc-as">${[o.range&&o.range!=="—"?o.range:"",o.dmg||"",o.rules&&o.rules!=="—"?o.rules:""].filter(Boolean).map(esc).join(" · ")}</div></div>`).join("")}
-    <div class="pc-atk"><span class="pc-an">✕ Ram / crush</span><span class="pc-ar">F ${meleeF}</span><div class="pc-as">${meleeD} · cover when ${sizeName==="Small"?"any part hidden":sizeName==="Medium"?"> 50% hidden":"> 75% hidden"}</div></div>
-    <div class="pc-sec">Sections · damage lands on one</div>
-    ${secs.map(s=>`<div class="pc-box"><small>${esc(s.name)}${s.facing&&s.facing!=="C"?" "+s.facing:""}</small> ${boxes(s.max)}</div>`).join("")}
-    <div class="pc-line"><b>Moves</b> ${esc(ty[3])}</div>
-    ${(v.traits||[]).map(id=>CAT.vtrait[id]).filter(Boolean).concat((v.abilities||[]).map(id=>CAT.vability[id]).filter(Boolean)).map(o=>`<div class="pc-t"><b>${esc(o.name)}</b> ${esc(o.desc)}</div>`).join("")}
+    <div class="p3-h"><b>▰ ${esc(v.name||"Unnamed vehicle")}</b><span>${wb?esc(wb)+" · ":""}${vehicleCost(v)} pts</span></div>
+    <div class="p3-sub"><span>${sizeName} ${esc(ty[0].toLowerCase())} · ${secs.length} sections · ${vehicleHP(v)} hull</span><span class="st">A${v.skills.A} S${v.skills.S}</span></div>
+    <div class="p3-grid">${boxes.join("")}</div>
+    ${ta.length?`<div class="p3-do"><b>Special</b>${ta.map(o=>`<i>${esc(o.name)}:</i> ${esc(o.desc)}`).join(" · ")}</div>`:""}
+    <div class="p3-do"><b>Sections</b>damage lands on one section · 75% of sections lost → break test (1D10 under sections left) · all lost = wreck, riders dumped 1D10</div>
+    <div class="p3-pips">${secs.map(sc=>`<small>${esc(sc.name)}${sc.facing&&sc.facing!=="C"?" · "+sc.facing:""} · ${sc.max}</small>${pips(sc.max)}`).join("")}</div>
+    <div class="p3-lab"><span>This game · crew aboard · damage · notes</span></div>
+    <div class="p3-lines"><div></div><div></div><div></div></div>
   </div>`;
 }
 function openPrintCards(){
@@ -6598,30 +6638,60 @@ function scenarioMapSVG(map,mini){
   const zones=Array.isArray(map.zones)?map.zones:[];
   const feats=Array.isArray(map.features)?map.features:[];
   const cl=v=>Math.max(0,Math.min(100,+v||0));
-  const zc=s=>s==="b"?["#e5686d","rgba(229,104,109,.15)"]:s==="neutral"?["#9aa3b2","rgba(154,163,178,.12)"]:["#5a9be0","rgba(90,155,224,.15)"];
-  let g="";
-  for(let i=10;i<100;i+=10)g+=`<line class="grid" x1="${i}" y1="0" x2="${i}" y2="100"/><line class="grid" x1="0" y1="${i}" x2="100" y2="${i}"/>`;
+  const zc=s=>s==="b"?["#e5686d","rgba(229,104,109,.13)"]:s==="neutral"?["#9aa3b2","rgba(154,163,178,.10)"]:["#5a9be0","rgba(90,155,224,.13)"];
+  const uid="mp"+Math.random().toString(36).slice(2,7);
+  const defs=`<defs>
+    <pattern id="${uid}g" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M10 0V10H0" fill="none" class="grid"/></pattern>
+    <pattern id="${uid}h" width="2.4" height="2.4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="2.4" stroke="#e9b949" stroke-width=".55"/></pattern>
+    <pattern id="${uid}i" width="2" height="2" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)"><line x1="0" y1="0" x2="0" y2="2" stroke="#9aa3b2" stroke-width=".7"/></pattern>
+    <radialGradient id="${uid}v"><stop offset="55%" stop-color="#000" stop-opacity="0"/><stop offset="100%" stop-color="#000" stop-opacity=".12"/></radialGradient>
+  </defs>`;
+  let g=`<rect width="100" height="100" fill="url(#${uid}g)"/><rect width="100" height="100" fill="url(#${uid}v)"/>`;
   let num=0;
-  const badge=(x,y,fill,n,label)=>`<g class="mapnum" data-mapnum="${n}" data-maplabel="${esc(String(label))}"><circle cx="${x}" cy="${y}" r="3.1" fill="${fill}" stroke="#fff" stroke-width="0.5"/><text x="${x}" y="${y}" font-size="3.3" font-weight="700" fill="#fff" text-anchor="middle" dominant-baseline="central">${n}</text></g>`;
+  const badge=(x,y,fill,n,label)=>`<g class="mapnum" data-mapnum="${n}" data-maplabel="${esc(String(label))}"><circle cx="${x}" cy="${y}" r="2.9" fill="${fill}" stroke="#fff" stroke-width="0.5"/><text x="${x}" y="${y}" font-size="3.1" font-weight="700" fill="#fff" text-anchor="middle" dominant-baseline="central">${n}</text></g>`;
+  // deployment zones: tinted field, dashed edge, name in the corner
   let z="";
   zones.forEach(zo=>{const[st,fi]=zc(zo.side);const x=cl(zo.x),y=cl(zo.y),w=Math.min(100-x,Math.max(4,+zo.w||20)),h=Math.min(100-y,Math.max(4,+zo.h||18));
-    z+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="2" fill="${fi}" stroke="${st}" stroke-width="0.5" stroke-dasharray="2 1.5"/>`;
-    if(!mini&&zo.label){num++;z+=badge(x+w/2,y+h/2,st,num,zo.label);}});
+    z+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="1.6" fill="${fi}" stroke="${st}" stroke-width="0.55" stroke-dasharray="2 1.5"/>`;
+    if(!mini&&zo.label){num++;
+      const lbl=String(zo.label).toUpperCase().slice(0,26);
+      z+=badge(x+3.6,y+3.6,st,num,zo.label);
+      z+=`<text class="zlabel" x="${x+7.4}" y="${y+3.6}" font-size="2.6" fill="${st}" dominant-baseline="central" letter-spacing=".25">${esc(lbl)}</text>`;
+    }});
+  // ground: soft blobs — hatched for rough, red pool for hazardous, cross-hatched for impassable
   let a="";
-  const GA={rough:["#e9b949",".13"],hazardous:["#ec5b60",".16"],impassable:["#9aa3b2",".14"]};
   feats.forEach(ft=>{
     const gr=(typeof featGround==="function")?featGround(ft):"";
-    const c=GA[gr]; if(!c)return;
+    if(!gr||gr==="even")return;
     const x=cl(ft.x),y=cl(ft.y),r=Math.max(4,Math.min(28,+ft.r||9));
-    a+=`<circle cx="${x}" cy="${y}" r="${r}" fill="${c[0]}" fill-opacity="${c[1]}" stroke="${c[0]}" stroke-width="0.5" stroke-dasharray="${gr==="impassable"?"1 1.2":"2 1.5"}"/>`;
+    const rot=((x*7+y*13)%60)-30;
+    const sh=`cx="${x}" cy="${y}" rx="${r}" ry="${(r*.8).toFixed(1)}" transform="rotate(${rot} ${x} ${y})"`;
+    if(gr==="rough")a+=`<ellipse ${sh} fill="#e9b949" fill-opacity=".10"/><ellipse ${sh} fill="url(#${uid}h)" fill-opacity=".55" stroke="#e9b949" stroke-width=".45" stroke-dasharray="2 1.5"/>`;
+    else if(gr==="hazardous")a+=`<ellipse ${sh} fill="#ec5b60" fill-opacity=".20" stroke="#ec5b60" stroke-width=".55"/>`;
+    else a+=`<ellipse ${sh} fill="#9aa3b2" fill-opacity=".12"/><ellipse ${sh} fill="url(#${uid}i)" fill-opacity=".5" stroke="#9aa3b2" stroke-width=".5"/>`;
   });
+  // features: a glyph per role so the map reads without the legend
   let f="";
-  feats.forEach(ft=>{const x=cl(ft.x),y=cl(ft.y),t=ft.type||"terrain";
-    if(t==="objective")f+=`<circle class="obj" cx="${x}" cy="${y}" r="2.7"/>`;
-    else if(t==="hazard")f+=`<path class="haz" d="M ${x} ${y-3.2} L ${x+3} ${y+2.5} L ${x-3} ${y+2.5} Z"/>`;
-    else f+=`<rect class="terr" x="${x-3.5}" y="${y-3.5}" width="7" height="7" rx="1.5"/>`;
-    if(!mini&&ft.label){num++;f+=badge(x,y-6,"#2c313d",num,ft.label);}});
-  return `<svg class="scn-map" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">${g}${a}${z}${f}</svg>`;
+  const shadow=(x,y,w,h,rx)=>`<rect class="mshadow" x="${x+.5}" y="${y+.7}" width="${w}" height="${h}" rx="${rx}"/>`;
+  feats.forEach(ft=>{const x=cl(ft.x),y=cl(ft.y),t=String(ft.type||"terrain"),role=String(ft.role||"").toLowerCase();
+    const k=role||(t==="objective"?"objective":t==="hazard"?"hazard":"");
+    if(k==="objective")f+=`<circle cx="${x}" cy="${y}" r="3.4" fill="none" stroke="#e9b949" stroke-width=".9"/><circle cx="${x}" cy="${y}" r="1.4" fill="#e9b949"/>`;
+    else if(k==="hazard")f+=`<ellipse cx="${x}" cy="${y}" rx="4.2" ry="2.9" fill="#ec5b60" fill-opacity=".55" stroke="#c9444a" stroke-width=".5"/><path d="M${x-2.6} ${y}q.9-.9 1.8 0t1.8 0t1.8 0" fill="none" stroke="#fff" stroke-width=".45" opacity=".8"/>`;
+    else if(k==="blocking")f+=shadow(x-5,y-1.6,10,3.2,.5)+`<rect class="mwall" x="${x-5}" y="${y-1.6}" width="10" height="3.2" rx=".5"/><path class="mwall-dash" d="M${x-4} ${y}h8" stroke-width=".4" stroke-dasharray="1.2 .8"/>`;
+    else if(k==="cover-tall")f+=shadow(x-3.5,y-3.5,7,7,1)+`<rect class="mtall" x="${x-3.5}" y="${y-3.5}" width="7" height="7" rx="1"/><path class="mtall-line" d="M${x-2.2} ${y-1.6}h4.4M${x-2.2} ${y}h4.4M${x-2.2} ${y+1.6}h4.4" stroke-width=".55"/>`;
+    else if(k==="cover-low")f+=`<rect x="${x-3.6}" y="${y-.4}" width="3.4" height="3.4" fill="#a68d5c" stroke="#6b5a30" stroke-width=".35"/><rect x="${x+.2}" y="${y-.4}" width="3.4" height="3.4" fill="#a68d5c" stroke="#6b5a30" stroke-width=".35"/><rect x="${x-1.7}" y="${y-3.6}" width="3.4" height="3.4" fill="#bca470" stroke="#6b5a30" stroke-width=".35"/>`;
+    else if(k==="cache")f+=shadow(x-3,y-2.5,6,5,.8)+`<rect x="${x-3}" y="${y-2.5}" width="6" height="5" rx=".8" fill="#5a9be0"/><text x="${x}" y="${y+.1}" font-size="3.6" font-weight="700" fill="#fff" text-anchor="middle" dominant-baseline="central">?</text>`;
+    else if(k==="interactive")f+=`<path d="M${x} ${y-3.6}L${x+3.6} ${y}L${x} ${y+3.6}L${x-3.6} ${y}Z" fill="#8e6bd0" stroke="#fff" stroke-width=".4"/><text x="${x}" y="${y+.1}" font-size="3.2" font-weight="700" fill="#fff" text-anchor="middle" dominant-baseline="central">!</text>`;
+    else if(k==="spawn")f+=`<circle cx="${x}" cy="${y}" r="3.2" fill="rgba(229,104,109,.18)" stroke="#e5686d" stroke-width=".6" stroke-dasharray="1.4 1"/><circle cx="${x}" cy="${y}" r="1.1" fill="#e5686d"/>`;
+    else if(k==="deco")f+=`<circle cx="${x+1.2}" cy="${y+.8}" r="2.6" fill="#6f9a6a" opacity=".8"/><circle cx="${x-1.3}" cy="${y-.6}" r="2.4" fill="#86ad7e" opacity=".9"/>`;
+    else f+=shadow(x-3.5,y-3.5,7,7,1.5)+`<rect class="terr" x="${x-3.5}" y="${y-3.5}" width="7" height="7" rx="1.5"/>`;
+    if(!mini&&ft.label){num++;
+      f+=`<text class="flabel" x="${x}" y="${y+6.6}" font-size="2.5" text-anchor="middle">${esc(String(ft.label).slice(0,22))}</text>`;
+      f+=badge(x-4.4,y-4.4,"var(--map-badge)",num,ft.label);
+    }});
+  // 10 cm scale bar (the table is 90 × 90 cm → 100 units)
+  const sc=mini?"":`<g class="mscale"><path d="M85.9 95.2h11.1" stroke-width=".7"/><path d="M85.9 93.8v2.8M97 93.8v2.8" stroke-width=".5"/><text x="91.45" y="92.2" font-size="2.3" text-anchor="middle">10 cm</text></g>`;
+  return `<svg class="scn-map" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">${defs}${g}${a}${z}${f}${sc}</svg>`;
 }
 /* ---- map ↔ build-list cross-referencing ----
    Every labelled zone/feature gets a number (zones first, then features — the SAME order
@@ -6715,13 +6785,39 @@ function prepGround(map,e){
   const hit=mapSeq(map).find(q=>nums.includes(q.n)&&q.ground);
   return hit?hit.ground:"";
 }
+/* key of the glyphs actually on this map (same order the roles are drawn), so the picture
+   reads on its own without hunting through the numbered list */
+const MAP_KEY={
+  "cover-tall":["tall cover","background:var(--map-solid);border-radius:2px"],
+  "cover-low":["low cover","background:#a68d5c;border:1px solid #6b5a30"],
+  "blocking":["wall","background:var(--map-wall);height:6px!important;border-radius:1px"],
+  "hazard":["hazard","background:rgba(236,91,96,.6);border:1px solid #c9444a;border-radius:50%"],
+  "objective":["objective","border:2.5px solid #e9b949;border-radius:50%;background:none"],
+  "cache":["searchable","background:#5a9be0;border-radius:2px"],
+  "interactive":["interactive","background:#8e6bd0;transform:rotate(45deg) scale(.8)"],
+  "spawn":["spawn point","border:1.5px dashed #e5686d;border-radius:50%;background:rgba(229,104,109,.18)"],
+  "deco":["scenic","background:#86ad7e;border-radius:50%"],
+  "":["terrain","background:var(--map-solid);border-radius:2px"]
+};
+function mapKeyHTML(map){
+  map=map||{};
+  const feats=Array.isArray(map.features)?map.features:[];
+  const zones=Array.isArray(map.zones)?map.zones:[];
+  const roles=[];
+  feats.forEach(f=>{let k=String(f.role||"").toLowerCase();if(!MAP_KEY[k])k=f.type==="objective"?"objective":f.type==="hazard"?"hazard":"";if(!roles.includes(k))roles.push(k);});
+  const items=[];
+  if(zones.some(z=>z.side!=="b"&&z.side!=="neutral"))items.push(`<span><i style="border:1.5px dashed #5a9be0;background:rgba(90,155,224,.13)"></i>deploy · players</span>`);
+  if(zones.some(z=>z.side==="b"))items.push(`<span><i style="border:1.5px dashed #e5686d;background:rgba(229,104,109,.13)"></i>deploy · enemy</span>`);
+  Object.keys(MAP_KEY).forEach(k=>{if(roles.includes(k))items.push(`<span><i style="${MAP_KEY[k][1]}"></i>${MAP_KEY[k][0]}</span>`);});
+  return items.length?`<div class="scn-maplegend">${items.join("")}</div>`:"";
+}
 function mapLegendHTML(map){
   const seq=mapSeq(map);
-  if(!seq.length)return "";
+  if(!seq.length)return mapKeyHTML(map);
   const grounds=[...new Set(seq.map(e=>e.ground).filter(g=>g&&g!=="even"))];
-  const gkey=grounds.length?`<div class="scn-maplegend">${grounds.map(g=>`<span><i style="background:${g==="hazardous"?"rgba(236,91,96,.35)":g==="rough"?"rgba(233,185,73,.35)":"rgba(154,163,178,.35)"};border:1px dashed ${g==="hazardous"?"#ec5b60":g==="rough"?"#e9b949":"#9aa3b2"}"></i>${esc(GROUND[g].label)}</span>`).join("")}</div>`:"";
+  const gkey=grounds.length?`<div class="scn-maplegend">${grounds.map(g=>`<span><i style="background:${g==="hazardous"?"rgba(236,91,96,.3)":g==="rough"?"repeating-linear-gradient(45deg,#e9b949 0 1px,rgba(233,185,73,.12) 1px 4px)":"repeating-linear-gradient(-45deg,#9aa3b2 0 1px,rgba(154,163,178,.15) 1px 3px)"};border:1px ${g==="hazardous"?"solid":"dashed"} ${g==="hazardous"?"#ec5b60":g==="rough"?"#e9b949":"#9aa3b2"}"></i>${esc(GROUND[g].label)}</span>`).join("")}</div>`:"";
   const rows=seq.map(e=>`<div class="maplg-row" data-mapnum="${e.n}"><span class="maplg-num">${e.n}</span><span class="maplg-label">${esc(e.label)}</span>${roleChip(e.role)}${groundChip(e.ground)}</div>`);
-  return gkey+`<div class="scn-maplegend-nums">${rows.join("")}</div>`;
+  return mapKeyHTML(map)+gkey+`<div class="scn-maplegend-nums">${rows.join("")}</div>`;
 }
 function wireMapNums(container){
   if(!container)return;
@@ -7669,13 +7765,6 @@ function renderScenarioDetail(scnOverride){
             <div class="mh">Battlefield · 90 × 90cm <span style="color:var(--ink-mute);font-weight:400;text-transform:none;letter-spacing:0">· tap to enlarge</span></div>
             ${scenarioMapSVG(s.map,false)}
             ${s.map&&s.map.note?`<div class="scn-mapnote">${esc(s.map.note)}</div>`:""}
-            <div class="scn-maplegend">
-              <span><i style="background:#5a9be0"></i>Deploy A</span>
-              <span><i style="background:#e5686d"></i>Deploy B / enemy</span>
-              <span><i style="background:#6b7280"></i>Terrain</span>
-              <span><i style="background:var(--amber)"></i>Objective</span>
-              <span><i style="background:var(--danger)"></i>Hazard</span>
-            </div>
             ${mapLegendHTML(s.map)}
           </div>`;
         const rows=(s.battle&&s.battle.combatants)||[], down=rows.filter(m=>(m.curHP|0)<=0).length;
