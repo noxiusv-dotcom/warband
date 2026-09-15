@@ -929,6 +929,19 @@ body.has-turnbar main{padding-bottom:120px}
 .outcome.draw{border-color:color-mix(in srgb,var(--warn) 55%,var(--line));background:color-mix(in srgb,var(--warn) 10%,transparent)}
 .outcome .linkbtn{margin-left:auto}
 .eff-where{font-family:var(--disp);font-weight:600;font-size:12.5px;letter-spacing:.02em;color:var(--amber);margin:4px 0 6px}
+.tline{display:flex;gap:4px;align-items:flex-end;overflow-x:auto;padding:2px 2px 8px;margin-bottom:8px}
+.tl-t{flex:none;width:28px;background:none;border:none;padding:0;text-align:center;cursor:pointer}
+.tl-t small{display:block;height:13px;font-size:10px;line-height:13px;color:var(--amber)}.tl-t.dl small{color:var(--danger)}
+.tl-t i{display:block;width:28px;height:28px;border-radius:50%;border:1px solid var(--line);background:var(--panel-2);font-style:normal;font-family:var(--mono);font-size:11px;line-height:26px;color:var(--ink-mute)}
+.tl-t.past i{background:var(--line);color:var(--ink-dim)}
+.tl-t.now i{background:var(--amber);border-color:var(--amber);color:#1b1610;font-weight:700;transform:scale(1.12)}
+.tl-t.ev i{border-color:var(--amber);border-width:2px}.tl-t.dl i{border-color:var(--danger);border-width:2px}
+.tsheet{border:2px solid color-mix(in srgb,var(--amber) 55%,var(--line));background:var(--amber-glow);border-radius:var(--r-sm);padding:9px 11px;margin-top:10px}
+.ts-h{font-family:var(--disp);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--amber);font-weight:600;margin-bottom:4px}
+.ts-it{display:flex;gap:8px;align-items:flex-start;font-size:13px;padding:6px 0;border-top:1px solid color-mix(in srgb,var(--amber) 25%,transparent)}.ts-it:first-of-type{border-top:0}
+.ts-it .ts-k{width:18px;flex:none;padding-top:1px}.ts-it>div{flex:1;min-width:0}.ts-it b{display:block;font-family:var(--disp);font-weight:600}.ts-it small{color:var(--ink-dim);line-height:1.45;font-size:12px}.ts-it .btn,.ts-it .chip{flex:none;margin-left:6px}
+.ts-note-in{width:100%;box-sizing:border-box;margin-top:8px;font-size:13px;resize:vertical}
+.ts-note{margin-top:8px;font-size:13px;color:var(--ink-dim);font-style:italic}
 .tk-sec{margin-top:14px}
 .tk-h{font-family:var(--disp);text-transform:uppercase;letter-spacing:.1em;font-size:10px;font-weight:600;color:var(--ink-mute);margin-bottom:8px}
 .deadline{display:flex;gap:9px;background:var(--sunk);border:1px solid color-mix(in srgb,var(--amber) 30%,var(--line));border-radius:8px;padding:9px 10px;margin-bottom:7px}
@@ -6979,8 +6992,9 @@ function nextTurn(s){
   const arrived=revealDueEnemies(s);   // anything hidden that is due now steps into the light
   save();renderScenarioView();
   const evs=(s.events||[]).filter(e=>e.round===nv);
-  if(evs.length)showTurnPopup(s,nv,evs);
-  else if(arrived)toast("It arrives: "+(arrived.name||"something"));
+  accSet("turn",true);
+  const d=document.querySelector('details.scn-acc[data-acc="turn"]'); if(d){d.open=true;}
+  if(evs.length||arrived){renderScenarioView();const ts=document.querySelector(".tsheet");if(ts)ts.scrollIntoView({behavior:"smooth",block:"center"});toast("Turn "+nv+" — "+(evs.length?evs.length+" thing"+(evs.length===1?"":"s")+" on the sheet":"")+(arrived?(evs.length?" · ":"")+"it arrives: "+(arrived.name||"something"):""));}
 }
 function effLabel(eff){
   if(eff.type==="damage")return "Damage "+(eff.amount||"?");
@@ -7051,26 +7065,111 @@ function renderTurnBar(s){
     d.scrollIntoView({behavior:"smooth",block:"start"});
   });
 }
+/* ---- T1+T2: the timeline, the sheet for this turn, the journal ---- */
+/* what a viewer may know about an event before it fires: deadlines are announced; a surprise
+   is nobody's business until its turn — and a SECRET one leaves no mark even for the host */
+function eventVisibleAhead(e,cur){
+  if(e.kind==="deadline")return true;
+  if(e.round<=cur)return true;
+  if(scnReadOnly)return false;
+  return !e.secret;
+}
+function timelineHTML(s){
+  const cur=curRound(s), tot=s.rounds||Math.max(cur+4,...(s.events||[]).map(e=>e.round||1));
+  const evs=(s.events||[]);
+  let h=`<div class="tline" id="tline">`;
+  for(let r=1;r<=tot;r++){
+    const here=evs.filter(e=>e.round===r&&eventVisibleAhead(e,cur));
+    const dl=here.some(e=>e.kind==="deadline"), ev=here.some(e=>e.kind!=="deadline");
+    h+=`<button class="tl-t ${r<cur?"past":r===cur?"now":""} ${dl?"dl":""} ${ev?"ev":""}" data-peek="${r}" title="Turn ${r}"><small>${dl?"⏱":ev?"⚡":""}</small><i>${r}</i></button>`;
+  }
+  return h+`</div>`;
+}
+function openTurnPeek(s,r){
+  const cur=curRound(s);
+  const evs=(s.events||[]).filter(e=>e.round===r&&eventVisibleAhead(e,cur));
+  const body=$("#modalBody");
+  body.innerHTML=`<h3>Turn ${r}${s.rounds?` <span style="color:var(--ink-mute);font-family:var(--mono);font-weight:400">/ ${s.rounds}</span>`:""} <span class="none-note" style="font-style:normal">· ${r<cur?"played":r===cur?"now":"ahead"}</span></h3>
+    ${evs.length?evs.map(e=>`<div class="turn-evt ${e.kind==="deadline"?"deadline":""}"><div class="te-h">${e.kind==="deadline"?"⏱ Deadline — ":"⚡ "}${esc(e.title)}</div>${e.text?`<div class="te-x">${esc(e.text)}</div>`:""}${e.effect&&e.effect.apply?`<div class="none-note" style="font-style:normal;margin-top:4px">${esc(effLabel(e.effect))}${e.effect.where?" · "+esc(e.effect.where):""}</div>`:""}</div>`).join("")
+      :`<p class="lead">${r<cur?"Nothing was written for this turn.":"Nothing announced for this turn."}</p>`}
+    ${s.journal&&s.journal[r]?`<div class="eyebrow" style="margin:10px 0 4px">Note</div><p class="lead">${esc(s.journal[r])}</p>`:""}
+    <div class="modal-actions"><button class="btn ghost sm" id="tpX" style="margin-left:auto">Close</button></div>`;
+  $("#tpX").onclick=closeModal; showModal();
+}
+/* an event's Apply, re-openable for as long as its turn lasts */
+function openEventApply(s,e){
+  const eff=e.effect; if(!eff||!eff.apply||!s.battle||!s.battle.started){toast("Start the battle roster first");return;}
+  const body=$("#modalBody");
+  const targets=s.battle.combatants.map(m=>`<button class="tgt-chip ${m.side} ${m.curHP<=0?"down":""} ${eff.scope==="all"?"on":""}" data-tgt="${m.id}">${esc(m.name)}</button>`).join("");
+  body.innerHTML=`<h3>⚡ ${esc(e.title)}</h3>${e.text?`<p class="lead">${esc(e.text)}</p>`:""}
+    <div class="eff-line"><span class="eff-badge">${esc(effLabel(eff))}</span> <span class="none-note" style="font-style:normal">${eff.scope==="all"?"affects everyone":"select who's in range"}</span></div>
+    ${eff.where&&eff.scope!=="all"?`<div class="eff-where">📐 ${esc(eff.where)}</div>`:""}
+    ${(eff.negatedBy&&eff.negatedBy.length)?`<div class="none-note" style="font-style:normal;margin-top:4px">Negated by: ${eff.negatedBy.map(esc).join(", ")}</div>`:""}
+    <div class="tgt-grid" id="eaGrid">${targets}</div>
+    <div class="eff-results" id="eaRes"></div>
+    <div class="modal-actions"><button class="btn sm primary" id="eaGo">Apply to selected</button><button class="btn ghost sm" id="eaX" style="margin-left:auto">Close</button></div>`;
+  body.querySelectorAll(".tgt-chip").forEach(b=>b.onclick=()=>b.classList.toggle("on"));
+  $("#eaX").onclick=closeModal;
+  $("#eaGo").onclick=()=>{
+    const ids=[...body.querySelectorAll(".tgt-chip.on")].map(x=>x.dataset.tgt);
+    if(!ids.length){toast("Select who's affected");return;}
+    const res=applyEventEffect(s,Object.assign({},eff,{cause:e.title}),ids);
+    e.applied=true; e.result=res.map(r=>r.name+": "+r.txt).join(" · ");
+    $("#eaRes").innerHTML=res.map(r=>`<div class="eff-r ${r.neg?"neg":""}">${esc(r.name)}: ${esc(r.txt)}</div>`).join("");
+    $("#eaGo").disabled=true;$("#eaGo").textContent="Applied";
+    save();renderScenarioView();if(liveRole==="host"&&hostScenarioId===s.id)scheduleHostSync(s);
+  };
+  showModal();
+}
+function turnSheetHTML(s){
+  const cur=curRound(s), evs=(s.events||[]);
+  const started=!!(s.battle&&s.battle.started);
+  const items=[];
+  evs.filter(e=>e.round===cur).forEach(e=>{
+    const dl=e.kind==="deadline";
+    const act=!scnReadOnly&&!dl&&e.effect&&e.effect.apply?(e.applied?`<span class="chip teal">applied</span>`:`<button class="btn sm primary" data-evapply="${esc(e.title)}">Apply…</button>`):"";
+    items.push(`<div class="ts-it"><span class="ts-k">${dl?"⏱":"⚡"}</span><div><b>${dl?"Due now — ":""}${esc(e.title)}</b><small>${esc(e.text||"")}${e.effect&&e.effect.apply?`<br>${esc(effLabel(e.effect))}${e.effect.where?" · "+esc(e.effect.where):""}${e.effect.negatedBy&&e.effect.negatedBy.length?" · negated by "+esc(e.effect.negatedBy.join(", ")):""}`:""}${e.applied&&e.result?`<br><i>${esc(e.result)}</i>`:""}</small></div>${act}</div>`);
+  });
+  evs.filter(e=>e.kind==="deadline"&&e.round===cur+1).forEach(e=>items.push(`<div class="ts-it"><span class="ts-k">⏱</span><div><b>${esc(e.title)}</b><small>due next turn</small></div></div>`));
+  if(started){
+    (s.battle.combatants||[]).forEach(m=>(m.conditions||[]).filter(cd=>cd.expireTurn===cur+1).forEach(cd=>items.push(`<div class="ts-it"><span class="ts-k">◈</span><div><b>${esc(cd.label)} wears off</b><small>${esc(m.name)} · at the end of this turn</small></div></div>`)));
+  }
+  if(!scnReadOnly)enemyAll(s).forEach(c=>{if(enemyArrivalTurn(c)===cur)items.push(`<div class="ts-it"><span class="ts-k">👁</span><div><b>${esc(c.name)} arrives</b><small>${esc(c.deployNote||"")}</small></div><button class="btn sm" data-evcard="${esc(c.id)}">Card</button></div>`);});
+  const note=(s.journal||{})[cur]||"";
+  return `<div class="tsheet"><div class="ts-h">This turn · ${cur}${s.rounds?` / ${s.rounds}`:""}${s.rounds&&cur>=s.rounds?" · final turn":""}</div>
+    ${items.join("")||`<div class="none-note" style="font-style:normal">Nothing on the sheet — a quiet turn.</div>`}
+    ${scnReadOnly?(note?`<div class="ts-note">✎ ${esc(note)}</div>`:""):`<textarea class="input ts-note-in" id="tsNote" placeholder="✎ what happened this turn…" rows="2">${esc(note)}</textarea>`}
+  </div>`;
+}
+function journalHTML(s){
+  const cur=curRound(s), evs=(s.events||[]), J=s.journal||{};
+  const turns=[];for(let r=cur-1;r>=1;r--)turns.push(r);
+  const rows=turns.map(r=>{
+    const here=evs.filter(e=>e.round===r&&e.kind!=="deadline");
+    const note=J[r];
+    if(!here.length&&!note)return "";
+    return `<div class="evt past"><span class="evt-r">T${r}</span><div class="evt-body">${here.map(e=>`<div class="evt-t">⚡ ${esc(e.title)}</div>${e.text?`<div class="evt-x">${esc(e.text)}</div>`:""}${e.result?`<div class="evt-x"><i>${esc(e.result)}</i></div>`:""}`).join("")}${note?`<div class="evt-x">✎ ${esc(note)}</div>`:""}</div></div>`;
+  }).filter(Boolean).join("");
+  return `<div class="tk-sec"><div class="tk-h">Journal</div>${rows||`<div class="none-note" style="font-style:normal">Nothing has happened yet.</div>`}</div>`;
+}
 function trackerHTML(s){
   const cur=curRound(s), tot=s.rounds;
-  const evs=(s.events||[]);
-  const deadlines=evs.filter(e=>e.kind==="deadline");
-  const log=evs.filter(e=>e.kind!=="deadline"&&e.round<=cur).sort((a,b)=>b.round-a.round);
   const over=tot&&cur>=tot;
   let h=`<div class="scn-tracker">
-    <div class="mh">Game tracker · ${esc(diffOf(s).label)}${scnReadOnly?" · live":""}</div>
+    <div class="mh">Turn &amp; events · ${esc(diffOf(s).label)}${scnReadOnly?" · live":""}</div>
+    ${timelineHTML(s)}
     <div class="round-row">
       ${scnReadOnly?"":`<button class="rbtn" id="rndPrev" aria-label="Previous turn"${cur<=1?" disabled":""}>−</button>`}
       <div class="round-cur">Turn <b>${cur}</b>${tot?` <span>/ ${tot}</span>`:""}</div>
       ${scnReadOnly?"":`<button class="rbtn" id="rndNext" aria-label="Next turn"${over?" disabled":""}>+</button>`}
     </div>
-    ${scnReadOnly?"":`<div class="round-actions"><span class="none-note" style="font-style:normal">${over?"Final turn — the game ends.":"Advance a turn to reveal what happens."}</span><button class="linkbtn" id="rndReset">Reset</button></div>
+    ${turnSheetHTML(s)}
+    ${scnReadOnly?"":`<div class="round-actions"><span class="none-note" style="font-style:normal">${over?"Final turn — the game ends.":"Advance a turn when everyone has acted."}</span><button class="linkbtn" id="rndReset">Reset</button></div>
     ${s.outcome?"":`<button class="btn sm" id="endQuest" style="margin-top:10px;width:100%;justify-content:center">⚑ End the quest — call the result</button>`}`}`;
   h=outcomeBanner(s)+h;
-  if(deadlines.length){
-    h+=`<div class="tk-sec"><div class="tk-h">⏱ On the clock</div>${deadlines.map(e=>{const st=e.round<cur?"past":(e.round===cur?"now":"");return `<div class="deadline ${st}"><span class="dl-r">by&nbsp;T${e.round}</span><div class="dl-b"><b>${esc(e.title)}</b>${e.text?`<div class="dl-x">${esc(e.text)}</div>`:""}</div></div>`;}).join("")}</div>`;
-  }
-  h+=`<div class="tk-sec"><div class="tk-h">Turn log</div>${log.length?log.map(e=>`<div class="evt ${e.round===cur?"now":"past"}"><span class="evt-r">T${e.round}</span><div class="evt-body"><div class="evt-t">${esc(e.title)}</div>${e.text?`<div class="evt-x">${esc(e.text)}</div>`:""}</div></div>`).join(""):`<div class="none-note" style="font-style:normal">Nothing has happened yet — surprises reveal as you advance.</div>`}</div></div>`;
+  const deadlines=(s.events||[]).filter(e=>e.kind==="deadline"&&e.round>cur);
+  if(deadlines.length)h+=`<div class="tk-sec"><div class="tk-h">⏱ On the clock</div>${deadlines.map(e=>`<div class="deadline"><span class="dl-r">by&nbsp;T${e.round}</span><div class="dl-b"><b>${esc(e.title)}</b>${e.text?`<div class="dl-x">${esc(e.text)}</div>`:""}<div class="none-note" style="font-style:normal">${e.round-cur} turn${e.round-cur===1?"":"s"} left</div></div></div>`).join("")}</div>`;
+  h+=journalHTML(s)+`</div>`;
   return h;
 }
 /* Caches: map features with role "cache" are searchable. Items whose mapLabel points at a
@@ -7462,7 +7561,8 @@ function tableHTML(s){
     <div class="tbl-top"><button class="scn-back" id="tblBack">‹ Full page</button><span class="tbl-title">${esc(s.title)}</span><span class="chip live">📡 ${esc(hostCode)}</span></div>
     <div class="tbl-turn"><div class="tbl-l">turn</div><div class="tbl-n">${cur}${tot?`<small>/${tot}</small>`:""}</div>
       <div class="tbl-row"><button class="rbtn big" id="rndPrev"${cur<=1?" disabled":""}>−</button><button class="rbtn big" id="rndNext"${over?" disabled":""}>+</button></div></div>
-    ${next?`<div class="tbl-next">⚡ <b>${esc(next.title)}</b> · turn ${next.round}${next.effect&&next.effect.where?` · ${esc(next.effect.where)}`:""}</div>`:over?`<div class="tbl-next">Final turn — the game ends.</div>`:""}
+    ${turnSheetHTML(s)}
+    ${next&&eventVisibleAhead(next,cur)?`<div class="tbl-next">⚡ next: <b>${esc(next.title)}</b> · turn ${next.round}</div>`:over?`<div class="tbl-next">Final turn — the game ends.</div>`:""}
     ${env}
     ${battleHTML(s)}
     ${collectHTML(s)}
@@ -7662,7 +7762,12 @@ function renderScenarioDetail(scnOverride){
   // round tracker
   const rp=$("#rndPrev");if(rp)rp.onclick=()=>setRound(s,curRound(s)-1);
   const rn=$("#rndNext");if(rn)rn.onclick=()=>nextTurn(s);
-  const rz=$("#rndReset");if(rz)rz.onclick=()=>{s.round=1;save();renderScenarioView();};
+  const rz=$("#rndReset");if(rz)rz.onclick=()=>askConfirm("Back to turn 1? Applied events, notes and conditions stay as they are.",()=>{s.round=1;save();renderScenarioView();},{danger:true,yesLabel:"Reset"});
+  el.querySelectorAll("[data-peek]").forEach(b=>b.onclick=()=>openTurnPeek(s,+b.dataset.peek));
+  el.querySelectorAll("[data-evapply]").forEach(b=>b.onclick=()=>{const ev=(s.events||[]).find(x=>x.round===curRound(s)&&x.title===b.dataset.evapply);if(ev)openEventApply(s,ev);});
+  el.querySelectorAll("[data-evcard]").forEach(b=>b.onclick=()=>{const c=enemyAll(s).find(x=>x.id===b.dataset.evcard);if(c)openEnemyCard(c);});
+  const tn=$("#tsNote");if(tn){tn.oninput=()=>{s.journal=s.journal||{};s.journal[curRound(s)]=tn.value.slice(0,300);save();};tn.onblur=()=>{if(liveRole==="host"&&hostScenarioId===s.id)scheduleHostSync(s);};}
+  const tl=$("#tline");if(tl){const now=tl.querySelector(".tl-t.now");if(now)tl.scrollLeft=Math.max(0,now.offsetLeft-tl.clientWidth/2+16);}
   const eq=$("#endQuest");if(eq)eq.onclick=()=>openEndQuest(s);
   const equ=$("#eqUndo");if(equ)equ.onclick=()=>{delete s.outcome;save();renderScenarioView();if(liveRole==="host"&&hostScenarioId===s.id)scheduleHostSync(s);};
   // battle roster
