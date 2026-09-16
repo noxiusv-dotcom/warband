@@ -573,13 +573,15 @@ mark{background:color-mix(in srgb,var(--amber) 35%,transparent);color:inherit;bo
 .p3-h b{font-size:14px;font-family:"Chakra Petch",Arial,sans-serif;font-weight:800;line-height:1.1}.p3-h span{font-size:9px;color:#444;white-space:nowrap}
 .p3-sub{font-size:9.5px;color:#444;margin:2px 0 4px;display:flex;justify-content:space-between;gap:6px}
 .p3-sub .st{font-family:"Space Mono",monospace;font-size:9px;color:#111;white-space:nowrap}
-.p3-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin:5px 0}
-.p3-box{border:1px solid #111;border-radius:4px;padding:4px 5px;font-size:9.5px;line-height:1.25;break-inside:avoid}
+.p3-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:5px;margin:5px 0}
+.paper-58 .p3-grid{grid-template-columns:minmax(0,1fr)}
+.paper-58 .p3-box .big{font-size:14px}
+.p3-box{border:1px solid #111;border-radius:4px;padding:4px 5px;font-size:9.5px;line-height:1.25;break-inside:avoid;min-width:0;overflow-wrap:anywhere}
 .p3-box.wide{grid-column:1/-1}
 .p3-box h4{margin:0 0 2px;font-size:7.5px;letter-spacing:.12em;text-transform:uppercase;color:#555;font-family:"Chakra Petch",Arial,sans-serif;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .p3-box .big{font-size:16px;font-weight:700;font-family:"Space Mono",monospace;line-height:1;margin-bottom:2px}
 .p3-box .big small{font-size:8.5px;font-weight:400;font-family:"Barlow",Arial,sans-serif;color:#444}
-.p3-do{border-left:3px solid #111;padding:2px 6px;margin:4px 0;font-size:9.5px;line-height:1.3}.p3-do b{display:block;font-size:7.5px;letter-spacing:.1em;text-transform:uppercase;font-family:"Chakra Petch",Arial,sans-serif;color:#333}
+.p3-do{border-left:3px solid #111;padding:2px 6px;margin:4px 0;font-size:9.5px;line-height:1.3;overflow-wrap:anywhere}.p3-do b{display:block;font-size:7.5px;letter-spacing:.1em;text-transform:uppercase;font-family:"Chakra Petch",Arial,sans-serif;color:#333}
 .p3-do i{font-style:normal;font-weight:700}
 .p3-lab{margin-top:6px;font-size:7.5px;letter-spacing:.1em;text-transform:uppercase;color:#555;font-family:"Chakra Petch",Arial,sans-serif;display:flex;justify-content:space-between}
 .p3-pips{display:flex;flex-wrap:wrap;gap:2.5px;margin:3px 0;align-items:center}.p3-pips i{width:9px;height:9px;border:1px solid #111;border-radius:50%;display:block;flex:none}.p3-pips i.f{border-width:2px}.p3-pips small{font-size:8px;color:#555;width:100%;margin-top:2px}.p3-pips small:first-child{margin-top:0}
