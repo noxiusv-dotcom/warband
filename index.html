@@ -365,6 +365,8 @@ body.sealed .wb-name{font-size:clamp(22px,5vw,32px)}
 body.sealed .manifest .gauge{display:none}
 body.sealed .manifest{grid-template-columns:1fr;align-items:start}
 .campaign-panel{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-top:4px}
+.cpk-conv{font-size:11px;margin-left:6px;vertical-align:middle}
+.cv-slider{width:100%;margin:6px 0 0;accent-color:var(--amber)}
 .campaign-panel .cpk{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 11px}
 .campaign-panel .cpk small{display:block;font-family:var(--disp);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-mute);font-weight:600;margin-bottom:3px}
 .campaign-panel .cpk b{font-family:var(--mono);font-size:17px}
@@ -570,9 +572,11 @@ mark{background:color-mix(in srgb,var(--amber) 35%,transparent);color:inherit;bo
 .pc-box{font-size:10.5px;letter-spacing:.5px;word-break:break-all;line-height:1.5}.pc-box small{font-size:9px;color:#555;letter-spacing:0}
 /* P3 play sheet: what you roll first, then what you own, then room for pen notes */
 .p3-h{display:flex;justify-content:space-between;align-items:baseline;gap:6px;border-bottom:2px solid #111;padding-bottom:2px}
-.p3-h b{font-size:14px;font-family:"Chakra Petch",Arial,sans-serif;font-weight:800;line-height:1.1}.p3-h span{font-size:9px;color:#444;white-space:nowrap}
+.p3-h b{font-size:14px;font-family:"Chakra Petch",Arial,sans-serif;font-weight:800;line-height:1.1;min-width:0;overflow-wrap:anywhere}.p3-h span{font-size:9px;color:#444;text-align:right;flex:none;max-width:45%}
+.paper-58 .p3-h{flex-wrap:wrap}.paper-58 .p3-h span{width:100%;max-width:none;text-align:left}
 .p3-sub{font-size:9.5px;color:#444;margin:2px 0 4px;display:flex;justify-content:space-between;gap:6px}
-.p3-sub .st{font-family:"Space Mono",monospace;font-size:9px;color:#111;white-space:nowrap}
+.p3-sub .st{font-family:"Space Mono",monospace;font-size:9px;color:#111;white-space:nowrap;flex:none}
+.p3-sub{flex-wrap:wrap}
 .p3-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:5px;margin:5px 0}
 .paper-58 .p3-grid{grid-template-columns:minmax(0,1fr)}
 .paper-58 .p3-box .big{font-size:14px}
@@ -921,7 +925,19 @@ details.scn-acc .acc-body .scn-block:first-child{margin-top:10px}
 .turnbar .tb-jumps{margin-left:auto;display:flex;gap:5px}
 .turnbar .tb-jumps button{width:34px;height:34px;border-radius:8px;border:1px solid var(--line);background:var(--panel-2);font-size:15px;line-height:1}
 body.has-turnbar main{padding-bottom:120px}
-@media(max-width:520px){.turnbar{left:10px;transform:none;width:calc(100vw - 86px)}}
+@media(max-width:520px){.turnbar{left:10px;transform:none;width:calc(100vw - 20px);gap:5px;padding:7px 7px}.turnbar .tb-jumps button{width:30px;height:30px;font-size:13px}.turnbar .tb-jumps{gap:3px}
+  body.has-turnbar:not(.tb-folded) .cheatfab{bottom:76px}}
+/* the bar must never sit on top of a card's own buttons: slide it away while any overlay is open */
+.turnbar{transition:transform .2s,opacity .2s,width .2s}
+body.overlay-open .turnbar{transform:translate(-50%,140%);opacity:0;pointer-events:none}
+@media(max-width:520px){body.overlay-open .turnbar{transform:translateY(140%)}}
+/* fold sideways into a small turn pill at the left edge */
+.turnbar .tb-fold{width:22px;height:34px;border-radius:8px;border:1px solid var(--line);background:var(--panel-2);font-size:14px;line-height:1;color:var(--ink-dim);flex:none;padding:0}
+.turnbar.folded{left:12px;transform:none;width:auto;gap:6px;padding:6px 8px}
+.turnbar.folded .rbtn,.turnbar.folded .tb-jumps,.turnbar.folded .tb-cur span{display:none}
+.turnbar.folded .tb-cur{font-size:12px}.turnbar.folded .tb-cur b{font-size:16px}
+body.overlay-open .turnbar.folded{transform:translateY(140%)}
+body.has-turnbar.tb-folded main{padding-bottom:70px}
 .scn-tracker,.scn-collect{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-top:14px}
 .scn-tracker .mh,.scn-collect .mh{font-family:var(--disp);text-transform:uppercase;letter-spacing:.12em;font-size:11px;font-weight:600;color:var(--ink-mute);margin-bottom:10px}
 .round-row{display:flex;align-items:center;gap:10px;justify-content:space-between;background:var(--sunk);border:1px solid var(--line);border-radius:9px;padding:6px 8px}
@@ -1312,7 +1328,7 @@ const TRAITS=[
  ["Fearless",12,"Immune to the effects of the Fearsome and Terrifying traits."],
  ["Fearsome",12,"Enemies wishing to charge this character must first pass a break test."],
  ["Foul aura",15,"Enemy characters take 1 damage for every turn spent in base contact with this character."],
- ["Gigantic",18,"Gains all effects of Big, plus: not in cover unless fully obscured; cannot be pushed back after combat; only takes fall damage from 20cm+."],
+ ["Gigantic",18,"Gains all effects of Big (+1(F) when charging; −3cm speed), plus: not in cover unless fully obscured; cannot be pushed back after combat; only takes fall damage from 20cm+."],
  ["Gunner",10,"When embarked may act as crew for shooting, using the character's shooting skill. Fires only on the embarked facing."],
  ["Gunslinger",20,"May make shoot actions while locked in combat."],
  ["Intelligent",10,"May reroll one failed (AW) roll per turn."],
@@ -1738,6 +1754,20 @@ function sampleErr(code){
 }
 
 function uid(){return Math.random().toString(36).slice(2,9)}
+/* Speed is fixed at 10cm by the rules, but Big/Gigantic (−3cm) and healed-or-not leg
+   injuries change it — show the real number wherever a speed is printed. Fast/Slow are a
+   per-turn D6 so they stay a suffix, never folded into the number. */
+function charSpeed(c){
+  let v=RULES.speed;
+  const has=n=>(c&&c.traits||[]).some(id=>CAT.trait[id]&&CAT.trait[id].name===n);
+  if(has("Big")||has("Gigantic"))v-=3;
+  (c&&c.injuries||[]).forEach(i=>{if(i&&i.speed)v+=i.speed;});
+  return Math.max(1,v);
+}
+function speedSuffix(c){
+  const has=n=>(c&&c.traits||[]).some(id=>CAT.trait[id]&&CAT.trait[id].name===n);
+  return has("Fast")?" +1D6":has("Slow")?" −1D6":"";
+}
 function newChar(){return{id:uid(),name:"",role:"",bg:"",fielded:true,count:1,skills:{A:1,F:1,S:1,AW:1,P:1},hp:RULES.hpStart,traits:[],abilities:[],weapons:[],armour:[],items:[]}}
 function newVehicle(){return{id:uid(),name:"",role:"",bg:"",fielded:true,type:0,size:1,skills:{A:VRULES.aStart,S:VRULES.sStart},sections:[],traits:[],abilities:[],weapons:[]}}
 function newWarband(name){return{id:uid(),name:name||"Untitled Warband",budget:500,characters:[],vehicles:[]}}
@@ -1928,11 +1958,12 @@ function renderHeader(){
       const L=w.ledger||[], last=L[0], o=last&&OUTCOMES[last.result];
       cpan.hidden=false;
       cpan.innerHTML=`<div class="cpk"><small>⭐ Warband pool</small><b>${w.cp||0} cp</b></div>
-        <div class="cpk"><small>🪙 Credits</small><b>${creditsOf(w)}</b></div>
+        <div class="cpk"><small>🪙 Credits</small><b>${creditsOf(w)}</b>${((w.cp|0)>0||w.characters.some(c=>cpOf(c)>0))?`<button class="linkbtn cpk-conv" data-convert-cp>⇄ 2:1</button>`:""}</div>
         <div class="cpk"><small>Fielded</small><b>${fieldedN}/${total}</b>${vTotal?` <span class="none-note" style="font-style:normal">· ${vFielded}/${vTotal} veh</span>`:""}</div>
         <div class="cpk"><small>Last quest</small><div class="lq">${last?`${o?o.icon+" ":""}${esc(last.title)}`:"—"}</div></div>`;
     } else {cpan.hidden=true;cpan.innerHTML="";}
   }
+  const cv=cpan&&cpan.querySelector("[data-convert-cp]"); if(cv)cv.onclick=()=>openConvertCP(null);
   renderActRow(); renderCampNotes(); renderLedgerBox();
 }
 
@@ -2136,7 +2167,7 @@ function renderRoster(){
           ${hpChipFor(c,c.hp*n,false)}
           ${questUnitFor(c.id,false)?`<span class="chip onquest">⚔ deployed</span>`:""}
           ${tallyHTML(c)}
-          <span class="chip">${RULES.speed}cm</span>
+          <span class="chip">${charSpeed(c)}cm${speedSuffix(c)}</span>
           ${cpTotalOf(c)>0?`<span class="chip rank">${esc(rankOf(cpTotalOf(c)))}</span>`:""}
           ${cpOf(c)>0?`<span class="chip xp">⭐ ${cpOf(c)} cp</span>`:""}
           ${cardMarks(c,false)}
@@ -2582,6 +2613,7 @@ function addVehicle(){
 function syncScroll(){
   const open=document.querySelector(".scrim.show,.dossier.show,.picker.show,.modal.show,.cardwrap.show,.confirm.show,.maplb.show");
   document.body.style.overflow=open?"hidden":"";
+  document.body.classList.toggle("overlay-open",!!open);
 }
 let _confirmCb=null;
 function askConfirm(message,onYes,opts){
@@ -3089,7 +3121,7 @@ function printCardChar(c){
     boxes.push(`<div class="p3-box"><h4>${ranged?"▸ Shoot":"✕ Fight"} · ${esc(gearLabel(o,e,e.qty||1))}</h4><div class="big">${ranged?"S "+S:"F "+F} <small>under</small></div>${bits.join(" · ")}<br>${ranged?"−1 per move this turn":"+1D4 on a charge"}</div>`);
   });
   if(!boxes.length)boxes.push(`<div class="p3-box"><h4>✕ Fight · unarmed</h4><div class="big">F ${F} <small>under</small></div>melee · 1D4<br>+1D4 on a charge</div>`);
-  boxes.push(`<div class="p3-box"><h4>Move · Agility ${A}</h4><div class="big">${RULES.speed} <small>cm · 2 actions</small></div>rough: A ${A} or half speed</div>`);
+  boxes.push(`<div class="p3-box"><h4>Move · Agility ${A}</h4><div class="big">${charSpeed(c)} <small>cm${speedSuffix(c)} · 2 actions</small></div>rough: A ${A} or half speed</div>`);
   boxes.push(`<div class="p3-box"><h4>Nerve · Psyche ${P}</h4><div class="big">P ${P} <small>under</small></div>under half HP: P ${Math.max(1,P-1)}, all skills −1</div>`);
   const arm=(c.armour||[]).map(e=>CAT.armour[e.id]).filter(Boolean).map(o=>`<i>${esc(o.def)}</i> ${esc(o.name)}`).join(" · ");
   const ta=c.traits.map(id=>CAT.trait[id]).filter(Boolean).concat(c.abilities.map(id=>CAT.ability[id]).filter(Boolean));
@@ -3192,7 +3224,7 @@ function openSummary(){
         <div class="srname" style="font-size:15px">${esc(c.name||"Unnamed")}${c.role?` <span style="color:var(--ink-mute);font-weight:400">· ${esc(c.role)}</span>`:""}${nn>1?` <span class="tag" style="color:var(--teal);border-color:var(--teal)">Squad ×${nn}</span>`:""}${benched?` <span class="tag">Benched</span>`:""}</div>
         <span class="srcost cr">${cost} pts</span>
       </div>
-      <div class="srdesc mono" style="margin:0">${skl}   ·   ${c.hp} HP   ·   ${RULES.speed}cm</div>
+      <div class="srdesc mono" style="margin:0">${skl}   ·   ${c.hp} HP   ·   ${charSpeed(c)}cm${speedSuffix(c)}</div>
       <div class="srdesc" style="margin:0"><b>Traits:</b> ${esc(traitTxt)}</div>
       <div class="srdesc" style="margin:0"><b>Abilities:</b> ${esc(abilTxt)}</div>
       <div class="srdesc" style="margin:0"><b>Equipment:</b> ${esc(gear)}</div>
@@ -3216,7 +3248,7 @@ function summaryText(w){
   let out=`${w.name}\nFielded ${fieldedN}/${w.characters.length}: ${wbSpent(w)} / ${w.budget} pts${pool!==wbSpent(w)?`  (pool ${pool} pts)`:""}\n\n`;
   w.characters.slice().sort((a,b)=>(isFielded(b)?1:0)-(isFielded(a)?1:0)).forEach(c=>{
     out+=`${c.name||"Unnamed"}${c.role?" — "+c.role:""}  [${unitCost(c)} pts]${memberCount(c)>1?"  (squad ×"+memberCount(c)+")":""}${isFielded(c)?"":"  (benched)"}\n`;
-    out+="  "+SKILLS.map(([k])=>`${k} ${c.skills[k]}`).join("  ")+`   ${c.hp}HP  ${RULES.speed}cm\n`;
+    out+="  "+SKILLS.map(([k])=>`${k} ${c.skills[k]}`).join("  ")+`   ${c.hp}HP  ${charSpeed(c)}cm${speedSuffix(c)}\n`;
     const t=c.traits.map(id=>CAT.trait[id]?.name).filter(Boolean).join(", ");if(t)out+="  Traits: "+t+"\n";
     const a=c.abilities.map(id=>CAT.ability[id]?.name).filter(Boolean).join(", ");if(a)out+="  Abilities: "+a+"\n";
     const g=[...c.weapons.map(e=>CAT.weapon[e.id]?.name+(e.qty>1?" x"+e.qty:"")),...c.armour.map(e=>CAT.armour[e.id]?.name),...c.items.map(e=>CAT.item[e.id]?.name+(e.qty>1?" x"+e.qty:""))].filter(Boolean).join(", ");
@@ -3434,7 +3466,7 @@ function playStripHTML(c){
   const canEdit=!(live&&liveRole==="guest");
   return `<div class="play ${down?"down":half?"hurt":""}">
     <div class="play-l1"><span class="play-hp ${down?"d":half?"h":""}">${down?"DOWN":cur+`<small>/${max}</small>`}</span>${live?`<span class="chip amber">⚔ deployed</span>`:isFielded(c)?`<span class="chip teal">◉ fielded</span>`:`<span class="chip">○ benched</span>`}${conds}${scars}${canEdit?`<span class="play-btns"><button class="hpb" data-chp="-1">−</button><button class="hpb" data-chp="1">+</button></span>`:""}</div>
-    <div class="play-l2">Speed ${RULES.speed}cm · break test: roll under <b class="tgt" data-dtarget="${P}|${esc((c.name||"?").split(" ")[0])} · P">P ${P}</b>${half?" <span class='chip red'>under half · −1 all skills</span>":""} · armour ${armourLine(c)}</div>
+    <div class="play-l2">Speed ${charSpeed(c)}cm${speedSuffix(c)} · break test: roll under <b class="tgt" data-dtarget="${P}|${esc((c.name||"?").split(" ")[0])} · P">P ${P}</b>${half?" <span class='chip red'>under half · −1 all skills</span>":""} · armour ${armourLine(c)}</div>
   </div>`;
 }
 function cardHP(c,delta){
@@ -3459,7 +3491,7 @@ function enemyStripHTML(c){
   return `<div class="play enemy ${down?"down":half?"hurt":""}">
     <div class="play-l1"><span class="play-hp ${down?"d":half?"h":""}">${down?"DOWN":cur+`<small>/${max}</small>`}</span>${rows.length?`<span class="chip red">${squad?"squad tests at "+thr:"break test at "+thr}</span>`:c.atStart?`<span class="chip">on the table from the start</span>`:arrive?`<span class="chip amber">arrives turn ${arrive}</span>`:`<span class="chip amber">arrives on a trigger</span>`}${conds}</div>
     ${mem}
-    <div class="play-l2">Speed ${RULES.speed}cm · armour ${armourLine(c)} · Psyche target <b>P ${P}</b>${half?" <span class='chip red'>under half · −1 all skills</span>":""}${hidden?` · <span class="chip">${esc(c.tease||"hidden until it shows itself")}</span>`:""}</div>
+    <div class="play-l2">Speed ${charSpeed(c)}cm${speedSuffix(c)} · armour ${armourLine(c)} · Psyche target <b>P ${P}</b>${half?" <span class='chip red'>under half · −1 all skills</span>":""}${hidden?` · <span class="chip">${esc(c.tease||"hidden until it shows itself")}</span>`:""}</div>
   </div>`;
 }
 function deciderHTML(c){
@@ -3486,11 +3518,11 @@ function deciderHTML(c){
       body=parts.join(". ")+". Two actions — use the better one twice if nothing changes.";
     } else {
       line=[3,"It cannot shoot — it moves straight at the nearest visible player."];
-      body=`Full speed, ${RULES.speed}cm, at the nearest visible player character (equally close? pick at random). If that reaches base contact it <b>charges</b>: one fight at <b>+1D4</b> Fighting${melee.length?" with "+melee.map(wl).join(" or "):""}.`;
+      body=`Full speed, ${charSpeed(c)}cm${speedSuffix(c)}, at the nearest visible player character (equally close? pick at random). If that reaches base contact it <b>charges</b>: one fight at <b>+1D4</b> Fighting${melee.length?" with "+melee.map(wl).join(" or "):""}.`;
     }
   } else if(st.combat===false&&st.visible===false){
     line=[4,"No player in sight — it moves away."];
-    body=`Full speed, ${RULES.speed}cm, towards the board edge furthest from where it stands. Hits an obstacle? Roll the D4 below.`;
+    body=`Full speed, ${charSpeed(c)}cm${speedSuffix(c)}, towards the board edge furthest from where it stands. Hits an obstacle? Roll the D4 below.`;
   }
   const brk=half?`<div class="vs" style="margin-top:6px">Under half: every skill −1 (already applied above); if it takes damage it tests: roll under <b>P ${c.skills.P-1}</b>${hasTrait(c,"Brave")?" — Brave: it rerolls one failed test a turn":""}.</div>`:"";
   return `<div class="q"><div class="qt">What does it do? — its activation</div>
@@ -4745,6 +4777,7 @@ function fillScnArrayDefaults(s){
   // defaults on the receiving (guest) side so template code that assumes arrays never crashes.
   if(!s||typeof s!=="object")return s;
   ["objectives","specialRules","terrain","markers","npcs","items","events","searched"].forEach(k=>{if(!Array.isArray(s[k]))s[k]=[];});
+  s.items.forEach(it=>{if(it&&typeof it==="object"&&it.trap===undefined)it.trap=coerceTrap(it);});   // scenarios saved before traps existed
   if(!s.map||typeof s.map!=="object")s.map={note:"",zones:[],features:[]};
   s.map.zones=Array.isArray(s.map.zones)?s.map.zones:[];
   s.map.features=Array.isArray(s.map.features)?s.map.features:[];
@@ -5115,7 +5148,7 @@ function openSpendCP(charId){
       <div class="chips-row" style="margin-top:8px">${hpChip}</div>
       <div class="field" style="margin:12px 0 4px"><label>Search traits &amp; abilities</label><input class="input" id="cpSearch" value="${esc(filter||"")}" placeholder="e.g. brave, inspire"></div>
       <div style="max-height:32vh;overflow:auto">${rows||`<div class="ng-note">Nothing matches.</div>`}</div>
-      <div class="none-note" style="font-style:normal;margin-top:6px">Greyed-out entries cost more than you have — unspent points carry over between games.</div>
+      <div class="none-note" style="font-style:normal;margin-top:6px">Greyed-out entries cost more than you have — unspent points carry over between games. Gear is bought with credits (🛒 in the dossier); spare points can be changed into credits at 2:1 there.</div>
       <div class="modal-actions">
         <button class="btn primary sm" id="cpConfirm"${spent>0?"":" disabled"}>Confirm — spend ${spent}</button>
         <button class="btn ghost sm" id="cpReset">Start over</button>
@@ -5201,21 +5234,31 @@ function openConvertCP(backToChar){
   const w=activeWB(), body=$("#modalBody");
   const chars=w.characters.filter(c=>cpOf(c)>0);
   const merc=(c)=>hasTrait(c,"Mercenary");   // Mercenary converts at 1:1
+  const rate=c=>c&&merc(c)?1:2;
+  const row=(key,name,have,r)=>`<div class="wb-item conv-row" data-key="${key}"><div class="wbi-main" style="cursor:default"><div class="wbi-name">${name}</div>
+      <div class="wbi-sub"><b class="mono cv-pts">${have}</b> of ${have} cp → <b class="mono cv-cr">${Math.floor(have/r)}</b> credits${r===1?" · 1:1":""}</div>
+      <input type="range" class="cv-slider" min="0" max="${have}" step="${r}" value="${have}" aria-label="points to convert"></div>
+      <button class="linkbtn" data-conv="${key}">Convert</button></div>`;
   body.innerHTML=`
     <h3>Convert campaign points to credits</h3>
-    <p class="lead">Campaign points become credits at two to one. A Mercenary trades theirs at one to one.</p>
-    ${(w.cp||0)>0?`<div class="wb-item"><div class="wbi-main" style="cursor:default"><div class="wbi-name">Warband pool</div>
-      <div class="wbi-sub">${w.cp} points → ${Math.floor((w.cp||0)/2)} credits</div></div>
-      <button class="linkbtn" data-conv="pool">Convert all</button></div>`:""}
-    ${chars.map(c=>`<div class="wb-item"><div class="wbi-main" style="cursor:default"><div class="wbi-name">${esc(c.name||"Unnamed")}${merc(c)?" <small>(Mercenary 1:1)</small>":""}</div>
-      <div class="wbi-sub">${cpOf(c)} points → ${merc(c)?cpOf(c):Math.floor(cpOf(c)/2)} credits</div></div>
-      <button class="linkbtn" data-conv="${c.id}">Convert all</button></div>`).join("")}
+    <p class="lead">Campaign points buy skills, hit-points, traits and abilities; credits buy gear. Points become credits at <b>two to one</b> and never the other way. A Mercenary trades theirs one to one. Slide to pick how many to change.</p>
+    ${(w.cp||0)>0?row("pool","Warband pool",w.cp|0,2):""}
+    ${chars.map(c=>row(c.id,esc(c.name||"Unnamed")+(merc(c)?" <small>(Mercenary)</small>":""),cpOf(c),rate(c))).join("")}
     ${!chars.length&&!(w.cp||0)?`<div class="ng-note">No campaign points to convert.</div>`:""}
-    <div class="modal-actions"><button class="btn ghost sm" id="cvBack" style="margin-left:auto">Back</button></div>`;
+    <div class="none-note" style="font-style:normal;margin-top:8px">Purse now: <b>${creditsOf(w)}</b> credits.</div>
+    <div class="modal-actions"><button class="btn ghost sm" id="cvBack" style="margin-left:auto">${backToChar?"Back to the shop":"Close"}</button></div>`;
+  body.querySelectorAll(".conv-row").forEach(rw=>{
+    const sl=rw.querySelector(".cv-slider"), r=+sl.step||2;
+    sl.oninput=()=>{const v=Math.floor((+sl.value)/r)*r;rw.querySelector(".cv-pts").textContent=v;rw.querySelector(".cv-cr").textContent=Math.floor(v/r);};
+  });
   body.querySelectorAll("[data-conv]").forEach(b=>b.onclick=()=>{
-    const k=b.dataset.conv;
-    if(k==="pool"){const cr=Math.floor((w.cp||0)/2);w.credits=creditsOf(w)+cr;w.cp=0;toast("+"+cr+" credits");}
-    else{const c=w.characters.find(x=>x.id===k);if(c){const cr=merc(c)?cpOf(c):Math.floor(cpOf(c)/2);w.credits=creditsOf(w)+cr;c.cp=0;toast("+"+cr+" credits");}}
+    const k=b.dataset.conv, rw=b.closest(".conv-row"), sl=rw.querySelector(".cv-slider"), r=+sl.step||2;
+    const pts=Math.floor((+sl.value)/r)*r; if(pts<=0){toast("Nothing to convert");return;}
+    const cr=Math.floor(pts/r);
+    if(k==="pool"){w.cp=Math.max(0,(w.cp|0)-pts);}
+    else{const c=w.characters.find(x=>x.id===k);if(!c)return;c.cp=Math.max(0,cpOf(c)-pts);}
+    w.credits=creditsOf(w)+cr;
+    toast("−"+pts+" cp → +"+cr+" credits");
     save();render();openConvertCP(backToChar);
   });
   $("#cvBack").onclick=()=>{if(backToChar)openBuyGear(backToChar);else closeModal();};
@@ -5939,7 +5982,7 @@ function normalizeImportedScn(raw){
   s.items=s.items.map((x,i)=>({name:String(x&&x.name||""),note:String(x&&x.note||""),
     when:String(x&&x.when||""),mapLabel:String(x&&x.mapLabel||""),role:String(x&&x.role||""),
     secret:!!(x&&x.secret),hint:String(x&&x.hint||""),revealed:!!(x&&x.revealed),
-    found:!!(x&&x.found),effect:coerceItemEffect(x&&x.effect),id:(x&&x.id)||("it"+i),heldBy:(x&&x.heldBy)||null}));
+    found:!!(x&&x.found),effect:coerceItemEffect(x&&x.effect),id:(x&&x.id)||("it"+i),heldBy:(x&&x.heldBy)||null,trap:coerceTrap(x),sprung:!!(x&&x.sprung)}));
   s.title=String(s.title||"Imported scenario").slice(0,80);
   s.premise=String(s.premise||"");
   if(!s.map||typeof s.map!=="object")s.map={note:"",zones:[],features:[]};
@@ -6151,11 +6194,11 @@ SEARCHING IS RESOLVED BY THE APP: a feature with role "cache" gets a Search butt
 ITEMS ARE THE MOST IMPORTANT PLACE TO GET THIS RIGHT, AND THE EASIEST TO FORGET: every entry in "items" MUST carry BOTH a "mapLabel" (where on the table it is found — normally the cache it is hidden in) AND a "when". Do not leave an item's mapLabel empty; if it is not hidden in a cache, point it at whatever feature it lies on or beside. An item with no mapLabel is useless to the host because they cannot place it.
 EVERY item MUST have a "when" field: one short, concrete sentence saying WHEN OR WHERE it matters, naming the specific special rule, hazard, event or place it interacts with — e.g. "Wear it before entering the flooded lower level; cancels the Deep-pressure -1 Athletics penalty" rather than a vague "useful later". If an item counters something, that something must exist in specialRules, events or a hazard feature — never invent a rule the scenario doesn't have. Do the same for npcs where it helps ("when" = when/where it shows up).
 LASTING INJURIES — when a character is taken down the players roll on the rulebook's own 1D8 injury table, so do NOT invent mechanics. Instead write an "injuries" list of 5-7 SCENARIO-FLAVOURED wound descriptions this place could inflict — each just a "name" (e.g. "Venom-withered arm", "Pressure-burst eardrum"), a one-line "note" of prose, and a "cause" tag matching a threat in this scenario (an enemy name, a hazard, an event) so the right flavour is drawn for what actually happened. The app pairs your description with whatever the dice decide.
-EVERY ITEM DECIDES ITS OWN EFFECT NOW. The host has no AI at the table, so write each item's mechanical "effect" here, in the exact shape shown: skill deltas between -4 and +4, HP delta between -10 and +10, traits and abilities by their exact catalogue names, an optional new name for a true transformation, and a one-sentence "summary". A plain piece of gear, or a pure objective like a data-core or a golden brick, gets {"apply":false,"summary":"..."} — it is carried, not absorbed. Never leave "effect" out.
+A find may instead be a TRAP: set "trap":{"damage":"1D6","condition":"Stunned" or "","note":"what goes off"} and the app springs it on whoever searches that cache — damage rolled and applied at the table, never picked up. A trap has no "effect". Use one at most, and make the "note" hint at it for a sharp-eyed reader. EVERY OTHER ITEM DECIDES ITS OWN EFFECT NOW. The host has no AI at the table, so write each item's mechanical "effect" here, in the exact shape shown: skill deltas between -4 and +4, HP delta between -10 and +10, traits and abilities by their exact catalogue names, an optional new name for a true transformation, and a one-sentence "summary". A plain piece of gear, or a pure objective like a data-core or a golden brick, gets {"apply":false,"summary":"..."} — it is carried, not absorbed. Never leave "effect" out.
 ${qt&&MYSTERY_TYPES.includes(qt[0])?`THIS IS A MYSTERY, SO IT IS DELIVERED SEALED. The players — and the host reading this at the table — must not be handed the shape of it in advance. Therefore: "objectives" holds EXACTLY ONE line, deliberately vague ("Find out what is down here, and come back."); "specialRules" holds at most 2 atmospheric rules about the PLACE (light, water, cold), never about the mystery itself; "twist" is an empty string; EVERY enemy unit and creature is "secret": true and does not deploy at the start; every item is "secret": true with a hint. Then add a "mystery" object: {"question":"the one thing the players are here to find out, in a sentence","truth":"the full answer — what this really is, why, what it wants; only ever shown at the finale","envelopes":[{"trigger":"a concrete, testable moment — 'turn 3', 'someone searches #4', 'a model enters the Sump (#7)', 'a caster fails a roll', 'the first time anyone is wounded'","title":"short sealed title the host sees BEFORE opening (2-4 words, no spoilers)","text":"what the host reads aloud when it opens — vivid, second person, 2-4 sentences","effect":"what changes at the table now, as a rule the host applies — a new marker, a creature stepping out (name it, it is in the enemy list), a zone that becomes hazardous, a clue that narrows the question; or an empty string if it is pure atmosphere"}],"finale":"how the truth comes out and how the game ends — what the players must do in the last turns, and what 'getting out with the answer' looks like on the table"}. Write 6-9 envelopes; order them from early to late; make at least 3 depend on what the players DO (search, enter, touch, cast), not just on the turn count; make the clues add up so a thinking table can guess the truth one envelope early. Timed "events" may still exist for the app's turn tracker, but keep them as atmosphere — the mystery lives in the envelopes.
 `:""}SECRETS & SURPRISES — make the world feel alive: you MAY include plot twists and surprise reveals. Mark any NPC, item, or timed event that should be a SECRET (hidden from the host until it happens) with "secret": true. For a secret NPC or item, DO NOT spoil it in the checklist — instead give a non-spoiler "hint" telling the host only what to PREPARE (e.g. "a large monstrous miniature", "a mysterious relic token"). A hint says WHAT TO BUILD and nothing else — never put the turn, the trigger or any timing in it ("kept hidden until turn 8" is wrong), because in a co-op game the host is playing too and would be spoiling their own surprise while keeping the real name/note/round in the normal fields (the app hides them until the host reveals or the moment arrives). A collectible item whose effect should only be discovered on pickup should be marked "secret": true with a vague "hint". Not everything needs to be secret — obvious, up-front elements stay visible.
 Reply with ONLY a JSON object (no prose, no code fence) shaped EXACTLY like:
-{"title":"short evocative title","premise":"1-2 sentence hook",${qt&&MYSTERY_TYPES.includes(qt[0])?`"mystery":{"question":"...","truth":"...","envelopes":[{"trigger":"...","title":"...","text":"...","effect":"..."}],"finale":"..."},`:""}"briefing":"vivid 4-6 sentence atmospheric second-person narration","scenery":"1-2 sentences describing the terrain to build","objectives":["a victory condition","..."],"specialRules":["an optional special rule","..."],"twist":"one mid-game complication (or empty string)","events":[{"round":4,"kind":"surprise","title":"short event name","text":"what happens this round, written atmospherically, ending with the measurable rule (e.g. 'Everyone within 10cm of the Marble Pit takes 1D6.')","effect":{"apply":true,"type":"damage","amount":"1D6","scope":"chosen","where":"within 10cm of Marble Pit (#3)","duration":"turn","negatedBy":["Power armour"]}}],"deployment":"how the warbands deploy, referencing table sides/centre","gameLength":"1D10+6 turns","terrain":[{"name":"terrain piece to build","note":"how many / what it looks like","prop":"P4","size":"8×8cm, 12cm tall","mapLabel":"Wreck Spire","role":"cover-tall"}],"newProps":[{"name":"Gantry bridge","size":"20×4cm, 8cm tall with a walkable top","why":"This table wants a raised crossing between two spires; nothing in the library spans a gap."}],"markers":[{"name":"objective/token to print","note":"what it marks","mapLabel":"Hadal Core","role":"objective"}],"npcs":[{"name":"extra character/creature","note":"what it is / when it appears","when":"when and where it shows up","mapLabel":"Vent Mouth","secret":false,"hint":""}],"items":[{"name":"collectible item","note":"what it does / what it changes about whoever picks it up","when":"the concrete moment it matters, naming the rule/hazard it answers","mapLabel":"Supply Locker","secret":false,"hint":"","effect":{"apply":true,"summary":"one vivid sentence of what happens to whoever keeps it","newName":"","skills":{"A":0,"F":0,"S":0,"AW":0,"P":0},"hp":0,"addTraits":[],"removeTraits":[],"addAbilities":[],"note":""}}],"injuries":[{"name":"Venom-withered arm","note":"The limb never regains its strength.","cause":"Scorpion Swarm"}],"map":{"note":"one-line caption of the battlefield","zones":[{"label":"short deployment label","side":"a","x":5,"y":5,"w":30,"h":18}],"features":[{"type":"terrain","role":"cover-tall","ground":"rough","label":"Wreck Spire","x":50,"y":50,"r":8}]}}
+{"title":"short evocative title","premise":"1-2 sentence hook",${qt&&MYSTERY_TYPES.includes(qt[0])?`"mystery":{"question":"...","truth":"...","envelopes":[{"trigger":"...","title":"...","text":"...","effect":"..."}],"finale":"..."},`:""}"briefing":"vivid 4-6 sentence atmospheric second-person narration","scenery":"1-2 sentences describing the terrain to build","objectives":["a victory condition","..."],"specialRules":["an optional special rule","..."],"twist":"one mid-game complication (or empty string)","events":[{"round":4,"kind":"surprise","title":"short event name","text":"what happens this round, written atmospherically, ending with the measurable rule (e.g. 'Everyone within 10cm of the Marble Pit takes 1D6.')","effect":{"apply":true,"type":"damage","amount":"1D6","scope":"chosen","where":"within 10cm of Marble Pit (#3)","duration":"turn","negatedBy":["Power armour"]}}],"deployment":"how the warbands deploy, referencing table sides/centre","gameLength":"1D10+6 turns","terrain":[{"name":"terrain piece to build","note":"how many / what it looks like","prop":"P4","size":"8×8cm, 12cm tall","mapLabel":"Wreck Spire","role":"cover-tall"}],"newProps":[{"name":"Gantry bridge","size":"20×4cm, 8cm tall with a walkable top","why":"This table wants a raised crossing between two spires; nothing in the library spans a gap."}],"markers":[{"name":"objective/token to print","note":"what it marks","mapLabel":"Hadal Core","role":"objective"}],"npcs":[{"name":"extra character/creature","note":"what it is / when it appears","when":"when and where it shows up","mapLabel":"Vent Mouth","secret":false,"hint":""}],"items":[{"name":"collectible item","note":"what it does / what it changes about whoever picks it up","when":"the concrete moment it matters, naming the rule/hazard it answers","mapLabel":"Supply Locker","secret":false,"hint":"","trap":null,"effect":{"apply":true,"summary":"one vivid sentence of what happens to whoever keeps it","newName":"","skills":{"A":0,"F":0,"S":0,"AW":0,"P":0},"hp":0,"addTraits":[],"removeTraits":[],"addAbilities":[],"note":""}}],"injuries":[{"name":"Venom-withered arm","note":"The limb never regains its strength.","cause":"Scorpion Swarm"}],"map":{"note":"one-line caption of the battlefield","zones":[{"label":"short deployment label","side":"a","x":5,"y":5,"w":30,"h":18}],"features":[{"type":"terrain","role":"cover-tall","ground":"rough","label":"Wreck Spire","x":50,"y":50,"r":8}]}}
 Map coordinates are percentages of the 90×90 board: x from 0 (left) to 100 (right), y from 0 (top) to 100 (bottom). Provide 2-4 deployment zones (side is "a", "b" or "neutral") and 6-10 features (type is one of "terrain","cover","objective","hazard"; role is one of the roles listed above and is REQUIRED on every feature; "ground" is one of "even","rough","hazardous","impassable" and is also REQUIRED on every feature; add "r" — how far the ground of that type spreads, 4-28 in the same percentage units — on any rough, hazardous or impassable feature, so the map can shade the area rather than a point). Keep every map label under 22 characters and make each one distinctive enough to reference. Keep the checklist arrays short and concrete (omit any that don't apply), and give every checklist entry a "mapLabel" matching a map label exactly wherever it belongs on the table.`;
   try{
     const raw=await s.json(prompt,{modelTier:"default",cache:false});
@@ -6178,6 +6221,20 @@ Map coordinates are percentages of the 90×90 board: x from 0 (left) to 100 (rig
 }
 /* The shape applyEffect() already understands. Anything malformed becomes "flavour only"
    rather than a guess — the app never invents a stat change. */
+/* A trap is a find that hurts instead of helps: it is sprung the moment the cache is searched,
+   never pocketed. The DM writes it explicitly; a scenario written before traps existed is read
+   from its wording ("booby-trapped", "tripwire", "rigged") with the dice in its note, else 1D6. */
+function coerceTrap(x){
+  const t=x&&x.trap;
+  const dice=v=>{const m=String(v||"").match(/\d+\s*[dD]\s*\d+(\s*[+\-]\s*\d+)?/);return m?m[0].replace(/\s/g,"").toUpperCase():"";};
+  if(t&&typeof t==="object"){
+    return {damage:dice(t.damage)||"1D6",condition:String(t.condition||"").slice(0,40),note:String(t.note||"").slice(0,200)};
+  }
+  if(t===true)return {damage:dice(x.note)||"1D6",condition:"",note:""};
+  const txt=String((x&&x.name||"")+" "+(x&&x.note||""));
+  if(/\b(booby|trap|tripwire|rigged|landmine|mine\b|snare)/i.test(txt))return {damage:dice(x.note)||"1D6",condition:"",note:""};
+  return null;
+}
 function coerceItemEffect(e){
   if(!e||typeof e!=="object")return null;
   if(e.apply===false)return {apply:false,summary:String(e.summary||"").slice(0,160)};
@@ -7050,10 +7107,14 @@ function battleHTML(s){
   const guestNow=scnReadOnly?(()=>{const id=s.battle.now;if(!id)return "";const n=all.find(u=>u.id===id);if(!n)return `<div class="nowbar"><div><div class="nb-l">Now acting</div><div class="nb-n">an unseen enemy</div></div></div>`;return `<div class="nowbar"><div><div class="nb-l">Now acting</div><div class="nb-n">${esc(n.name)}</div><div class="nb-s">A ${n.A}${isMine(n)?" · <b>that's you</b>":""}</div></div></div>`;})():"";
   const filters=`<div class="rfilters">${[["all","All"],["mine","Mine"],["enemy","Enemy"],["hurt","Hurt"]].concat(!scnReadOnly&&arrivingIds.length?[["arriving","Arriving"]]:[]).map(([k,l])=>`<button class="rf ${rosterFilter===k?"on":""}" data-rf="${k}">${l}</button>`).join("")}</div>`;
   const listHTML=onTable.map((u,i)=>unitHTML(u,i,onTable)).join("");
-  const arrHTML=arriving.length?`<div class="btl-band"><b>Arriving</b><span>not on the table yet</span></div>${arriving.map(u=>{const base=u.kind==="squad"?u.id:String(u.id).replace(/_\d+$/,"");const c=enemyAll(s).find(x=>"e_"+x.id===base);const turn=c?enemyArrivalTurn(c):0;return `<div class="btl-unit arriving"><div class="btl-row enemy"><div class="btl-main"><span class="btl-side"></span><button class="btl-name btl-open" data-open-unit="${esc(u.kind==="squad"?u.members[0].id:u.id)}">${esc(u.name)}</button><span class="btl-owner">${turn?"turn "+turn:"on a trigger"}${c&&c.tease?" · "+esc(c.tease):""}</span></div><div class="btl-hp"><span class="hpv">${u.kind==="squad"?u.members.length+" ×":""}${u.kind==="squad"?u.members[0].maxHP:u.m.maxHP} HP</span></div></div></div>`;}).join("")}`:"";
+  const arrHTML=arriving.length?`<div class="btl-band"><b>Arriving</b><span>not on the table yet</span></div>${arriving.map(u=>{const base=u.kind==="squad"?u.id:String(u.id).replace(/_\d+$/,"");const c=enemyAll(s).find(x=>"e_"+x.id===base);const turn=c?enemyArrivalTurn(c):0;
+      // a secret stays secret even from the host (co-op: they play too) — no name, no numbers, no card
+      if(c&&enemyHidden(c))return `<div class="btl-unit arriving sealed"><div class="btl-row enemy"><div class="btl-main"><span class="btl-side"></span><button class="btl-name btl-open" data-reveal-enemy="${esc(c.id)}" title="Tap to reveal">🔒 Unseen</button><span class="btl-owner">${esc(c.omen||"something out there, unaccounted for")}</span></div><div class="btl-hp"><span class="hpv">?</span></div></div></div>`;
+      if(c&&enemyTeased(c))return `<div class="btl-unit arriving sealed"><div class="btl-row enemy"><div class="btl-main"><span class="btl-side"></span><button class="btl-name btl-open" data-reveal-enemy="${esc(c.id)}" title="Tap to reveal early">⚠ Something approaches</button><span class="btl-owner">${turn?"turn "+turn:"on a trigger"}${c.tease?" · "+esc(c.tease):""}</span></div><div class="btl-hp"><span class="hpv">?</span></div></div></div>`;
+      return `<div class="btl-unit arriving"><div class="btl-row enemy"><div class="btl-main"><span class="btl-side"></span><button class="btl-name btl-open" data-open-unit="${esc(u.kind==="squad"?u.members[0].id:u.id)}">${esc(u.name)}</button><span class="btl-owner">${turn?"turn "+turn:"on a trigger"}</span></div><div class="btl-hp"><span class="hpv">${u.kind==="squad"?u.members.length+" ×":""}${u.kind==="squad"?u.members[0].maxHP:u.m.maxHP} HP</span></div></div></div>`;}).join("")}`:"";
   return `<div class="scn-battle"><div class="mh">Battle order${scnReadOnly?" · live":""} <span class="none-note" style="font-style:normal;text-transform:none;letter-spacing:0">· by Agility${!scnReadOnly&&liveN?` · ${actedN} of ${liveN} acted`:""}</span></div>
     ${nowBar}${guestNow}${filters}${listHTML||`<div class="none-note">Nothing to show for this filter.</div>`}${arrHTML}
-    ${scnReadOnly?"":`<div class="round-actions" style="margin-top:8px"><span class="none-note" style="font-style:normal">${s.battle.combatants.length} models · ± adjusts HP · ↗ takes a member out of unit</span>${pendingQuest(s)?`<button class="linkbtn" id="btlHome">🏕 Return to camp</button>`:""}<button class="linkbtn" id="btlReset">Rebuild</button></div>`}</div>`;
+    ${scnReadOnly?"":`<div class="round-actions" style="margin-top:8px"><span class="none-note" style="font-style:normal">${s.battle.combatants.filter(m=>{const c=enemyAll(s).find(x=>"e_"+x.id===String(m.id).replace(/_\d+$/,""));return !(c&&enemyHidden(c));}).length} models · ± adjusts HP · ↗ takes a member out of unit</span>${pendingQuest(s)?`<button class="linkbtn" id="btlHome">🏕 Return to camp</button>`:""}<button class="linkbtn" id="btlReset">Rebuild</button></div>`}</div>`;
 }
 function rollDice(str){
   str=String(str||"").trim();
@@ -7143,6 +7204,7 @@ function showTurnPopup(s,turn,evs){
   showModal();
 }
 /* the turn counter, pinned to the bottom of the scenario page with jumps to the sections used mid-game */
+let tbFolded=false;try{tbFolded=localStorage.getItem("p28_tbfold")==="1";}catch(e){}
 function renderTurnBar(s){
   let bar=$("#turnBar");
   if(!s||currentView!=="scenarios"||scnScreen!=="detail"&&!(liveRole==="guest"&&liveScenario)){if(bar)bar.remove();document.body.classList.remove("has-turnbar");return;}
@@ -7155,6 +7217,9 @@ function renderTurnBar(s){
     <div class="tb-cur">Turn <b>${cur}</b>${tot?` <span>/ ${tot}</span>`:""}</div>
     ${scnReadOnly?"":`<button class="rbtn" id="tbNext" aria-label="Next turn"${over?" disabled":""}>+</button>`}
     <div class="tb-jumps"><button data-jump="roster" title="Battle roster">⚔</button><button data-jump="pick" title="Search points &amp; pick-ups">🔦</button><button data-jump="map" title="Battlefield">🗺</button><button data-jump="turn" title="Turn &amp; events">⏱</button></div>`;
+  bar.insertAdjacentHTML("afterbegin",`<button class="tb-fold" id="tbFold" title="${tbFolded?"Show the turn bar":"Tuck the turn bar away"}">${tbFolded?"›":"‹"}</button>`);
+  bar.classList.toggle("folded",tbFolded);document.body.classList.toggle("tb-folded",tbFolded);
+  $("#tbFold").onclick=()=>{tbFolded=!tbFolded;try{localStorage.setItem("p28_tbfold",tbFolded?"1":"0");}catch(e){}renderTurnBar(s);};
   const tp=$("#tbPrev");if(tp)tp.onclick=()=>setRound(s,curRound(s)-1);
   const tn=$("#tbNext");if(tn)tn.onclick=()=>nextTurn(s);
   bar.querySelectorAll("[data-jump]").forEach(b=>b.onclick=()=>{
@@ -7287,6 +7352,7 @@ function cacheNums(s){
   return out.sort((a,b)=>a-b);
 }
 function cacheList(s){
+  (s.items||[]).forEach(it=>{if(it&&typeof it==="object"&&it.trap===undefined)it.trap=coerceTrap(it);});
   const nums=cacheNums(s), seq=mapSeq(s.map);
   return nums.map(n=>{
     const e=seq.find(q=>q.n===n); if(!e)return null;
@@ -7294,7 +7360,7 @@ function cacheList(s){
     const token=[].concat(s.terrain||[],s.markers||[]).map(prepEntry)
       .find(x=>String(x.role||"").toLowerCase()==="cache"&&mapNumsFor(s.map,x.mapLabel).includes(n));
     const inside=(s.items||[]).filter(it=>mapNumsFor(s.map,it.mapLabel).includes(n));
-    return {n,label:e.label,name:(token&&token.name)||e.label,inside,left:inside.filter(it=>!it.found&&!it.heldBy)};
+    return {n,label:e.label,name:(token&&token.name)||e.label,inside,left:inside.filter(it=>!it.found&&!it.heldBy&&!it.sprung)};
   }).filter(Boolean);
 }
 /* REPAIR PASS for enemy deployment. The dangerous default is assuming a unit starts on the
@@ -7394,7 +7460,45 @@ function searchCache(s,label){
   if(found.secret)found.revealed=true;      // finding it reveals what it is
   pickupOpenId=null;
   save();renderScenarioView();
-  openFoundItem(s,found);                   // what it is, what it does, who takes it
+  if(found.trap)openTrapSprung(s,found);    // it bites — no pocketing this one
+  else openFoundItem(s,found);              // what it is, what it does, who takes it
+}
+/* The searcher takes the hit. The app rolls the dice; the host can trim the number for an
+   armour roll before it lands on the roster, and a model taken to 0 is marked for the injury
+   table like any other hazard. */
+function openTrapSprung(s,it){
+  const opts=pickupOptions(s).filter(o=>!o.down);
+  const roll=rollDice(it.trap.damage);
+  const body=$("#modalBody");
+  body.innerHTML=`<div class="eyebrow" style="color:var(--danger)">💥 It was rigged</div>
+    <h3>${esc(it.name||"A trap")}</h3>
+    ${it.note?`<p class="lead">${esc(it.note)}</p>`:""}
+    ${it.trap.note?`<p class="lead">${esc(it.trap.note)}</p>`:""}
+    <div class="camp-box" style="margin:10px 0"><div class="prep-h">Damage · ${esc(it.trap.damage)}</div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><b class="mono" style="font-size:26px">${roll}</b>
+      <span class="none-note" style="font-style:normal">rolled for you · roll armour and take the saves off below</span></div>
+      <div class="field" style="margin-top:8px"><label>Damage that lands</label><input class="input mono" id="trDmg" type="number" min="0" max="99" value="${roll}"></div>
+      ${it.trap.condition?`<div class="none-note" style="font-style:normal;margin-top:6px">Also: <b>${esc(it.trap.condition)}</b> until the end of next turn.</div>`:""}
+    </div>
+    ${opts.length?`<div class="eyebrow">Who searched it</div>
+      <select class="input" id="trWho">${opts.map(o=>`<option value="${esc(o.key)}">${esc(o.label)}</option>`).join("")}</select>`
+      :`<p class="none-note" style="font-style:normal">Start the battle roster first — nobody is on the table to take the hit.</p>`}
+    <div class="modal-actions">
+      ${opts.length?`<button class="btn primary sm" id="trHit">Take the hit</button>`:""}
+      <button class="btn ghost sm" id="trSkip" style="margin-left:auto">It missed</button>
+    </div>`;
+  const finish=(txt)=>{it.sprung=true;it.found=true;it.heldBy=null;pushFeed(s,{kind:"trap",text:txt});save();closeModal();renderScenarioView();toast(txt);
+    if(liveRole==="host"&&hostScenarioId===s.id)scheduleHostSync(s);};
+  const hit=$("#trHit");if(hit)hit.onclick=()=>{
+    const dmg=Math.max(0,Math.min(99,+$("#trDmg").value||0));
+    const m=((s.battle&&s.battle.combatants)||[]).find(x=>x.id===$("#trWho").value);
+    if(!m){finish(it.name+" went off — nobody on the roster to hurt");return;}
+    if(dmg>0){m.curHP=Math.max(0,(m.curHP|0)-dmg);if(m.curHP<=0)m.maimedBy=String("a trap — "+(it.name||"")).slice(0,40);}
+    if(it.trap.condition){m.conditions=Array.isArray(m.conditions)?m.conditions:[];m.conditions.push({label:it.trap.condition,expireTurn:curRound(s)+1});}
+    finish(m.name+" took "+dmg+" from "+(it.name||"a trap")+(m.curHP<=0?" — DOWN":""));
+  };
+  $("#trSkip").onclick=()=>finish((it.name||"The trap")+" went off — nobody hurt");
+  showModal();
 }
 function collectHTML(s){
   const items=(s.items||[]);
@@ -7413,6 +7517,8 @@ function collectHTML(s){
     if(!it.id)return "";
     const nums=numBadges(mapNumsFor(s.map,it.mapLabel));
     const whenLine=it.when?`<div class="pick-when">⏱ ${esc(it.when)}</div>`:"";
+    if(it.sprung)return `<div class="pick-row dim"><div class="pick-main">${nums}<b>💥 ${esc(it.name)}</b><span class="pick-note"> — sprung</span></div></div>`;
+    if(it.trap&&!itemIsHidden(s,it)&&!scnReadOnly)return `<div class="pick-row"><div class="pick-main">${nums}<b>${esc(it.name)}</b><span class="pick-note"> — trap · ${esc(it.trap.damage)} to whoever searches it</span></div></div>`;
     if(it.heldBy){
       const m=((s.battle&&s.battle.combatants)||[]).find(x=>x.id===it.heldBy);
       const ch=chars.find(c=>c.id===((m&&m.charId)||String(it.heldBy).replace(/^p_/,"")));
@@ -8030,16 +8136,41 @@ $("#btnTheme").onclick=()=>{
 };
 (function initTheme(){try{const t=localStorage.getItem("p28_theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}})();
 
-document.addEventListener("keydown",e=>{
-  if(e.key==="Escape"){
-    if($("#confirmWrap").classList.contains("show"))return closeConfirm();
-    if($("#mapLightbox").classList.contains("show"))return closeMapLightbox();
-    if($("#picker").classList.contains("show"))return closePicker();
-    if($("#modal").classList.contains("show"))return closeModal();
-    if($("#dossier").classList.contains("show"))return closeDossier();
-    if($("#cardWrap").classList.contains("show"))return closeCard();
-  }
+/* ---- Escape and the phone's back button both close the top-most overlay ----
+   Every overlay open pushes ONE history entry; going back pops it and closes the overlay
+   instead of leaving the page. Closing by button pops that entry ourselves so the stack
+   stays clean. If another overlay is still open underneath, the entry is re-armed. */
+const OVERLAY_SEL=".confirm.show,.maplb.show,.picker.show,.modal.show,.dossier.show,.cardwrap.show,.menupop.show,#cheatDrawer.show";
+function overlayOpenNow(){return !!document.querySelector(OVERLAY_SEL);}
+function closeTopOverlay(){
+  if($("#confirmWrap").classList.contains("show"))return closeConfirm();
+  if($("#mapLightbox").classList.contains("show"))return closeMapLightbox();
+  if($("#picker").classList.contains("show"))return closePicker();
+  if($("#modal").classList.contains("show"))return closeModal();
+  if($("#dossier").classList.contains("show"))return closeDossier();
+  if($("#cardWrap").classList.contains("show"))return closeCard();
+  const mp=$("#menuPop");if(mp&&mp.classList.contains("show"))return mp.classList.remove("show");
+  const cd=$("#cheatDrawer");if(cd&&cd.classList.contains("show"))return closeCheat();
+}
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeTopOverlay();});
+let ovArmed=false, ovSelfBack=false;
+function ovSync(){
+  const open=overlayOpenNow();
+  if(open&&!ovArmed){try{history.pushState({p28ov:1},"");ovArmed=true;}catch(e){}}
+  else if(!open&&ovArmed){ovArmed=false;ovSelfBack=true;try{history.back();}catch(e){ovSelfBack=false;}}
+}
+window.addEventListener("popstate",()=>{
+  if(ovSelfBack){ovSelfBack=false;return;}       // the pop we asked for after a button close
+  if(!ovArmed)return;                              // not ours — let the browser do its thing
+  ovArmed=false;
+  closeTopOverlay();
+  if(overlayOpenNow()){try{history.pushState({p28ov:1},"");ovArmed=true;}catch(e){}}
 });
+(function(){
+  let t=0;
+  new MutationObserver(()=>{if(!t)t=setTimeout(()=>{t=0;ovSync();},0);})
+    .observe(document.body,{attributes:true,attributeFilter:["class","hidden"],subtree:true});
+})();
 
 /* ---- tooltips (hover + tap) for [data-tip] elements ---- */
 (function(){
