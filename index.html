@@ -2802,7 +2802,7 @@ function dossierCostHTML(cost,obj){
   }
   if(wbSealed(w)){
     const cp=obj&&obj.id?cpOf(obj)+(w.cp||0):(w.cp||0);
-    return `${cost}<small>points · <b class="ok">⭐ ${cp} cp to spend</b></small>`;
+    return `${cost}<small>points · <b class="ok">⭐ ${cp} cp</b> · <b class="ok">🪙 ${creditsOf(w)} cr</b></small>`;
   }
   const left=w.budget-wbSpent(w);
   return `${cost}<small>points · <b class="${left<0?"over":"ok"}">${left<0?"over by "+(-left):left+" left of "+w.budget}</b></small>`;
@@ -5222,6 +5222,7 @@ function openBuyGear(charId){
       c[fld]=Array.isArray(c[fld])?c[fld]:[];
       const ex=c[fld].find(e=>e.id===id); if(ex)ex.qty=(ex.qty||1)+1; else c[fld].push({id,qty:1});
       w.credits=creditsOf(w)-price; save();render();draw(filter);
+      if($("#dossier").classList.contains("show"))buildDossier();   // the header's credit count and the kit list under the modal
       toast("Bought "+o.name+" for "+price+" credits");
     });
     $("#cgConvert").onclick=()=>openConvertCP(charId);
@@ -5259,7 +5260,7 @@ function openConvertCP(backToChar){
     else{const c=w.characters.find(x=>x.id===k);if(!c)return;c.cp=Math.max(0,cpOf(c)-pts);}
     w.credits=creditsOf(w)+cr;
     toast("−"+pts+" cp → +"+cr+" credits");
-    save();render();openConvertCP(backToChar);
+    save();render();if($("#dossier").classList.contains("show"))buildDossier();openConvertCP(backToChar);
   });
   $("#cvBack").onclick=()=>{if(backToChar)openBuyGear(backToChar);else closeModal();};
   showModal();
