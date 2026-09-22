@@ -450,6 +450,24 @@ mark{background:color-mix(in srgb,var(--amber) 35%,transparent);color:inherit;bo
 .cheat-a{padding:0 2px 14px;display:none}
 .cheat-sec.open .cheat-a{display:block}
 .cheat-item{margin-bottom:13px}
+/* my terrain: the pieces on the shelf */
+.mp-row{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--line-soft)}
+.mp-img{width:46px;height:46px;border-radius:8px;background:var(--sunk);border:1px solid var(--line);object-fit:cover;flex:none;display:grid;place-items:center;font-size:20px}
+.mp-main{flex:1;min-width:0}.mp-name{font-weight:600;font-size:13px}.mp-name .mono{color:var(--amber);margin-right:6px}
+.mp-sub{font-size:11.5px;color:var(--ink-dim);margin-top:2px}.mp-look{font-size:11.5px;color:var(--ink-mute);font-style:italic;margin-top:2px}
+.mp-qty{display:flex;align-items:center;gap:5px;flex:none}.mp-qty b{font-family:var(--mono);min-width:16px;text-align:center}
+.mp-add{margin-top:10px}
+.mp-photo{display:flex;gap:10px;align-items:center;margin:6px 0 10px}.mp-photo img{width:64px;height:64px;border-radius:8px;object-fit:cover;border:1px solid var(--line)}
+/* set piece */
+.sp-box{border:1px solid color-mix(in srgb,var(--arcane) 55%,var(--line));background:color-mix(in srgb,var(--arcane) 8%,var(--panel));border-radius:var(--r-sm);padding:10px 12px;margin:0 0 10px}
+.sp-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px}.sp-h b{font-family:var(--disp);font-size:14px}.sp-h .chip{flex:none}
+.sp-pres{font-size:12.5px;margin:6px 0;color:var(--ink)}.sp-pres b{color:var(--arcane)}
+.sp-wp{display:flex;align-items:center;gap:8px;padding:5px 0;border-top:1px dashed var(--line-soft);font-size:12.5px}
+.sp-wp .n{flex:1;min-width:0}.sp-wp .n small{display:block;color:var(--ink-mute);font-size:11px}
+.sp-wp.dead .n{text-decoration:line-through;color:var(--ink-mute)}
+.sp-wp .hpv{font-family:var(--mono);min-width:38px;text-align:center}
+.sp-win{font-size:12px;color:var(--ink-dim);margin-top:6px}.sp-win b{color:var(--ink)}
+.sp-state{font-family:var(--disp);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase}
 .cheat-item:last-child{margin-bottom:0}
 .cheat-item .ci-n{font-family:var(--disp);font-weight:600;font-size:13.5px;color:var(--ink);margin-bottom:3px}
 .cheat-item .ci-d{font-size:12.5px;color:var(--ink-dim);line-height:1.5}
@@ -4368,10 +4386,104 @@ function setPropCount(code,n){
   try{ localStorage.setItem("p28_props",JSON.stringify(c)); }catch(e){}
   renderCheat();
 }
-function ownedProps(){ const c=propCounts(); return PROPS.filter(p=>c[p.code]>0).map(p=>Object.assign({},p,{qty:c[p.code]})); }
-function propByCode(c){c=String(c||"").trim().toUpperCase();return PROPS.find(p=>p.code===c)||null;}
+function ownedProps(){ const c=propCounts(); return PROPS.filter(p=>c[p.code]>0).map(p=>Object.assign({},p,{qty:c[p.code]})).concat(myProps().filter(p=>(+p.qty||0)>0).map(myPropAsProp)); }
+function propByCode(c){c=String(c||"").trim().toUpperCase();return PROPS.find(p=>p.code===c)||myProps().filter(p=>p.code===c).map(myPropAsProp)[0]||null;}
+/* ---- MY TERRAIN ----
+   The pieces the host has actually printed, beside the ten standard shapes. The role comes
+   from the height the way the rulebook cuts it (under 5cm: shoot and step over; 5cm+: climbed,
+   hides a crouching model; ~10cm+: blocks sight), and the host can overrule it for odd shapes.
+   A "set piece" is a big prop that cannot be fought, only dealt with — the DM gets told. */
+const MYPROP_SEED=[
+ {id:"mp1",code:"C1",name:"Stone Valley Arch A",w:10,d:5,h:5,qty:1,role:"cover-tall",ground:"rough",walk:false,setpiece:false,look:"a jagged crystal crescent, low skirt rising to spikes at one end; pairs with Arch B face-to-face to make a hollow that hides whatever is inside"},
+ {id:"mp2",code:"C2",name:"Stone Valley Arch B",w:10,d:5,h:5,qty:1,role:"cover-tall",ground:"rough",walk:false,setpiece:false,look:"the other half of the arch — same crystal crescent"},
+ {id:"mp3",code:"C3",name:"Square container",w:6,d:6,h:6,qty:2,role:"cover-tall",ground:"even",walk:true,setpiece:false,look:"a ribbed steel shipping container with doors; two stack into a 12cm sight-blocker"},
+ {id:"mp4",code:"C4",name:"Ruined wall with door",w:20,d:6,h:3,qty:1,role:"cover-low",ground:"even",walk:false,setpiece:false,look:"broken stone wall with a wooden double door, sandbags at one end and barrels at the other"},
+ {id:"mp5",code:"C5",name:"Kraken",w:11,d:11,h:8,qty:1,role:"cover-tall",ground:"rough",walk:false,setpiece:true,look:"a huge black octopus rearing out of rubble, tentacles raised — you can shoot between the tentacles, not through the body"},
+ {id:"mp6",code:"C6",name:"Dragon",w:20,d:20,h:7,qty:1,role:"cover-tall",ground:"rough",walk:false,setpiece:true,look:"a sprawling dragon with wings spread, a quarter of the table on its own; needs a clear 20cm circle"},
+ {id:"mp7",code:"C7",name:"Hanging AI",w:10,d:10,h:12,qty:1,role:"cover-tall",ground:"even",walk:false,setpiece:true,look:"a machine intelligence hanging from a disc on a tiled column — the column and disc block sight, the air under it does not"},
+ {id:"mp8",code:"C8",name:"Paladin statue",w:11,d:10,h:11,qty:1,role:"cover-tall",ground:"rough",walk:false,setpiece:false,look:"an armoured giant on a rocky plinth, hammer in one hand and an open book in the other"}
+];
+function myProps(){
+  try{const v=JSON.parse(localStorage.getItem("p28_myprops")||"null");if(Array.isArray(v))return v;}catch(e){}
+  return MYPROP_SEED.map(x=>Object.assign({},x));
+}
+function saveMyProps(list){try{localStorage.setItem("p28_myprops",JSON.stringify(list));}catch(e){}}
+function propRoleFromHeight(h){h=+h||0;return h<5?"cover-low":h<10?"cover-tall":"blocking";}
+function myPropSize(p){return `${+p.w||0}×${+p.d||0}cm, ${+p.h||0}cm tall`;}
+function myPropUse(p){
+  const r=String(p.role||propRoleFromHeight(p.h));
+  const bits=[r==="cover-low"?"Gives cover; shot over and stepped over, no climbing.":r==="cover-tall"?"Hides a standing model behind it and blocks sight through it. Must be climbed.":r==="blocking"?"Blocks line of sight outright; impassable.":r==="deco"?"Scenic only.":(FEAT_ROLES[r]?FEAT_ROLES[r].label+".":"")];
+  if(p.walk)bits.push("Flat top you can stand on — a model up there shoots down at +1.");
+  if(p.ground&&p.ground!=="even"&&GROUND[p.ground])bits.push("Ground around it is "+GROUND[p.ground].label+".");
+  if(p.setpiece)bits.push("SET PIECE.");
+  return bits.join(" ");
+}
+function myPropAsProp(p){return {code:p.code,name:p.name,size:myPropSize(p),use:myPropUse(p),qty:+p.qty||0,full:+p.qty||0,custom:true,look:p.look||"",setpiece:!!p.setpiece,role:p.role||propRoleFromHeight(p.h)};}
+function nextMyCode(list){let n=1;while(list.some(p=>p.code==="C"+n))n++;return "C"+n;}
 function propsForAI(){
-  return ownedProps().map(p=>`${p.code} — ${p.name} (the host owns ${p.qty}): ${p.size}. ${p.use}`).join("\n");
+  return ownedProps().map(p=>`${p.code} — ${p.name} (the host owns ${p.qty}): ${p.size}. ${p.use}${p.custom&&p.look?" Looks like: "+p.look+".":""}`).join("\n");
+}
+function setpiecesForAI(){
+  const sp=ownedProps().filter(p=>p.setpiece);
+  if(!sp.length)return "";
+  return `SET PIECES. The host owns big props that are NOT enemies to be killed: ${sp.map(p=>p.code+" "+p.name+" ("+p.size+")").join("; ")}. You MAY build the scenario around ONE of them (never more than one) by filling "setpiece": {"prop":"C5","name":"the fiction's name for it","presence":"one sentence of what it does to the table every turn just by being there — a pull, a wake-up stage, a turret it re-arms","weakPoints":[{"name":"a tentacle / a power node / a ward","hp":6,"how":"smash it (F roll) · hack it (AW roll) · plant a charge (1 action in contact)"}],"win":"what the players must do — subdue it, get past it, shut it down by turn N — never 'kill it'"}. Give it 3-5 weak points with 4-10 hp each; when three quarters are gone it is SUBDUED and its presence stops. Put the set piece on the map as ONE feature with role "interactive" and mapLabel equal to its name, and list it in "terrain" with its prop code. Its minions are the ordinary enemy force — write them as its creatures, guards or drones, and let more arrive when it is disturbed. If the scenario does not need a set piece, set "setpiece": null and leave those props as plain terrain.`;
+}
+function myTerrainHTML(){
+  const list=myProps();
+  const rows=list.map(p=>`<div class="mp-row" data-mp="${esc(p.id)}">
+      ${p.img?`<img class="mp-img" src="${p.img}" alt="">`:`<div class="mp-img">${p.setpiece?"◆":"🧱"}</div>`}
+      <div class="mp-main"><div class="mp-name"><span class="mono">${esc(p.code)}</span>${esc(p.name)}${p.setpiece?' <span class="chip">set piece</span>':""}</div>
+        <div class="mp-sub">${esc(myPropSize(p))} · ${esc((FEAT_ROLES[p.role||propRoleFromHeight(p.h)]||{}).label||"")}${p.walk?" · walkable top":""}${p.ground&&p.ground!=="even"?" · "+esc((GROUND[p.ground]||{}).label||""):""}</div>
+        ${p.look?`<div class="mp-look">${esc(p.look)}</div>`:""}
+        <button class="linkbtn" data-mp-edit="${esc(p.id)}">edit</button></div>
+      <div class="mp-qty"><button class="rbtn sm" data-mp-qty="${esc(p.id)}|-1">−</button><b>${+p.qty||0}</b><button class="rbtn sm" data-mp-qty="${esc(p.id)}|1">+</button></div>
+    </div>`).join("");
+  return `<div class="cheat-sec${cheatOpen["mp"]?" open":""}"><button class="cheat-q" data-cheat="mp"><span class="cq-ico">🧱</span>My terrain<span class="cq-n">${list.length}</span><span class="cq-arrow">›</span></button>
+    <div class="cheat-a"><div class="ci-d" style="margin-bottom:8px">The pieces you have printed or built, beside the standard shapes. The DM is told about every one you own — size, what it does in play, and what it looks like — and writes the table out of them. A set piece is a big prop that cannot be fought, only dealt with.</div>
+      ${rows||`<div class="ng-note">Nothing on the shelf yet.</div>`}
+      <button class="btn sm mp-add" id="mpAdd">+ Add a piece</button></div></div>`;
+}
+function openMyPropEditor(id){
+  const list=myProps();
+  const p=id?list.find(x=>x.id===id):{id:uid(),code:nextMyCode(list),name:"",w:10,d:10,h:5,qty:1,role:"",ground:"even",walk:false,setpiece:false,look:"",img:""};
+  if(!p)return;
+  const draft=Object.assign({},p);
+  const body=$("#modalBody");
+  const roleOpts=[["","auto from height"],["cover-low","cover · shoot over"],["cover-tall","cover · hides a model"],["blocking","blocks sight · impassable"],["deco","scenic only"],["interactive","interactive"],["objective","objective"],["hazard","hazard"]];
+  const draw=()=>{
+    const autoRole=propRoleFromHeight(draft.h);
+    body.innerHTML=`<h3>${id?"Edit piece":"Add a piece"} <span class="mono" style="color:var(--amber)">${esc(draft.code)}</span></h3>
+      <div class="field"><label>Name</label><input class="input" id="mpName" value="${esc(draft.name)}" placeholder="e.g. Cargo container" maxlength="40"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px">
+        <div class="field"><label>Wide cm</label><input class="input mono" id="mpW" type="number" min="1" max="90" value="${+draft.w||0}"></div>
+        <div class="field"><label>Deep cm</label><input class="input mono" id="mpD" type="number" min="1" max="90" value="${+draft.d||0}"></div>
+        <div class="field"><label>Tall cm</label><input class="input mono" id="mpH" type="number" min="0" max="60" value="${+draft.h||0}"></div>
+        <div class="field"><label>Own</label><input class="input mono" id="mpQ" type="number" min="0" max="20" value="${+draft.qty||0}"></div>
+      </div>
+      <div class="field"><label>In play</label><select class="input" id="mpRole">${roleOpts.map(([v,l])=>`<option value="${v}"${(draft.role||"")===v?" selected":""}>${l}${v===""?" ("+(FEAT_ROLES[autoRole]||{}).label+")":""}</option>`).join("")}</select></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div class="field"><label>Ground around it</label><select class="input" id="mpGround">${Object.keys(GROUND).map(g=>`<option value="${g}"${(draft.ground||"even")===g?" selected":""}>${GROUND[g].label}</option>`).join("")}</select></div>
+        <div class="field"><label>&nbsp;</label><label class="chk" style="display:flex;gap:8px;align-items:center;font-size:13px"><input type="checkbox" id="mpWalk"${draft.walk?" checked":""}> flat top, can stand on it</label>
+          <label class="chk" style="display:flex;gap:8px;align-items:center;font-size:13px;margin-top:6px"><input type="checkbox" id="mpSet"${draft.setpiece?" checked":""}> set piece (not an enemy — dealt with, not killed)</label></div>
+      </div>
+      <div class="field"><label>What it looks like (the DM writes around this)</label><textarea class="input" id="mpLook" rows="2" maxlength="200" placeholder="a ribbed steel container with one door hanging open">${esc(draft.look||"")}</textarea></div>
+      <div class="mp-photo">${draft.img?`<img src="${draft.img}" alt="">`:""}<label class="btn ghost sm">📷 ${draft.img?"Change photo":"Add a photo"}<input type="file" id="mpImg" accept="image/*" hidden></label>${draft.img?`<button class="linkbtn del" id="mpImgX">remove</button>`:""}</div>
+      <div class="modal-actions">
+        <button class="btn primary sm" id="mpSave">Save</button>
+        ${id?`<button class="btn ghost sm confirm-danger" id="mpDel">Delete</button>`:""}
+        <button class="btn ghost sm" id="mpX" style="margin-left:auto">Cancel</button>
+      </div>`;
+    const grab=()=>{draft.name=$("#mpName").value.trim();draft.w=+$("#mpW").value||0;draft.d=+$("#mpD").value||0;draft.h=+$("#mpH").value||0;draft.qty=Math.max(0,Math.min(20,+$("#mpQ").value||0));draft.role=$("#mpRole").value;draft.ground=$("#mpGround").value;draft.walk=$("#mpWalk").checked;draft.setpiece=$("#mpSet").checked;draft.look=$("#mpLook").value.trim();};
+    $("#mpH").onchange=()=>{grab();draw();};
+    $("#mpImg").onchange=e=>{const f=e.target.files&&e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{const im=new Image();im.onload=()=>{const c=document.createElement("canvas");const k=Math.min(1,140/Math.max(im.width,im.height));c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext("2d").drawImage(im,0,0,c.width,c.height);grab();draft.img=c.toDataURL("image/jpeg",.72);draw();};im.src=rd.result;};rd.readAsDataURL(f);};
+    const ix=$("#mpImgX");if(ix)ix.onclick=()=>{grab();draft.img="";draw();};
+    $("#mpSave").onclick=()=>{grab();if(!draft.name){toast("Give it a name");return;}
+      const i=list.findIndex(x=>x.id===draft.id);if(i>=0)list[i]=draft;else list.push(draft);
+      saveMyProps(list);closeModal();renderCheat();toast(draft.code+" "+draft.name+" saved");};
+    const dl=$("#mpDel");if(dl)dl.onclick=()=>askConfirm("Delete "+draft.code+" "+draft.name+" from the shelf?",()=>{saveMyProps(list.filter(x=>x.id!==draft.id));closeModal();renderCheat();},{yesLabel:"Delete"});
+    $("#mpX").onclick=closeModal;
+  };
+  draw();showModal();
 }
 const CHEAT=[
  {ico:"◉",title:"Your two actions",items:[
@@ -4500,6 +4612,7 @@ const FLOWS=[
 let guideTab="round", guideQuery="", diceTarget=null, diceLast=null;
 function guideEntries(){
   const out=[];
+  myProps().forEach(p=>out.push({tab:"camp",sec:"My terrain",n:p.code+" · "+p.name,d:myPropSize(p)+" — "+myPropUse(p)+" "+(p.look||""),html:`<div class="cheat-item"><div class="ci-n"><span class="mono">${esc(p.code)}</span> ${esc(p.name)}</div><div class="ci-d">${esc(myPropSize(p))} — ${esc(myPropUse(p))}</div></div>`}));
   CHEAT.forEach((s,si)=>{ if(s.build==="claude"&&fbAvailable())return;
     s.items.forEach(it=>out.push({tab:(s.title==="Back at camp"||s.title==="The prop library")?"camp":"round",sec:s.title,n:it.n,d:(it.d||"")+" "+(it.steps||[]).join(" ")+" "+(it.mod||""),html:cheatItemHTML(it)}));});
   WEAPON_RULES.forEach(r=>out.push({tab:"ref",sec:"Weapon keywords",n:r[0],d:r[1],html:`<div class="cheat-item"><div class="ci-n">${esc(r[0])}</div><div class="ci-d">${esc(r[1])}</div></div>`}));
@@ -4579,7 +4692,7 @@ function renderCheat(){
     body=groups.map(([title,items],gi)=>`<div class="cheat-sec${cheatOpen["r"+gi]?" open":""}"><button class="cheat-q" data-cheat="r${gi}"><span class="cq-ico">📚</span>${esc(title)}<span class="cq-n">${items.length}</span><span class="cq-arrow">›</span></button><div class="cheat-a">${items.map(cheatItemHTML).join("")}</div></div>`).join("");
   } else {
     const secs=CHEAT.map((s,i)=>[s,i]).filter(([s])=>!(s.build==="claude"&&fbAvailable())&&(s.title==="Back at camp"||s.title==="The prop library"));
-    body=`<div class="cheat-roll">Between games: 20 cp buys a skill level or +${CP_COSTS.hpStep} HP · traits and abilities cost their points · a recruit is ${CP_COSTS.recruit} · treatment ${CP_COSTS.heal} · points → credits at 2:1.</div>`+
+    body=`<div class="cheat-roll">Between games: 20 cp buys a skill level or +${CP_COSTS.hpStep} HP · traits and abilities cost their points · a recruit is ${CP_COSTS.recruit} · treatment ${CP_COSTS.heal} · points → credits at 2:1.</div>`+myTerrainHTML()+
       secs.map(([s,i])=>`<div class="cheat-sec${cheatOpen[i]?" open":""}"><button class="cheat-q" data-cheat="${i}"><span class="cq-ico">${s.ico}</span>${esc(s.title)}<span class="cq-n">${s.items.length}</span><span class="cq-arrow">›</span></button><div class="cheat-a">${s.items.map(cheatItemHTML).join("")}</div></div>`).join("");
   }
   d.innerHTML=`<div class="cheat-head"><h3>Guide</h3><button class="iconbtn" id="cheatClose" aria-label="Close">✕</button></div>
@@ -4592,6 +4705,9 @@ function renderCheat(){
   const qi=$("#guideQ");qi.oninput=()=>{const pos=qi.selectionStart;guideQuery=qi.value;renderCheat();const n=$("#guideQ");if(n){n.focus();try{n.setSelectionRange(pos,pos);}catch(e){}}};
   d.querySelectorAll("[data-gtab]").forEach(b=>b.onclick=()=>{guideTab=b.dataset.gtab;renderCheat();});
   d.querySelectorAll("[data-prop]").forEach(b=>b.onclick=e=>{e.stopPropagation();const [code,delta]=b.dataset.prop.split("|");setPropCount(code,(propCounts()[code]||0)+(+delta));});
+  d.querySelectorAll("[data-mp-qty]").forEach(b=>b.onclick=e=>{e.stopPropagation();const[id,delta]=b.dataset.mpQty.split("|");const list=myProps();const p=list.find(x=>x.id===id);if(!p)return;p.qty=Math.max(0,Math.min(20,(+p.qty||0)+(+delta)));saveMyProps(list);renderCheat();});
+  d.querySelectorAll("[data-mp-edit]").forEach(b=>b.onclick=()=>openMyPropEditor(b.dataset.mpEdit));
+  const mpa=$("#mpAdd");if(mpa)mpa.onclick=()=>openMyPropEditor(null);
   d.querySelectorAll("[data-cheat]").forEach(b=>b.onclick=()=>{const i=b.dataset.cheat;cheatOpen[i]=!cheatOpen[i];b.parentElement.classList.toggle("open",!!cheatOpen[i]);});
   d.querySelectorAll("[data-flow]").forEach(b=>b.onclick=()=>{const k="f_"+b.dataset.flow;cheatOpen[k]=!cheatOpen[k];b.parentElement.classList.toggle("open",!!cheatOpen[k]);});
   d.querySelectorAll("[data-dtarget]").forEach(b=>b.onclick=()=>{const [v,label]=b.dataset.dtarget.split("|");diceTarget={v:+v,label};diceLast=null;renderCheat();});
@@ -5972,6 +6088,7 @@ function normalizeImportedScn(raw){
   const s=raw&&typeof raw==="object"?JSON.parse(JSON.stringify(raw)):{};
   s.id=uid(); s.createdAt=s.createdAt||Date.now();
   s.mystery=coerceMystery(s.mystery);
+  s.setpiece=coerceSetpiece(s.setpiece);
   s.mode=s.mode==="coop"?"coop":"pvp";
   s.players=+s.players||3; s.points=+s.points||300;
   ["objectives","specialRules","terrain","markers","searched"].forEach(k=>{if(!Array.isArray(s[k]))s[k]=[];});
@@ -6188,6 +6305,7 @@ GROUND TYPE ON EVERY MAP FEATURE. Separately from what a piece DOES, the ruleboo
 Do NOT make everything even — a table of flat ground plays flat. Rough ground is the workhorse: it is what makes a ruin feel like a ruin and gives Agility, Sure-footed, Climber and the vehicle types (Walker, Hover, Flyer) something to matter against. Reserve hazardous for genuinely lethal ground and place little of it, and use impassable sparingly for hard edges. Ground and role are independent: a collapsed spire can be tall cover AND rough, a reactor pool can be an objective AND hazardous.
 BUILD THE TABLE OUT OF THE STANDARD PROPS. The host owns a fixed set of shapes, so every terrain entry must name one by its code in a "prop" field, and its "size" must be that prop's size copied exactly. Name the piece for the fiction, not the shape — "P5 — The Rust Spire", "P2 — collapsed handrail". Each prop line says how many the host OWNS — never call for more of one than that, and never use a prop that is not listed, because it does not exist yet. A table is usually 8-14 pieces in total. If the list is short, build the scenario around what is there: fewer, better-placed pieces and ground areas beat imaginary scenery. The library:
 ${propsForAI()}
+${setpiecesForAI()}
 GET THE COVER LANGUAGE RIGHT. Planet 28 has ONE cover rule: if any part of a character's body is covered by terrain they are in cover, and gain an extra 1D6 armour roll against shooting. There is no "heavy" or "light" cover, and cover never blocks a shot by itself. What height changes is LINE OF SIGHT — you may shoot anyone with any part of their body visible — so a piece taller than a standing model hides them completely (no shot at all), while a low piece leaves them targetable but in cover. Say it that way in the scenario: "blocks line of sight" or "gives cover", never "heavy cover".
 If the table truly needs a shape the library does not have, do NOT bend an existing prop — instead add it to "newProps" (see the JSON shape) so the host can build it before next time, and use the closest existing prop for this game.
 CONNECT THE CHECKLIST TO THE MAP — this is important. Every map feature needs a "role" saying what it DOES in play, chosen from: "cover-low" (shoot over it), "cover-tall" (blocks sight, can hide behind), "blocking" (impassable/solid), "deco" (pure scenery, no game effect), "cache" (can be SEARCHED — this is where a collectible item is found), "interactive" (can be operated/hacked/opened/triggered), "objective", "hazard", "spawn" (where something arrives). And every checklist entry (terrain, markers, npcs, items) must set "mapLabel" to the EXACT label text of the map feature or zone it corresponds to, copied character-for-character (use a comma-separated list if one entry covers several identical pieces, e.g. "Wreck Spire, Wreck Spire"). The app turns those into the numbers shown on the map, so the host knows exactly which printed piece goes where and which one is searchable. If a collectible item is found by searching a terrain piece, give that feature role "cache" and point the item's "mapLabel" at it. Leave "mapLabel" as "" ONLY for things genuinely not on the map (e.g. a spare token kept off-table).
@@ -6199,7 +6317,7 @@ A find may instead be a TRAP: set "trap":{"damage":"1D6","condition":"Stunned" o
 ${qt&&MYSTERY_TYPES.includes(qt[0])?`THIS IS A MYSTERY, SO IT IS DELIVERED SEALED. The players — and the host reading this at the table — must not be handed the shape of it in advance. Therefore: "objectives" holds EXACTLY ONE line, deliberately vague ("Find out what is down here, and come back."); "specialRules" holds at most 2 atmospheric rules about the PLACE (light, water, cold), never about the mystery itself; "twist" is an empty string; EVERY enemy unit and creature is "secret": true and does not deploy at the start; every item is "secret": true with a hint. Then add a "mystery" object: {"question":"the one thing the players are here to find out, in a sentence","truth":"the full answer — what this really is, why, what it wants; only ever shown at the finale","envelopes":[{"trigger":"a concrete, testable moment — 'turn 3', 'someone searches #4', 'a model enters the Sump (#7)', 'a caster fails a roll', 'the first time anyone is wounded'","title":"short sealed title the host sees BEFORE opening (2-4 words, no spoilers)","text":"what the host reads aloud when it opens — vivid, second person, 2-4 sentences","effect":"what changes at the table now, as a rule the host applies — a new marker, a creature stepping out (name it, it is in the enemy list), a zone that becomes hazardous, a clue that narrows the question; or an empty string if it is pure atmosphere"}],"finale":"how the truth comes out and how the game ends — what the players must do in the last turns, and what 'getting out with the answer' looks like on the table"}. Write 6-9 envelopes; order them from early to late; make at least 3 depend on what the players DO (search, enter, touch, cast), not just on the turn count; make the clues add up so a thinking table can guess the truth one envelope early. Timed "events" may still exist for the app's turn tracker, but keep them as atmosphere — the mystery lives in the envelopes.
 `:""}SECRETS & SURPRISES — make the world feel alive: you MAY include plot twists and surprise reveals. Mark any NPC, item, or timed event that should be a SECRET (hidden from the host until it happens) with "secret": true. For a secret NPC or item, DO NOT spoil it in the checklist — instead give a non-spoiler "hint" telling the host only what to PREPARE (e.g. "a large monstrous miniature", "a mysterious relic token"). A hint says WHAT TO BUILD and nothing else — never put the turn, the trigger or any timing in it ("kept hidden until turn 8" is wrong), because in a co-op game the host is playing too and would be spoiling their own surprise while keeping the real name/note/round in the normal fields (the app hides them until the host reveals or the moment arrives). A collectible item whose effect should only be discovered on pickup should be marked "secret": true with a vague "hint". Not everything needs to be secret — obvious, up-front elements stay visible.
 Reply with ONLY a JSON object (no prose, no code fence) shaped EXACTLY like:
-{"title":"short evocative title","premise":"1-2 sentence hook",${qt&&MYSTERY_TYPES.includes(qt[0])?`"mystery":{"question":"...","truth":"...","envelopes":[{"trigger":"...","title":"...","text":"...","effect":"..."}],"finale":"..."},`:""}"briefing":"vivid 4-6 sentence atmospheric second-person narration","scenery":"1-2 sentences describing the terrain to build","objectives":["a victory condition","..."],"specialRules":["an optional special rule","..."],"twist":"one mid-game complication (or empty string)","events":[{"round":4,"kind":"surprise","title":"short event name","text":"what happens this round, written atmospherically, ending with the measurable rule (e.g. 'Everyone within 10cm of the Marble Pit takes 1D6.')","effect":{"apply":true,"type":"damage","amount":"1D6","scope":"chosen","where":"within 10cm of Marble Pit (#3)","duration":"turn","negatedBy":["Power armour"]}}],"deployment":"how the warbands deploy, referencing table sides/centre","gameLength":"1D10+6 turns","terrain":[{"name":"terrain piece to build","note":"how many / what it looks like","prop":"P4","size":"8×8cm, 12cm tall","mapLabel":"Wreck Spire","role":"cover-tall"}],"newProps":[{"name":"Gantry bridge","size":"20×4cm, 8cm tall with a walkable top","why":"This table wants a raised crossing between two spires; nothing in the library spans a gap."}],"markers":[{"name":"objective/token to print","note":"what it marks","mapLabel":"Hadal Core","role":"objective"}],"npcs":[{"name":"extra character/creature","note":"what it is / when it appears","when":"when and where it shows up","mapLabel":"Vent Mouth","secret":false,"hint":""}],"items":[{"name":"collectible item","note":"what it does / what it changes about whoever picks it up","when":"the concrete moment it matters, naming the rule/hazard it answers","mapLabel":"Supply Locker","secret":false,"hint":"","trap":null,"effect":{"apply":true,"summary":"one vivid sentence of what happens to whoever keeps it","newName":"","skills":{"A":0,"F":0,"S":0,"AW":0,"P":0},"hp":0,"addTraits":[],"removeTraits":[],"addAbilities":[],"note":""}}],"injuries":[{"name":"Venom-withered arm","note":"The limb never regains its strength.","cause":"Scorpion Swarm"}],"map":{"note":"one-line caption of the battlefield","zones":[{"label":"short deployment label","side":"a","x":5,"y":5,"w":30,"h":18}],"features":[{"type":"terrain","role":"cover-tall","ground":"rough","label":"Wreck Spire","x":50,"y":50,"r":8}]}}
+{"title":"short evocative title","premise":"1-2 sentence hook",${qt&&MYSTERY_TYPES.includes(qt[0])?`"mystery":{"question":"...","truth":"...","envelopes":[{"trigger":"...","title":"...","text":"...","effect":"..."}],"finale":"..."},`:""}"briefing":"vivid 4-6 sentence atmospheric second-person narration","scenery":"1-2 sentences describing the terrain to build","objectives":["a victory condition","..."],"specialRules":["an optional special rule","..."],"twist":"one mid-game complication (or empty string)","events":[{"round":4,"kind":"surprise","title":"short event name","text":"what happens this round, written atmospherically, ending with the measurable rule (e.g. 'Everyone within 10cm of the Marble Pit takes 1D6.')","effect":{"apply":true,"type":"damage","amount":"1D6","scope":"chosen","where":"within 10cm of Marble Pit (#3)","duration":"turn","negatedBy":["Power armour"]}}],"deployment":"how the warbands deploy, referencing table sides/centre","gameLength":"1D10+6 turns","terrain":[{"name":"terrain piece to build","note":"how many / what it looks like","prop":"P4","size":"8×8cm, 12cm tall","mapLabel":"Wreck Spire","role":"cover-tall"}],"newProps":[{"name":"Gantry bridge","size":"20×4cm, 8cm tall with a walkable top","why":"This table wants a raised crossing between two spires; nothing in the library spans a gap."}],"setpiece":null,"markers":[{"name":"objective/token to print","note":"what it marks","mapLabel":"Hadal Core","role":"objective"}],"npcs":[{"name":"extra character/creature","note":"what it is / when it appears","when":"when and where it shows up","mapLabel":"Vent Mouth","secret":false,"hint":""}],"items":[{"name":"collectible item","note":"what it does / what it changes about whoever picks it up","when":"the concrete moment it matters, naming the rule/hazard it answers","mapLabel":"Supply Locker","secret":false,"hint":"","trap":null,"effect":{"apply":true,"summary":"one vivid sentence of what happens to whoever keeps it","newName":"","skills":{"A":0,"F":0,"S":0,"AW":0,"P":0},"hp":0,"addTraits":[],"removeTraits":[],"addAbilities":[],"note":""}}],"injuries":[{"name":"Venom-withered arm","note":"The limb never regains its strength.","cause":"Scorpion Swarm"}],"map":{"note":"one-line caption of the battlefield","zones":[{"label":"short deployment label","side":"a","x":5,"y":5,"w":30,"h":18}],"features":[{"type":"terrain","role":"cover-tall","ground":"rough","label":"Wreck Spire","x":50,"y":50,"r":8}]}}
 Map coordinates are percentages of the 90×90 board: x from 0 (left) to 100 (right), y from 0 (top) to 100 (bottom). Provide 2-4 deployment zones (side is "a", "b" or "neutral") and 6-10 features (type is one of "terrain","cover","objective","hazard"; role is one of the roles listed above and is REQUIRED on every feature; "ground" is one of "even","rough","hazardous","impassable" and is also REQUIRED on every feature; add "r" — how far the ground of that type spreads, 4-28 in the same percentage units — on any rough, hazardous or impassable feature, so the map can shade the area rather than a point). Keep every map label under 22 characters and make each one distinctive enough to reference. Keep the checklist arrays short and concrete (omit any that don't apply), and give every checklist entry a "mapLabel" matching a map label exactly wherever it belongs on the table.`;
   try{
     const raw=await s.json(prompt,{modelTier:"default",cache:false});
@@ -6249,10 +6367,16 @@ function coerceItemEffect(e){
   if(!changes)out.apply=false;
   return out;
 }
+function coerceSetpiece(x){
+  if(!x||typeof x!=="object"||!x.name)return null;
+  const wps=(Array.isArray(x.weakPoints)?x.weakPoints:[]).slice(0,6).map(w=>({name:String(w&&w.name||"weak point").slice(0,40),hp:Math.max(1,Math.min(30,Math.round(+(w&&w.hp)||6))),how:String(w&&w.how||"").slice(0,120)})).filter(w=>w.name);
+  if(!wps.length)return null;
+  return {prop:String(x.prop||"").slice(0,6).toUpperCase(),name:String(x.name).slice(0,60),presence:String(x.presence||"").slice(0,240),weakPoints:wps,win:String(x.win||"").slice(0,200)};
+}
 function coerceScenario(raw,opts){
   raw=raw&&typeof raw==="object"?raw:{};
   const arr=x=>Array.isArray(x)?x.filter(Boolean).map(String):[];
-  const named=x=>Array.isArray(x)?x.map(v=>typeof v==="string"?{name:v,note:"",when:"",size:"",prop:"",mapLabel:"",role:"",secret:false,hint:"",revealed:false}:{name:String(v&&v.name||"").slice(0,60),note:String(v&&v.note||"").slice(0,180),when:String(v&&v.when||"").slice(0,180),size:String(v&&v.size||"").slice(0,40),prop:String(v&&v.prop||"").slice(0,6).toUpperCase(),effect:coerceItemEffect(v&&v.effect),mapLabel:String(v&&v.mapLabel||"").slice(0,120),role:String(v&&v.role||"").toLowerCase().slice(0,20),secret:!!(v&&v.secret),hint:String(v&&v.hint||"").slice(0,90),revealed:false}).filter(v=>v.name||v.hint):[];
+  const named=x=>Array.isArray(x)?x.map(v=>typeof v==="string"?{name:v,note:"",when:"",size:"",prop:"",mapLabel:"",role:"",secret:false,hint:"",revealed:false}:{name:String(v&&v.name||"").slice(0,60),note:String(v&&v.note||"").slice(0,180),when:String(v&&v.when||"").slice(0,180),size:String(v&&v.size||"").slice(0,40),prop:String(v&&v.prop||"").slice(0,6).toUpperCase(),effect:coerceItemEffect(v&&v.effect),mapLabel:String(v&&v.mapLabel||"").slice(0,120),role:String(v&&v.role||"").toLowerCase().slice(0,20),secret:!!(v&&v.secret),hint:String(v&&v.hint||"").slice(0,90),revealed:false,trap:v&&v.trap}).filter(v=>v.name||v.hint):[];
   const m=raw.map&&typeof raw.map==="object"?raw.map:{};
   const num=(v,d)=>{const n=+v;return isFinite(n)?Math.max(0,Math.min(100,n)):d;};
   const zones=(Array.isArray(m.zones)?m.zones:[]).map(z=>({label:String(z&&z.label||"").slice(0,34),side:(z&&z.side)==="b"?"b":(z&&z.side)==="neutral"?"neutral":"a",x:num(z&&z.x,5),y:num(z&&z.y,5),w:num(z&&z.w,25),h:num(z&&z.h,18)}));
@@ -6289,7 +6413,7 @@ function coerceScenario(raw,opts){
     deployment:String(raw.deployment||""),
     gameLength:String(raw.gameLength||"1D10+6 turns"),
     terrain:terrainL, markers:markersL, npcs:npcsL,
-    items:itemsL.map((x,i)=>({name:x.name,note:x.note,when:x.when,mapLabel:x.mapLabel,role:x.role,secret:x.secret,hint:x.hint,effect:x.effect||null,revealed:false,found:false,id:"it"+i,heldBy:null})),
+    items:itemsL.map((x,i)=>({name:x.name,note:x.note,when:x.when,mapLabel:x.mapLabel,role:x.role,secret:x.secret,hint:x.hint,effect:x.effect||null,revealed:false,found:false,id:"it"+i,heldBy:null,trap:coerceTrap(x)})),
     searched:[],
     injuries:(Array.isArray(raw.injuries)?raw.injuries:[]).map(coerceInjury).filter(Boolean).slice(0,10),
     newProps:(Array.isArray(raw.newProps)?raw.newProps:[]).slice(0,3).map(x=>({name:String(x&&x.name||"").slice(0,40),size:String(x&&x.size||"").slice(0,40),why:String(x&&x.why||"").slice(0,160)})).filter(x=>x.name&&x.size),
@@ -6297,6 +6421,7 @@ function coerceScenario(raw,opts){
     round:1, rounds:opts.length||null,
     map:{note:String(m.note||""),zones,features:feats},
     mystery:coerceMystery(raw.mystery),
+    setpiece:coerceSetpiece(raw.setpiece),
   };
 }
 function coerceMystery(x){
@@ -6647,13 +6772,23 @@ function enemyMiniCard(c){
     <div class="ec-stats">${SKILLS.map(([k])=>`<span><b>${c.skills[k]}</b>${k}</span>`).join("")}<span class="hp"><b>${c.hp}</b>HP</span></div>
   </button>`;
 }
+function setpieceCardHTML(s){
+  const sp=s.setpiece; if(!sp)return "";
+  const p=propByCode(sp.prop);
+  return `<div class="sp-box"><div class="sp-h"><b>◆ ${esc(sp.name)}</b><span class="chip">set piece${p?" · "+esc(p.code)+" "+esc(p.name):""}</span></div>
+    <div class="none-note" style="font-style:normal;margin-top:2px">Cannot be fought — only dealt with. Its weak points are tracked on the battle roster once the battle starts.</div>
+    ${sp.presence?`<div class="sp-pres"><b>Every turn:</b> ${esc(sp.presence)}</div>`:""}
+    ${sp.weakPoints.map(w=>`<div class="sp-wp"><div class="n">${esc(w.name)}${w.how?`<small>${esc(w.how)}</small>`:""}</div><span class="hpv">${w.hp} hp</span></div>`).join("")}
+    ${sp.win?`<div class="sp-win"><b>To win:</b> ${esc(sp.win)}</div>`:""}
+  </div>`;
+}
 function enemyBlock(s){
   const diff=diffOf(s), bonus=diff.enemyBonus, target=enemyTargetFor(s);
   if(enemyAll(s).length){
     const vehs=enemyVehs(s);
     const total=enemyChars(s).reduce((a,c)=>a+unitCost(c),0)+vehs.reduce((a,v)=>a+vehicleCost(v),0);
     const nUnits=enemyAll(s).length;
-    return `<div class="scn-block"><div class="bh">Enemy force — run by the DM</div>
+    return `<div class="scn-block"><div class="bh">Enemy force — run by the DM</div>${setpieceCardHTML(s)}
       <p style="margin-bottom:10px">Target <b>${s.enemy.target||target} pts</b> (${s.players} × ${s.points} + ${bonus}, ${diff.label}) · built <b style="color:var(--danger)">${total} pts</b> across ${nUnits} unit${nUnits===1?"":"s"}${vehs.length?` (including ${vehs.length} vehicle${vehs.length>1?"s":""})`:""}. Tap a unit for its full card.</p>
       ${(()=>{const cs=enemyAll(s),any=cs.some(c=>c.deployNote||c.atStart===false);
         if(!any)return `<div class="enemy-grid">${cs.map(enemyMiniCard).join("")}</div>`;
@@ -6956,7 +7091,27 @@ function buildBattle(s){
     // a vehicle's hull is the sum of its sections; it is destroyed section by section
     enemyVehs(s).forEach(v=>{const hp=vehicleHP(v);combatants.push({id:"e_"+v.id,side:"enemy",owner:"Enemy",name:"▰ "+(v.name||"Enemy vehicle"),maxHP:hp,curHP:hp,conditions:[],neg:[],isVeh:true,secs:vehSections(v).map(s=>Object.assign({},s,{cur:s.max})),aboard:[]});});
   }
+  if(s.setpiece){const sp=s.setpiece,secs=sp.weakPoints.map((w,i)=>({key:"wp"+i,name:w.name,max:w.hp,cur:w.hp,how:w.how}));
+    combatants.push({id:"sp_main",side:"enemy",owner:"Enemy",name:"◆ "+sp.name,isSetpiece:true,secs,maxHP:secs.reduce((a,x)=>a+x.max,0),curHP:secs.reduce((a,x)=>a+x.max,0),A:0,AW:0,acted:true,conditions:[],neg:[]});}
   s.battle={started:true,combatants};save();
+}
+/* a set piece never takes a turn — it sits above the order with its weak points */
+function setpieceRow(s){return ((s.battle&&s.battle.combatants)||[]).find(m=>m.isSetpiece)||null;}
+function setpieceState(m){
+  const n=m.secs.length,dead=m.secs.filter(x=>(x.cur|0)<=0).length;
+  if(dead>=n)return {key:"down",label:"shut down"};
+  if(dead>=n*0.75)return {key:"subdued",label:"subdued — its presence stops"};
+  return {key:"live",label:(n-dead)+" of "+n+" weak points holding"};
+}
+function setpieceRosterHTML(s){
+  const m=setpieceRow(s), sp=s.setpiece; if(!m||!sp)return "";
+  const st=setpieceState(m);
+  return `<div class="sp-box"><div class="sp-h"><b>◆ ${esc(sp.name)}</b><span class="chip ${st.key==="live"?"amber":"teal"}"><span class="sp-state">${esc(st.label)}</span></span></div>
+    ${sp.presence&&st.key==="live"?`<div class="sp-pres"><b>Every turn:</b> ${esc(sp.presence)}</div>`:""}
+    ${m.secs.map((w,i)=>`<div class="sp-wp ${(w.cur|0)<=0?"dead":""}"><div class="n">${esc(w.name)}${w.how?`<small>${esc(w.how)}</small>`:""}</div>
+      ${scnReadOnly?"":`<button class="hpb" data-sp="${i}|-1" aria-label="damage">−</button>`}<span class="hpv">${(w.cur|0)<=0?"OUT":w.cur+"/"+w.max}</span>${scnReadOnly?"":`<button class="hpb" data-sp="${i}|1" aria-label="undo">+</button>`}</div>`).join("")}
+    ${sp.win?`<div class="sp-win"><b>To win:</b> ${esc(sp.win)}</div>`:""}
+  </div>`;
 }
 function mergePlayersIntoHostedBattle(){
   const s=findScn(hostScenarioId);
@@ -7011,7 +7166,7 @@ function unitAW(s,m){
 function squadBase(id){return /_\d+$/.test(String(id))?String(id).replace(/_\d+$/,""):null;}
 /* units = single rows, squads (members grouped), and out-of-unit members on their own */
 function battleUnits(s){
-  const rows=s.battle.combatants||[], units=[], seen={};
+  const rows=(s.battle.combatants||[]).filter(m=>!m.isSetpiece), units=[], seen={};
   rows.forEach(m=>{
     const base=squadBase(m.id);
     if(base&&!m.solo){
@@ -7114,8 +7269,8 @@ function battleHTML(s){
       if(c&&enemyTeased(c))return `<div class="btl-unit arriving sealed"><div class="btl-row enemy"><div class="btl-main"><span class="btl-side"></span><button class="btl-name btl-open" data-reveal-enemy="${esc(c.id)}" title="Tap to reveal early">⚠ Something approaches</button><span class="btl-owner">${turn?"turn "+turn:"on a trigger"}${c.tease?" · "+esc(c.tease):""}</span></div><div class="btl-hp"><span class="hpv">?</span></div></div></div>`;
       return `<div class="btl-unit arriving"><div class="btl-row enemy"><div class="btl-main"><span class="btl-side"></span><button class="btl-name btl-open" data-open-unit="${esc(u.kind==="squad"?u.members[0].id:u.id)}">${esc(u.name)}</button><span class="btl-owner">${turn?"turn "+turn:"on a trigger"}</span></div><div class="btl-hp"><span class="hpv">${u.kind==="squad"?u.members.length+" ×":""}${u.kind==="squad"?u.members[0].maxHP:u.m.maxHP} HP</span></div></div></div>`;}).join("")}`:"";
   return `<div class="scn-battle"><div class="mh">Battle order${scnReadOnly?" · live":""} <span class="none-note" style="font-style:normal;text-transform:none;letter-spacing:0">· by Agility${!scnReadOnly&&liveN?` · ${actedN} of ${liveN} acted`:""}</span></div>
-    ${nowBar}${guestNow}${filters}${listHTML||`<div class="none-note">Nothing to show for this filter.</div>`}${arrHTML}
-    ${scnReadOnly?"":`<div class="round-actions" style="margin-top:8px"><span class="none-note" style="font-style:normal">${s.battle.combatants.filter(m=>{const c=enemyAll(s).find(x=>"e_"+x.id===String(m.id).replace(/_\d+$/,""));return !(c&&enemyHidden(c));}).length} models · ± adjusts HP · ↗ takes a member out of unit</span>${pendingQuest(s)?`<button class="linkbtn" id="btlHome">🏕 Return to camp</button>`:""}<button class="linkbtn" id="btlReset">Rebuild</button></div>`}</div>`;
+    ${nowBar}${guestNow}${setpieceRosterHTML(s)}${filters}${listHTML||`<div class="none-note">Nothing to show for this filter.</div>`}${arrHTML}
+    ${scnReadOnly?"":`<div class="round-actions" style="margin-top:8px"><span class="none-note" style="font-style:normal">${s.battle.combatants.filter(m=>{if(m.isSetpiece)return false;const c=enemyAll(s).find(x=>"e_"+x.id===String(m.id).replace(/_\d+$/,""));return !(c&&enemyHidden(c));}).length} models · ± adjusts HP · ↗ takes a member out of unit</span>${pendingQuest(s)?`<button class="linkbtn" id="btlHome">🏕 Return to camp</button>`:""}<button class="linkbtn" id="btlReset">Rebuild</button></div>`}</div>`;
 }
 function rollDice(str){
   str=String(str||"").trim();
@@ -7990,6 +8145,10 @@ function renderScenarioDetail(scnOverride){
     else if(m.vehId&&vehsOf(activeWB()).some(v=>v.id===m.vehId))openVehicleCard(m.vehId);
     else toast("That one belongs to another player");
   });
+  el.querySelectorAll("[data-sp]").forEach(b=>b.onclick=()=>{const[i,d]=b.dataset.sp.split("|");const m=setpieceRow(s);if(!m)return;const w=m.secs[+i];if(!w)return;
+    const was=w.cur|0;w.cur=Math.max(0,Math.min(w.max,was+ +d));m.curHP=m.secs.reduce((a,x)=>a+Math.max(0,x.cur|0),0);
+    if(was>0&&w.cur<=0){const st=setpieceState(m);toast(w.name+" is out"+(st.key!=="live"?" — "+s.setpiece.name+" "+st.label:""));pushFeed(s,{kind:"setpiece",text:w.name+" out — "+s.setpiece.name+" "+st.label});}
+    save();renderScenarioView();if(liveRole==="host")scheduleHostSync(s);});
   el.querySelectorAll("[data-hp]").forEach(b=>b.onclick=()=>{const[id,d]=b.dataset.hp.split("|");const m=(s.battle.combatants||[]).find(x=>x.id===id);if(!m)return;
     const was=m.curHP; m.curHP=Math.max(0,Math.min(m.maxHP,m.curHP+ +d));
     const base=squadBase(m.id);
